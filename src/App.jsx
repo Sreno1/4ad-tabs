@@ -1,5 +1,5 @@
 import React, { useState, useReducer } from 'react';
-import { Sword, Shield, Heart, Scroll, Map, Users, Package, Plus, X, ChevronRight, Sparkles, RefreshCw, Grid3x3 } from 'lucide-react';
+import { Sword, Shield, Heart, Scroll, Map, Users, Package, Plus, X, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
 
 // Dice utilities
 const roll = (n, sides = 6, mod = 0) => { let t = 0; for (let i = 0; i < n; i++) t += Math.floor(Math.random() * sides) + 1; return t + mod; };
@@ -40,7 +40,21 @@ const CONTENT = {
 };
 
 // State
-const init = { party: [], gold: 0, hcl: 1, rooms: [], log: [], minorEnc: 0, majorFoes: 0, finalBoss: false, clues: 0 };
+const init = {
+  party: [],
+  gold: 0,
+  hcl: 1,
+  rooms: [],
+  log: [],
+  minorEnc: 0,
+  majorFoes: 0,
+  finalBoss: false,
+  clues: 0,
+  dungeonGrid: Array(28).fill(null).map(() => Array(20).fill(null)),
+  currentTileNum: null,
+  rotation: 0,
+  mirrored: false
+};
 
 function reducer(s, a) {
   switch (a.type) {
@@ -54,6 +68,11 @@ function reducer(s, a) {
     case 'MAJOR': return { ...s, majorFoes: s.majorFoes + 1 };
     case 'BOSS': return { ...s, finalBoss: true };
     case 'CLUE': return { ...s, clues: s.clues + a.n };
+    case 'SET_TILE': return { ...s, currentTileNum: a.tile, rotation: 0, mirrored: false };
+    case 'ROTATE': return { ...s, rotation: (s.rotation + 90) % 360 };
+    case 'MIRROR': return { ...s, mirrored: !s.mirrored };
+    case 'PLACE_TILE': return { ...s, dungeonGrid: a.grid, currentTileNum: null };
+    case 'CLEAR_DUNGEON': return { ...s, dungeonGrid: Array(28).fill(null).map(() => Array(20).fill(null)), rooms: [], currentTileNum: null };
     case 'RESET': return init;
     default: return s;
   }
@@ -132,69 +151,171 @@ function Party({ s, d }) {
 }
 
 function Dungeon({ s, d }) {
-  const [rolls, setRolls] = useState(null);
-  
-  const gen = () => {
-    const tileR = d66(), contR = r2d6();
+  const getTilePattern = () => {
+    if (!s.currentTileNum) return null;
+    let pattern = TILE_PATTERNS[s.currentTileNum];
+    if (!pattern) return null;
+    if (s.rotation !== 0) pattern = rotateTile(pattern, s.rotation);
+    if (s.mirrored) pattern = mirrorTile(pattern);
+    return pattern;
+  };
+
+  const rollNewTile = () => {
+    let tileR;
+    if (s.rooms.length === 0) {
+      // First tile: entrance room (d6 = tiles 11-16)
+      tileR = 10 + d6();
+    } else {
+      // Subsequent tiles: normal d66
+      tileR = d66();
+    }
+
+    const contR = r2d6();
     const cor = isCorridor(tileR);
     const tile = TILES[tileR] || `? (${tileR})`;
     let cont = CONTENT[contR];
     if (cor && [4, 8, 10, 12].includes(contR)) cont = 'Empty (corridor)';
-    
+
     const isMajor = [10, 11].includes(contR) || (contR === 12 && !cor);
     let fb = false;
-    if (isMajor && !s.finalBoss && s.rooms.length >= 3 && d6() + s.majorFoes >= 6) { fb = true; d({ type: 'BOSS' }); }
-    
-    setRolls({ tileR, contR, cor, fb });
+    if (isMajor && !s.finalBoss && s.rooms.length >= 3 && d6() + s.majorFoes >= 6) {
+      fb = true;
+      d({ type: 'BOSS' });
+    }
+
     d({ type: 'ROOM', r: { id: Date.now(), n: s.rooms.length + 1, tileR, tile, cor, contR, cont, fb } });
-    d({ type: 'LOG', t: `#${s.rooms.length + 1}: d66=${tileR} (${tile}) | 2d6=${contR} → ${cont}${fb ? ' ★FINAL BOSS★' : ''}` });
+    d({ type: 'LOG', t: `#${s.rooms.length + 1}: ${s.rooms.length === 0 ? 'd6' : 'd66'}=${tileR} (${tile}) | 2d6=${contR} → ${cont}${fb ? ' ★FINAL BOSS★' : ''}` });
+    d({ type: 'SET_TILE', tile: tileR });
+
     if (isMajor) d({ type: 'MAJOR' });
     if ([6, 7].includes(contR) || (contR === 8 && !cor)) d({ type: 'MINOR' });
   };
-  
-  const search = () => {
-    const r = d6() + (s.cur?.cor ? -1 : 0);
-    const res = r <= 1 ? 'Wandering Monsters!' : r <= 4 ? 'Nothing' : 'Found! (Clue/Door/Treasure/Passage)';
-    if (r >= 5) d({ type: 'CLUE', n: 1 });
-    d({ type: 'LOG', t: `Search ${r}: ${res}` });
+
+  const placeTile = (gridX, gridY) => {
+    const pattern = getTilePattern();
+    if (!pattern) return;
+
+    const newGrid = s.dungeonGrid.map(row => [...row]);
+    for (let y = 0; y < pattern.h; y++) {
+      for (let x = 0; x < pattern.w; x++) {
+        if (gridY + y < 28 && gridX + x < 20 && pattern.grid[y][x]) {
+          newGrid[gridY + y][gridX + x] = { tile: s.currentTileNum, rotation: s.rotation, mirrored: s.mirrored };
+        }
+      }
+    }
+    d({ type: 'PLACE_TILE', grid: newGrid });
+    d({ type: 'LOG', t: `Placed tile ${s.currentTileNum} at (${gridX},${gridY}) rot:${s.rotation}° ${s.mirrored ? 'mirrored' : ''}` });
   };
-  
+
+  const renderDungeonGrid = () => {
+    const cellSize = 10;
+    return (
+      <svg width={20 * cellSize} height={28 * cellSize} className="mx-auto bg-slate-950 border border-slate-700">
+        {s.dungeonGrid.map((row, y) =>
+          row.map((cell, x) => (
+            <rect
+              key={`${x}-${y}`}
+              x={x * cellSize}
+              y={y * cellSize}
+              width={cellSize}
+              height={cellSize}
+              fill={cell ? "#f59e0b" : "#0f172a"}
+              stroke="#334155"
+              strokeWidth="0.5"
+              onClick={() => !cell && s.currentTileNum && placeTile(x, y)}
+              className={s.currentTileNum && !cell ? "cursor-pointer hover:fill-amber-700" : ""}
+            />
+          ))
+        )}
+      </svg>
+    );
+  };
+
+  const renderTilePreview = () => {
+    const pattern = getTilePattern();
+    if (!pattern) return null;
+
+    const cellSize = 20;
+    return (
+      <svg width={pattern.w * cellSize} height={pattern.h * cellSize} className="mx-auto">
+        {pattern.grid.map((row, y) =>
+          row.map((cell, x) =>
+            cell ? (
+              <rect
+                key={`${x}-${y}`}
+                x={x * cellSize}
+                y={y * cellSize}
+                width={cellSize}
+                height={cellSize}
+                fill="#f59e0b"
+                stroke="#92400e"
+                strokeWidth="1"
+              />
+            ) : null
+          )
+        )}
+        {pattern.doors?.map((door, i) => {
+          const doorSize = cellSize * 0.4;
+          let dx, dy;
+          if (door.s === 'top') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = 0; }
+          else if (door.s === 'bottom') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = door.y * cellSize + cellSize - doorSize; }
+          else if (door.s === 'left') { dx = 0; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
+          else { dx = door.x * cellSize + cellSize - doorSize; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
+          return <rect key={i} x={dx} y={dy} width={doorSize} height={doorSize} fill="#10b981" stroke="#064e3b" strokeWidth="1" />;
+        })}
+      </svg>
+    );
+  };
+
   return (
     <div className="p-3 space-y-2">
-      <button onClick={gen} className="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded font-bold flex justify-center items-center gap-2">
-        <ChevronRight size={18} /> New Room
-      </button>
-      
-      {rolls && (
-        <div className="bg-slate-800 rounded p-3 text-center">
-          <div className="flex justify-center gap-8">
-            <div><div className="text-2xl font-bold text-amber-400">{rolls.tileR}</div><div className="text-xs text-slate-500">d66 Tile</div></div>
-            <div><div className="text-2xl font-bold text-amber-400">{rolls.contR}</div><div className="text-xs text-slate-500">2d6 Content</div></div>
+      <div className="flex justify-between items-center">
+        <h2 className="font-bold text-amber-400">Dungeon Map</h2>
+        <button onClick={() => d({ type: 'CLEAR_DUNGEON' })} className="bg-red-600 px-2 py-1 rounded text-xs">Clear All</button>
+      </div>
+
+      <div className="bg-slate-800 rounded p-2 overflow-x-auto">
+        {renderDungeonGrid()}
+      </div>
+
+      {s.currentTileNum ? (
+        <div className="bg-slate-800 rounded p-3 space-y-2">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-amber-400">{s.currentTileNum}</div>
+            <div className="text-sm text-slate-300">{TILES[s.currentTileNum]}</div>
+            {s.cur && <div className="text-xs text-slate-400 mt-1">{s.cur.cont}</div>}
           </div>
-          <div className="text-xs mt-1">
-            {rolls.cor && <span className="text-blue-400 mr-2">Corridor</span>}
-            {rolls.fb && <span className="text-red-400 font-bold">★ FINAL BOSS ★</span>}
+
+          <div className="bg-slate-900 rounded p-2">
+            {renderTilePreview()}
+          </div>
+
+          <div className="grid grid-cols-4 gap-1 text-xs">
+            <button onClick={() => d({ type: 'ROTATE' })} className="bg-slate-700 px-2 py-1 rounded">⟲ {s.rotation}°</button>
+            <button onClick={() => d({ type: 'MIRROR' })} className="bg-slate-700 px-2 py-1 rounded">{s.mirrored ? '⇄ Yes' : '⇄ No'}</button>
+            <button onClick={() => d({ type: 'SET_TILE', tile: null })} className="bg-red-700 px-2 py-1 rounded col-span-2">Cancel</button>
+          </div>
+
+          <div className="text-xs text-slate-400 text-center">
+            Click grid to place tile • Green = doors
           </div>
         </div>
+      ) : (
+        <button onClick={rollNewTile} className="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded font-bold flex justify-center items-center gap-2">
+          <ChevronRight size={18} /> {s.rooms.length === 0 ? 'Roll Entrance (d6)' : 'Roll New Room (d66)'}
+        </button>
       )}
-      
-      {s.cur && (
-        <div className="bg-slate-800 rounded p-2">
-          <div className="flex justify-between items-center">
-            <span className="text-amber-400 font-bold">Room {s.cur.n}</span>
-            <button onClick={search} className="bg-slate-700 px-2 py-1 rounded text-xs"><Sparkles size={12} className="inline" /> Search</button>
-          </div>
-          <div className="text-sm text-slate-300">{s.cur.tile}</div>
-          <div className="text-xs text-slate-400 mt-1">{s.cur.cont}</div>
-        </div>
-      )}
-      
+
       <Dice />
-      
-      <div className="bg-slate-800 rounded p-2 max-h-32 overflow-y-auto text-xs">
-        {s.rooms.slice().reverse().slice(0, 8).map(r => (
-          <div key={r.id} className="text-slate-500 py-0.5">#{r.n} [{r.tileR}] {r.cont.slice(0, 25)}</div>
+
+      <div className="bg-slate-800 rounded p-2 max-h-24 overflow-y-auto text-xs">
+        <div className="font-bold text-amber-400 mb-1">Room History</div>
+        {s.rooms.slice().reverse().slice(0, 6).map(r => (
+          <div key={r.id} className="text-slate-400 py-0.5">
+            #{r.n} [{r.tileR}] {r.tile} - {r.cont.slice(0, 30)}
+          </div>
         ))}
+        {!s.rooms.length && <div className="text-slate-500">No rooms yet</div>}
       </div>
     </div>
   );
@@ -320,106 +441,6 @@ const TILE_PATTERNS = {
   66: { grid: [[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1]], w: 8, h: 6, doors: [{s:'top',x:3,y:0}] }
 };
 
-function TileVisualizer({ d }) {
-  const [currentTile, setCurrentTile] = useState(null);
-
-  const rollTile = () => {
-    const tileNum = d66();
-    setCurrentTile(tileNum);
-    d({ type: 'LOG', t: `Tile Visualizer: d66=${tileNum} (${TILES[tileNum] || '?'})` });
-  };
-
-  const renderTile = (tileNum, showDoors = true) => {
-    const pattern = TILE_PATTERNS[tileNum];
-    if (!pattern) return <div className="text-slate-500 text-sm">No pattern for tile {tileNum}</div>;
-
-    const cellSize = Math.min(30, 240 / Math.max(pattern.w, pattern.h));
-    const width = pattern.w * cellSize;
-    const height = pattern.h * cellSize;
-
-    return (
-      <svg width={width} height={height} className="mx-auto">
-        {pattern.grid.map((row, y) =>
-          row.map((cell, x) =>
-            cell ? (
-              <rect
-                key={`${x}-${y}`}
-                x={x * cellSize}
-                y={y * cellSize}
-                width={cellSize}
-                height={cellSize}
-                fill="#f59e0b"
-                stroke="#92400e"
-                strokeWidth="1"
-              />
-            ) : null
-          )
-        )}
-        {showDoors && pattern.doors?.map((door, i) => {
-          const doorSize = cellSize * 0.4;
-          let dx, dy;
-          if (door.s === 'top') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = 0; }
-          else if (door.s === 'bottom') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = door.y * cellSize + cellSize - doorSize; }
-          else if (door.s === 'left') { dx = 0; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
-          else { dx = door.x * cellSize + cellSize - doorSize; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
-          return <rect key={i} x={dx} y={dy} width={doorSize} height={doorSize} fill="#10b981" stroke="#064e3b" strokeWidth="1" />;
-        })}
-      </svg>
-    );
-  };
-
-  return (
-    <div className="p-3 space-y-3">
-      <div className="text-center">
-        <h2 className="font-bold text-amber-400 mb-2">Dungeon Tile Visualizer</h2>
-        <button
-          onClick={rollTile}
-          className="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded font-bold flex justify-center items-center gap-2"
-        >
-          <Grid3x3 size={18} /> Roll d66 for Tile
-        </button>
-      </div>
-
-      {currentTile && (
-        <div className="bg-slate-800 rounded p-4 space-y-3">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-amber-400">{currentTile}</div>
-            <div className="text-sm text-slate-300">{TILES[currentTile] || 'Unknown Tile'}</div>
-            {isCorridor(currentTile) && (
-              <div className="inline-block bg-blue-600 text-white text-xs px-2 py-1 rounded mt-1">
-                CORRIDOR
-              </div>
-            )}
-          </div>
-
-          <div className="bg-slate-900 rounded p-4 flex items-center justify-center min-h-[150px]">
-            {renderTile(currentTile)}
-          </div>
-        </div>
-      )}
-
-      <div className="bg-slate-800 rounded p-3">
-        <div className="text-xs text-amber-400 font-bold mb-2">Tile Reference</div>
-        <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
-          <div>
-            <div className="font-bold text-blue-400 mb-1">Corridors (C)</div>
-            <div>11-16, 51-52</div>
-          </div>
-          <div>
-            <div className="font-bold text-amber-400 mb-1">Rooms</div>
-            <div>21-46, 53-66</div>
-          </div>
-        </div>
-        <div className="text-xs text-slate-500 mt-2">
-          Roll d66: First d6 = tens, second d6 = ones
-        </div>
-      </div>
-
-      <Dice />
-    </div>
-  );
-}
-
 // Rotate/mirror helpers
 const rotateTile = (pattern, rotation) => {
   if (rotation === 0) return pattern;
@@ -454,182 +475,12 @@ const mirrorTile = (pattern) => {
   return { ...pattern, grid: mirrored, doors: mirroredDoors };
 };
 
-function DungeonBuilder({ s, d }) {
-  const [dungeonGrid, setDungeonGrid] = useState(Array(28).fill(null).map(() => Array(20).fill(null)));
-  const [currentTileNum, setCurrentTileNum] = useState(null);
-  const [rotation, setRotation] = useState(0);
-  const [mirrored, setMirrored] = useState(false);
-  const [selectedDoor, setSelectedDoor] = useState(null);
-
-  const rollNewTile = () => {
-    const tileNum = s.rooms.length > 0 ? (s.cur?.tileR || d66()) : 21; // First tile or use last room
-    setCurrentTileNum(tileNum);
-    setRotation(0);
-    setMirrored(false);
-    setSelectedDoor(null);
-  };
-
-  const getTilePattern = () => {
-    if (!currentTileNum) return null;
-    let pattern = TILE_PATTERNS[currentTileNum];
-    if (!pattern) return null;
-    if (rotation !== 0) pattern = rotateTile(pattern, rotation);
-    if (mirrored) pattern = mirrorTile(pattern);
-    return pattern;
-  };
-
-  const placeTile = (gridX, gridY) => {
-    const pattern = getTilePattern();
-    if (!pattern) return;
-
-    const newGrid = dungeonGrid.map(row => [...row]);
-    for (let y = 0; y < pattern.h; y++) {
-      for (let x = 0; x < pattern.w; x++) {
-        if (gridY + y < 28 && gridX + x < 20 && pattern.grid[y][x]) {
-          newGrid[gridY + y][gridX + x] = { tile: currentTileNum, rotation, mirrored };
-        }
-      }
-    }
-    setDungeonGrid(newGrid);
-    d({ type: 'LOG', t: `Placed tile ${currentTileNum} at (${gridX},${gridY}) rot:${rotation}° ${mirrored ? 'mirrored' : ''}` });
-    setCurrentTileNum(null);
-  };
-
-  const clearDungeon = () => {
-    setDungeonGrid(Array(28).fill(null).map(() => Array(20).fill(null)));
-    setCurrentTileNum(null);
-  };
-
-  const renderDungeonGrid = () => {
-    const cellSize = 12;
-    return (
-      <svg width={20 * cellSize} height={28 * cellSize} className="mx-auto bg-slate-950 border border-slate-700">
-        {dungeonGrid.map((row, y) =>
-          row.map((cell, x) => (
-            <g key={`${x}-${y}`}>
-              <rect
-                x={x * cellSize}
-                y={y * cellSize}
-                width={cellSize}
-                height={cellSize}
-                fill={cell ? "#f59e0b" : "#0f172a"}
-                stroke="#334155"
-                strokeWidth="0.5"
-                onClick={() => !cell && currentTileNum && placeTile(x, y)}
-                className="cursor-pointer hover:fill-amber-700"
-              />
-            </g>
-          ))
-        )}
-      </svg>
-    );
-  };
-
-  const renderTilePreview = () => {
-    const pattern = getTilePattern();
-    if (!pattern) return null;
-
-    const cellSize = 25;
-    return (
-      <svg width={pattern.w * cellSize} height={pattern.h * cellSize} className="mx-auto">
-        {pattern.grid.map((row, y) =>
-          row.map((cell, x) =>
-            cell ? (
-              <rect
-                key={`${x}-${y}`}
-                x={x * cellSize}
-                y={y * cellSize}
-                width={cellSize}
-                height={cellSize}
-                fill="#f59e0b"
-                stroke="#92400e"
-                strokeWidth="1"
-              />
-            ) : null
-          )
-        )}
-        {pattern.doors?.map((door, i) => {
-          const doorSize = cellSize * 0.4;
-          let dx, dy;
-          if (door.s === 'top') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = 0; }
-          else if (door.s === 'bottom') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = door.y * cellSize + cellSize - doorSize; }
-          else if (door.s === 'left') { dx = 0; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
-          else { dx = door.x * cellSize + cellSize - doorSize; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
-          return (
-            <rect
-              key={i}
-              x={dx}
-              y={dy}
-              width={doorSize}
-              height={doorSize}
-              fill={selectedDoor === i ? "#10b981" : "#6ee7b7"}
-              stroke="#064e3b"
-              strokeWidth="1"
-              onClick={() => setSelectedDoor(i)}
-              className="cursor-pointer"
-            />
-          );
-        })}
-      </svg>
-    );
-  };
-
-  return (
-    <div className="p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <h2 className="font-bold text-amber-400">Dungeon Builder</h2>
-        <button onClick={clearDungeon} className="bg-red-600 px-2 py-1 rounded text-xs">Clear</button>
-      </div>
-
-      <div className="bg-slate-800 rounded p-2 overflow-x-auto">
-        {renderDungeonGrid()}
-      </div>
-
-      {currentTileNum ? (
-        <div className="bg-slate-800 rounded p-3 space-y-2">
-          <div className="text-center">
-            <div className="text-xl font-bold text-amber-400">{currentTileNum}</div>
-            <div className="text-xs text-slate-300">{TILES[currentTileNum]}</div>
-          </div>
-
-          <div className="bg-slate-900 rounded p-3">
-            {renderTilePreview()}
-          </div>
-
-          <div className="grid grid-cols-4 gap-1 text-xs">
-            <button onClick={() => setRotation((rotation + 90) % 360)} className="bg-slate-700 px-2 py-1 rounded">⟲ {rotation}°</button>
-            <button onClick={() => setMirrored(!mirrored)} className="bg-slate-700 px-2 py-1 rounded">{mirrored ? '⇄ Yes' : '⇄ No'}</button>
-            <button onClick={() => setCurrentTileNum(null)} className="bg-red-700 px-2 py-1 rounded col-span-2">Cancel</button>
-          </div>
-
-          <div className="text-xs text-slate-400 text-center">
-            Click grid to place tile
-          </div>
-        </div>
-      ) : (
-        <button onClick={rollNewTile} className="w-full bg-amber-600 hover:bg-amber-500 py-2 rounded font-bold text-sm">
-          {s.cur ? `Place Current Tile (${s.cur.tileR})` : 'Start Dungeon (Roll Tile First)'}
-        </button>
-      )}
-
-      <div className="bg-slate-800 rounded p-2 text-xs text-slate-400">
-        <div className="font-bold text-amber-400 mb-1">Instructions:</div>
-        <div>1. Generate rooms in Dungeon tab</div>
-        <div>2. Click "Place Current Tile" here</div>
-        <div>3. Rotate/mirror as needed</div>
-        <div>4. Click grid to place</div>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   const [s, d] = useReducer(reducer, init);
   const [tab, setTab] = useState('party');
   const tabs = [
     { id: 'party', icon: Users, label: 'Party' },
     { id: 'dungeon', icon: Map, label: 'Dungeon' },
-    { id: 'builder', icon: Grid3x3, label: 'Builder' },
     { id: 'combat', icon: Sword, label: 'Combat' },
     { id: 'log', icon: Scroll, label: 'Log' }
   ];
@@ -642,7 +493,6 @@ export default function App() {
       <main className="flex-1 overflow-y-auto pb-16">
         {tab === 'party' && <Party s={s} d={d} />}
         {tab === 'dungeon' && <Dungeon s={s} d={d} />}
-        {tab === 'builder' && <DungeonBuilder s={s} d={d} />}
         {tab === 'combat' && <Combat s={s} d={d} />}
         {tab === 'log' && <Log s={s} d={d} />}
       </main>
