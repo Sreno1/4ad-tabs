@@ -3,7 +3,8 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - claude/setup-artifact-deployment-2OcZ9
+      - main
+      - claude/**
   workflow_dispatch:
 
 permissions:
