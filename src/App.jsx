@@ -280,44 +280,44 @@ function Log({ s, d }) {
   );
 }
 
-// Tile patterns - each array represents grid cells (1=filled, 0=empty)
+// Tile patterns with doors - doors: {side: 'top'|'right'|'bottom'|'left', pos: cell position}
 const TILE_PATTERNS = {
-  11: { grid: [[1,1,1,1]], w: 4, h: 1 }, // Corridor 4×1
-  12: { grid: [[1,1,1,1,1,1]], w: 6, h: 1 }, // Corridor 6×1
-  13: { grid: [[1,1,0],[0,1,0],[0,1,1]], w: 3, h: 3 }, // L-bend
-  14: { grid: [[0,1,1],[0,1,0],[1,1,0]], w: 3, h: 3 }, // L-bend (mirrored)
-  15: { grid: [[1,1,1],[0,1,0],[0,1,1]], w: 3, h: 3 }, // T-junction
-  16: { grid: [[0,1,0],[1,1,1],[0,1,0]], w: 3, h: 3 }, // 4-way
-  21: { grid: [[1,1],[1,1]], w: 2, h: 2 }, // Room 2×2
-  22: { grid: [[1,1],[1,1]], w: 2, h: 2 }, // Room 2×2
-  23: { grid: [[1,1,1],[1,1,0],[1,1,0]], w: 3, h: 3 }, // 2×2+alcove
-  24: { grid: [[1,1,1],[1,1,1]], w: 3, h: 2 }, // Room 3×2
-  25: { grid: [[1,1,1],[1,1,1],[1,1,1]], w: 3, h: 3 }, // Room 3×3
-  26: { grid: [[1,1,1,1],[1,1,1,0],[1,1,1,0]], w: 4, h: 3 }, // 3×3+alcove
-  31: { grid: [[1,1,1,1],[1,1,1,1]], w: 4, h: 2 }, // Room 4×2
-  32: { grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1]], w: 4, h: 3 }, // Room 4×3
-  33: { grid: [[1,1,1,1],[1,1,0,0],[1,1,1,1]], w: 4, h: 3 }, // 4×3 L-shape
-  34: { grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]], w: 4, h: 4 }, // Room 4×4
-  35: { grid: [[1,1,1,1],[1,0,0,1],[1,0,0,1],[1,1,1,1]], w: 4, h: 4 }, // 4×4 pillars
-  36: { grid: [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]], w: 5, h: 4 }, // Room 5×4
-  41: { grid: [[0,1,1],[1,1,1],[1,1,1],[0,1,1]], w: 3, h: 4 }, // Round 3×3
-  42: { grid: [[0,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,0]], w: 4, h: 4 }, // Round 4×4
-  43: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]], w: 6, h: 4 }, // Room 6×4
-  44: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[0,0,1,1,0,0],[1,1,1,1,1,1]], w: 6, h: 4 }, // 6×4 divided
-  45: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]], w: 6, h: 6 }, // Room 6×6
-  46: { grid: [[1,1,1,1,1,1],[1,0,1,1,0,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,0,1,1,0,1],[1,1,1,1,1,1]], w: 6, h: 6 }, // 6×6 pillars
-  51: { grid: [[1,1,1,1,1,1,1,1]], w: 8, h: 1 }, // Corridor 8×1
-  52: { grid: [[1,1,1],[1,1,1],[0,1,0]], w: 3, h: 3 }, // Stairs
-  53: { grid: [[1,1],[1,1],[1,1],[1,1]], w: 2, h: 4 }, // Room 2×4
-  54: { grid: [[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]], w: 3, h: 5 }, // Room 3×5
-  55: { grid: [[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,0],[0,1,1,1,0]], w: 5, h: 4 }, // T-shape
-  56: { grid: [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]], w: 5, h: 5 }, // Room 5×5
-  61: { grid: [[1,1,1,0],[1,1,1,0],[1,1,1,1]], w: 4, h: 3 }, // Room+corridor
-  62: { grid: [[1,1,1,1,1],[1,1,1,1,0],[1,1,1,1,0]], w: 5, h: 3 }, // 4×3+corridor
-  63: { grid: [[1,1,1,1],[1,1,1,1],[1,1,0,1],[0,1,1,1]], w: 4, h: 4 }, // Irregular
-  64: { grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1],[0,0,1,1]], w: 4, h: 4 }, // Room+alcove
-  65: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]], w: 6, h: 5 }, // Room 6×5
-  66: { grid: [[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1]], w: 8, h: 6 } // Hall 8×6
+  11: { grid: [[1,1,1,1]], w: 4, h: 1, doors: [{s:'left',x:0,y:0},{s:'right',x:3,y:0}] },
+  12: { grid: [[1,1,1,1,1,1]], w: 6, h: 1, doors: [{s:'left',x:0,y:0},{s:'right',x:5,y:0}] },
+  13: { grid: [[1,1,0],[0,1,0],[0,1,1]], w: 3, h: 3, doors: [{s:'top',x:1,y:0},{s:'right',x:2,y:2}] },
+  14: { grid: [[0,1,1],[0,1,0],[1,1,0]], w: 3, h: 3, doors: [{s:'top',x:1,y:0},{s:'left',x:0,y:2}] },
+  15: { grid: [[1,1,1],[0,1,0],[0,1,1]], w: 3, h: 3, doors: [{s:'top',x:1,y:0},{s:'top',x:0,y:0},{s:'right',x:2,y:2}] },
+  16: { grid: [[0,1,0],[1,1,1],[0,1,0]], w: 3, h: 3, doors: [{s:'top',x:1,y:0},{s:'right',x:2,y:1},{s:'bottom',x:1,y:2},{s:'left',x:0,y:1}] },
+  21: { grid: [[1,1],[1,1]], w: 2, h: 2, doors: [{s:'top',x:0,y:0}] },
+  22: { grid: [[1,1],[1,1]], w: 2, h: 2, doors: [{s:'left',x:0,y:0}] },
+  23: { grid: [[1,1,1],[1,1,0],[1,1,0]], w: 3, h: 3, doors: [{s:'left',x:0,y:1}] },
+  24: { grid: [[1,1,1],[1,1,1]], w: 3, h: 2, doors: [{s:'top',x:1,y:0}] },
+  25: { grid: [[1,1,1],[1,1,1],[1,1,1]], w: 3, h: 3, doors: [{s:'top',x:1,y:0}] },
+  26: { grid: [[1,1,1,1],[1,1,1,0],[1,1,1,0]], w: 4, h: 3, doors: [{s:'left',x:0,y:1}] },
+  31: { grid: [[1,1,1,1],[1,1,1,1]], w: 4, h: 2, doors: [{s:'top',x:1,y:0}] },
+  32: { grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1]], w: 4, h: 3, doors: [{s:'top',x:1,y:0},{s:'left',x:0,y:1}] },
+  33: { grid: [[1,1,1,1],[1,1,0,0],[1,1,1,1]], w: 4, h: 3, doors: [{s:'left',x:0,y:0}] },
+  34: { grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]], w: 4, h: 4, doors: [{s:'top',x:1,y:0}] },
+  35: { grid: [[1,1,1,1],[1,0,0,1],[1,0,0,1],[1,1,1,1]], w: 4, h: 4, doors: [{s:'top',x:1,y:0}] },
+  36: { grid: [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]], w: 5, h: 4, doors: [{s:'top',x:2,y:0}] },
+  41: { grid: [[0,1,1],[1,1,1],[1,1,1],[0,1,1]], w: 3, h: 4, doors: [{s:'top',x:1,y:0}] },
+  42: { grid: [[0,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,0]], w: 4, h: 4, doors: [{s:'top',x:1,y:0}] },
+  43: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]], w: 6, h: 4, doors: [{s:'top',x:2,y:0}] },
+  44: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[0,0,1,1,0,0],[1,1,1,1,1,1]], w: 6, h: 4, doors: [{s:'top',x:2,y:0}] },
+  45: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]], w: 6, h: 6, doors: [{s:'top',x:2,y:0}] },
+  46: { grid: [[1,1,1,1,1,1],[1,0,1,1,0,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,0,1,1,0,1],[1,1,1,1,1,1]], w: 6, h: 6, doors: [{s:'top',x:2,y:0}] },
+  51: { grid: [[1,1,1,1,1,1,1,1]], w: 8, h: 1, doors: [{s:'left',x:0,y:0},{s:'right',x:7,y:0}] },
+  52: { grid: [[1,1,1],[1,1,1],[0,1,0]], w: 3, h: 3, doors: [{s:'top',x:1,y:0},{s:'bottom',x:1,y:2}] },
+  53: { grid: [[1,1],[1,1],[1,1],[1,1]], w: 2, h: 4, doors: [{s:'top',x:0,y:0}] },
+  54: { grid: [[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]], w: 3, h: 5, doors: [{s:'top',x:1,y:0}] },
+  55: { grid: [[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,0],[0,1,1,1,0]], w: 5, h: 4, doors: [{s:'top',x:2,y:0}] },
+  56: { grid: [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]], w: 5, h: 5, doors: [{s:'top',x:2,y:0}] },
+  61: { grid: [[1,1,1,0],[1,1,1,0],[1,1,1,1]], w: 4, h: 3, doors: [{s:'top',x:1,y:0},{s:'right',x:3,y:2}] },
+  62: { grid: [[1,1,1,1,1],[1,1,1,1,0],[1,1,1,1,0]], w: 5, h: 3, doors: [{s:'left',x:0,y:1},{s:'right',x:4,y:1}] },
+  63: { grid: [[1,1,1,1],[1,1,1,1],[1,1,0,1],[0,1,1,1]], w: 4, h: 4, doors: [{s:'top',x:1,y:0}] },
+  64: { grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1],[0,0,1,1]], w: 4, h: 4, doors: [{s:'top',x:1,y:0}] },
+  65: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]], w: 6, h: 5, doors: [{s:'top',x:2,y:0}] },
+  66: { grid: [[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1]], w: 8, h: 6, doors: [{s:'top',x:3,y:0}] }
 };
 
 function TileVisualizer({ d }) {
@@ -329,7 +329,7 @@ function TileVisualizer({ d }) {
     d({ type: 'LOG', t: `Tile Visualizer: d66=${tileNum} (${TILES[tileNum] || '?'})` });
   };
 
-  const renderTile = (tileNum) => {
+  const renderTile = (tileNum, showDoors = true) => {
     const pattern = TILE_PATTERNS[tileNum];
     if (!pattern) return <div className="text-slate-500 text-sm">No pattern for tile {tileNum}</div>;
 
@@ -355,6 +355,15 @@ function TileVisualizer({ d }) {
             ) : null
           )
         )}
+        {showDoors && pattern.doors?.map((door, i) => {
+          const doorSize = cellSize * 0.4;
+          let dx, dy;
+          if (door.s === 'top') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = 0; }
+          else if (door.s === 'bottom') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = door.y * cellSize + cellSize - doorSize; }
+          else if (door.s === 'left') { dx = 0; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
+          else { dx = door.x * cellSize + cellSize - doorSize; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
+          return <rect key={i} x={dx} y={dy} width={doorSize} height={doorSize} fill="#10b981" stroke="#064e3b" strokeWidth="1" />;
+        })}
       </svg>
     );
   };
@@ -411,13 +420,216 @@ function TileVisualizer({ d }) {
   );
 }
 
+// Rotate/mirror helpers
+const rotateTile = (pattern, rotation) => {
+  if (rotation === 0) return pattern;
+  const { grid, doors, w, h } = pattern;
+  let newGrid = grid;
+  let newDoors = doors;
+
+  for (let i = 0; i < rotation / 90; i++) {
+    const rotated = newGrid[0].map((_, colIdx) => newGrid.map(row => row[row.length - 1 - colIdx]).reverse());
+    newDoors = newDoors.map(d => {
+      const { s, x, y } = d;
+      const [nw, nh] = [newGrid[0].length, newGrid.length];
+      if (s === 'top') return { s: 'right', x: nh - 1 - y, y: x };
+      if (s === 'right') return { s: 'bottom', x: nw - 1 - x, y: nh - 1 - y };
+      if (s === 'bottom') return { s: 'left', x: y, y: nw - 1 - x };
+      return { s: 'top', x: x, y: y };
+    });
+    newGrid = rotated;
+  }
+
+  return { ...pattern, grid: newGrid, doors: newDoors, w: rotation % 180 === 90 ? h : w, h: rotation % 180 === 90 ? w : h };
+};
+
+const mirrorTile = (pattern) => {
+  const { grid, doors } = pattern;
+  const mirrored = grid.map(row => [...row].reverse());
+  const mirroredDoors = doors.map(d => ({
+    ...d,
+    s: d.s === 'left' ? 'right' : d.s === 'right' ? 'left' : d.s,
+    x: d.s === 'left' || d.s === 'right' ? pattern.w - 1 - d.x : pattern.w - 1 - d.x
+  }));
+  return { ...pattern, grid: mirrored, doors: mirroredDoors };
+};
+
+function DungeonBuilder({ s, d }) {
+  const [dungeonGrid, setDungeonGrid] = useState(Array(28).fill(null).map(() => Array(20).fill(null)));
+  const [currentTileNum, setCurrentTileNum] = useState(null);
+  const [rotation, setRotation] = useState(0);
+  const [mirrored, setMirrored] = useState(false);
+  const [selectedDoor, setSelectedDoor] = useState(null);
+
+  const rollNewTile = () => {
+    const tileNum = s.rooms.length > 0 ? (s.cur?.tileR || d66()) : 21; // First tile or use last room
+    setCurrentTileNum(tileNum);
+    setRotation(0);
+    setMirrored(false);
+    setSelectedDoor(null);
+  };
+
+  const getTilePattern = () => {
+    if (!currentTileNum) return null;
+    let pattern = TILE_PATTERNS[currentTileNum];
+    if (!pattern) return null;
+    if (rotation !== 0) pattern = rotateTile(pattern, rotation);
+    if (mirrored) pattern = mirrorTile(pattern);
+    return pattern;
+  };
+
+  const placeTile = (gridX, gridY) => {
+    const pattern = getTilePattern();
+    if (!pattern) return;
+
+    const newGrid = dungeonGrid.map(row => [...row]);
+    for (let y = 0; y < pattern.h; y++) {
+      for (let x = 0; x < pattern.w; x++) {
+        if (gridY + y < 28 && gridX + x < 20 && pattern.grid[y][x]) {
+          newGrid[gridY + y][gridX + x] = { tile: currentTileNum, rotation, mirrored };
+        }
+      }
+    }
+    setDungeonGrid(newGrid);
+    d({ type: 'LOG', t: `Placed tile ${currentTileNum} at (${gridX},${gridY}) rot:${rotation}° ${mirrored ? 'mirrored' : ''}` });
+    setCurrentTileNum(null);
+  };
+
+  const clearDungeon = () => {
+    setDungeonGrid(Array(28).fill(null).map(() => Array(20).fill(null)));
+    setCurrentTileNum(null);
+  };
+
+  const renderDungeonGrid = () => {
+    const cellSize = 12;
+    return (
+      <svg width={20 * cellSize} height={28 * cellSize} className="mx-auto bg-slate-950 border border-slate-700">
+        {dungeonGrid.map((row, y) =>
+          row.map((cell, x) => (
+            <g key={`${x}-${y}`}>
+              <rect
+                x={x * cellSize}
+                y={y * cellSize}
+                width={cellSize}
+                height={cellSize}
+                fill={cell ? "#f59e0b" : "#0f172a"}
+                stroke="#334155"
+                strokeWidth="0.5"
+                onClick={() => !cell && currentTileNum && placeTile(x, y)}
+                className="cursor-pointer hover:fill-amber-700"
+              />
+            </g>
+          ))
+        )}
+      </svg>
+    );
+  };
+
+  const renderTilePreview = () => {
+    const pattern = getTilePattern();
+    if (!pattern) return null;
+
+    const cellSize = 25;
+    return (
+      <svg width={pattern.w * cellSize} height={pattern.h * cellSize} className="mx-auto">
+        {pattern.grid.map((row, y) =>
+          row.map((cell, x) =>
+            cell ? (
+              <rect
+                key={`${x}-${y}`}
+                x={x * cellSize}
+                y={y * cellSize}
+                width={cellSize}
+                height={cellSize}
+                fill="#f59e0b"
+                stroke="#92400e"
+                strokeWidth="1"
+              />
+            ) : null
+          )
+        )}
+        {pattern.doors?.map((door, i) => {
+          const doorSize = cellSize * 0.4;
+          let dx, dy;
+          if (door.s === 'top') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = 0; }
+          else if (door.s === 'bottom') { dx = door.x * cellSize + cellSize / 2 - doorSize / 2; dy = door.y * cellSize + cellSize - doorSize; }
+          else if (door.s === 'left') { dx = 0; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
+          else { dx = door.x * cellSize + cellSize - doorSize; dy = door.y * cellSize + cellSize / 2 - doorSize / 2; }
+          return (
+            <rect
+              key={i}
+              x={dx}
+              y={dy}
+              width={doorSize}
+              height={doorSize}
+              fill={selectedDoor === i ? "#10b981" : "#6ee7b7"}
+              stroke="#064e3b"
+              strokeWidth="1"
+              onClick={() => setSelectedDoor(i)}
+              className="cursor-pointer"
+            />
+          );
+        })}
+      </svg>
+    );
+  };
+
+  return (
+    <div className="p-3 space-y-3">
+      <div className="flex justify-between items-center">
+        <h2 className="font-bold text-amber-400">Dungeon Builder</h2>
+        <button onClick={clearDungeon} className="bg-red-600 px-2 py-1 rounded text-xs">Clear</button>
+      </div>
+
+      <div className="bg-slate-800 rounded p-2 overflow-x-auto">
+        {renderDungeonGrid()}
+      </div>
+
+      {currentTileNum ? (
+        <div className="bg-slate-800 rounded p-3 space-y-2">
+          <div className="text-center">
+            <div className="text-xl font-bold text-amber-400">{currentTileNum}</div>
+            <div className="text-xs text-slate-300">{TILES[currentTileNum]}</div>
+          </div>
+
+          <div className="bg-slate-900 rounded p-3">
+            {renderTilePreview()}
+          </div>
+
+          <div className="grid grid-cols-4 gap-1 text-xs">
+            <button onClick={() => setRotation((rotation + 90) % 360)} className="bg-slate-700 px-2 py-1 rounded">⟲ {rotation}°</button>
+            <button onClick={() => setMirrored(!mirrored)} className="bg-slate-700 px-2 py-1 rounded">{mirrored ? '⇄ Yes' : '⇄ No'}</button>
+            <button onClick={() => setCurrentTileNum(null)} className="bg-red-700 px-2 py-1 rounded col-span-2">Cancel</button>
+          </div>
+
+          <div className="text-xs text-slate-400 text-center">
+            Click grid to place tile
+          </div>
+        </div>
+      ) : (
+        <button onClick={rollNewTile} className="w-full bg-amber-600 hover:bg-amber-500 py-2 rounded font-bold text-sm">
+          {s.cur ? `Place Current Tile (${s.cur.tileR})` : 'Start Dungeon (Roll Tile First)'}
+        </button>
+      )}
+
+      <div className="bg-slate-800 rounded p-2 text-xs text-slate-400">
+        <div className="font-bold text-amber-400 mb-1">Instructions:</div>
+        <div>1. Generate rooms in Dungeon tab</div>
+        <div>2. Click "Place Current Tile" here</div>
+        <div>3. Rotate/mirror as needed</div>
+        <div>4. Click grid to place</div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [s, d] = useReducer(reducer, init);
   const [tab, setTab] = useState('party');
   const tabs = [
     { id: 'party', icon: Users, label: 'Party' },
     { id: 'dungeon', icon: Map, label: 'Dungeon' },
-    { id: 'tiles', icon: Grid3x3, label: 'Tiles' },
+    { id: 'builder', icon: Grid3x3, label: 'Builder' },
     { id: 'combat', icon: Sword, label: 'Combat' },
     { id: 'log', icon: Scroll, label: 'Log' }
   ];
@@ -430,7 +642,7 @@ export default function App() {
       <main className="flex-1 overflow-y-auto pb-16">
         {tab === 'party' && <Party s={s} d={d} />}
         {tab === 'dungeon' && <Dungeon s={s} d={d} />}
-        {tab === 'tiles' && <TileVisualizer d={d} />}
+        {tab === 'builder' && <DungeonBuilder s={s} d={d} />}
         {tab === 'combat' && <Combat s={s} d={d} />}
         {tab === 'log' && <Log s={s} d={d} />}
       </main>
