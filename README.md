@@ -44,7 +44,7 @@ npm preview
 
 ## 📦 Deployment
 
-This project uses GitHub Actions to automatically deploy to GitHub Pages when you push to the `claude/setup-artifact-deployment-2OcZ9` branch.
+This project uses GitHub Actions to automatically deploy to GitHub Pages when you push to the `main` branch or any `claude/**` branch.
 
 ### First-Time Setup
 
