@@ -1,5 +1,5 @@
 import React, { useState, useReducer } from 'react';
-import { Sword, Shield, Heart, Scroll, Map, Users, Package, Plus, X, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
+import { Sword, Shield, Heart, Scroll, Map, Users, Package, Plus, X, ChevronRight, Sparkles, RefreshCw, Grid3x3 } from 'lucide-react';
 
 // Dice utilities
 const roll = (n, sides = 6, mod = 0) => { let t = 0; for (let i = 0; i < n; i++) t += Math.floor(Math.random() * sides) + 1; return t + mod; };
@@ -280,10 +280,147 @@ function Log({ s, d }) {
   );
 }
 
+// Tile patterns - each array represents grid cells (1=filled, 0=empty)
+const TILE_PATTERNS = {
+  11: { grid: [[1,1,1,1]], w: 4, h: 1 }, // Corridor 4×1
+  12: { grid: [[1,1,1,1,1,1]], w: 6, h: 1 }, // Corridor 6×1
+  13: { grid: [[1,1,0],[0,1,0],[0,1,1]], w: 3, h: 3 }, // L-bend
+  14: { grid: [[0,1,1],[0,1,0],[1,1,0]], w: 3, h: 3 }, // L-bend (mirrored)
+  15: { grid: [[1,1,1],[0,1,0],[0,1,1]], w: 3, h: 3 }, // T-junction
+  16: { grid: [[0,1,0],[1,1,1],[0,1,0]], w: 3, h: 3 }, // 4-way
+  21: { grid: [[1,1],[1,1]], w: 2, h: 2 }, // Room 2×2
+  22: { grid: [[1,1],[1,1]], w: 2, h: 2 }, // Room 2×2
+  23: { grid: [[1,1,1],[1,1,0],[1,1,0]], w: 3, h: 3 }, // 2×2+alcove
+  24: { grid: [[1,1,1],[1,1,1]], w: 3, h: 2 }, // Room 3×2
+  25: { grid: [[1,1,1],[1,1,1],[1,1,1]], w: 3, h: 3 }, // Room 3×3
+  26: { grid: [[1,1,1,1],[1,1,1,0],[1,1,1,0]], w: 4, h: 3 }, // 3×3+alcove
+  31: { grid: [[1,1,1,1],[1,1,1,1]], w: 4, h: 2 }, // Room 4×2
+  32: { grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1]], w: 4, h: 3 }, // Room 4×3
+  33: { grid: [[1,1,1,1],[1,1,0,0],[1,1,1,1]], w: 4, h: 3 }, // 4×3 L-shape
+  34: { grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]], w: 4, h: 4 }, // Room 4×4
+  35: { grid: [[1,1,1,1],[1,0,0,1],[1,0,0,1],[1,1,1,1]], w: 4, h: 4 }, // 4×4 pillars
+  36: { grid: [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]], w: 5, h: 4 }, // Room 5×4
+  41: { grid: [[0,1,1],[1,1,1],[1,1,1],[0,1,1]], w: 3, h: 4 }, // Round 3×3
+  42: { grid: [[0,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,0]], w: 4, h: 4 }, // Round 4×4
+  43: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]], w: 6, h: 4 }, // Room 6×4
+  44: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[0,0,1,1,0,0],[1,1,1,1,1,1]], w: 6, h: 4 }, // 6×4 divided
+  45: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]], w: 6, h: 6 }, // Room 6×6
+  46: { grid: [[1,1,1,1,1,1],[1,0,1,1,0,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,0,1,1,0,1],[1,1,1,1,1,1]], w: 6, h: 6 }, // 6×6 pillars
+  51: { grid: [[1,1,1,1,1,1,1,1]], w: 8, h: 1 }, // Corridor 8×1
+  52: { grid: [[1,1,1],[1,1,1],[0,1,0]], w: 3, h: 3 }, // Stairs
+  53: { grid: [[1,1],[1,1],[1,1],[1,1]], w: 2, h: 4 }, // Room 2×4
+  54: { grid: [[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]], w: 3, h: 5 }, // Room 3×5
+  55: { grid: [[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,0],[0,1,1,1,0]], w: 5, h: 4 }, // T-shape
+  56: { grid: [[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1]], w: 5, h: 5 }, // Room 5×5
+  61: { grid: [[1,1,1,0],[1,1,1,0],[1,1,1,1]], w: 4, h: 3 }, // Room+corridor
+  62: { grid: [[1,1,1,1,1],[1,1,1,1,0],[1,1,1,1,0]], w: 5, h: 3 }, // 4×3+corridor
+  63: { grid: [[1,1,1,1],[1,1,1,1],[1,1,0,1],[0,1,1,1]], w: 4, h: 4 }, // Irregular
+  64: { grid: [[1,1,1,1],[1,1,1,1],[1,1,1,1],[0,0,1,1]], w: 4, h: 4 }, // Room+alcove
+  65: { grid: [[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1]], w: 6, h: 5 }, // Room 6×5
+  66: { grid: [[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1]], w: 8, h: 6 } // Hall 8×6
+};
+
+function TileVisualizer({ d }) {
+  const [currentTile, setCurrentTile] = useState(null);
+
+  const rollTile = () => {
+    const tileNum = d66();
+    setCurrentTile(tileNum);
+    d({ type: 'LOG', t: `Tile Visualizer: d66=${tileNum} (${TILES[tileNum] || '?'})` });
+  };
+
+  const renderTile = (tileNum) => {
+    const pattern = TILE_PATTERNS[tileNum];
+    if (!pattern) return <div className="text-slate-500 text-sm">No pattern for tile {tileNum}</div>;
+
+    const cellSize = Math.min(30, 240 / Math.max(pattern.w, pattern.h));
+    const width = pattern.w * cellSize;
+    const height = pattern.h * cellSize;
+
+    return (
+      <svg width={width} height={height} className="mx-auto">
+        {pattern.grid.map((row, y) =>
+          row.map((cell, x) =>
+            cell ? (
+              <rect
+                key={`${x}-${y}`}
+                x={x * cellSize}
+                y={y * cellSize}
+                width={cellSize}
+                height={cellSize}
+                fill="#f59e0b"
+                stroke="#92400e"
+                strokeWidth="1"
+              />
+            ) : null
+          )
+        )}
+      </svg>
+    );
+  };
+
+  return (
+    <div className="p-3 space-y-3">
+      <div className="text-center">
+        <h2 className="font-bold text-amber-400 mb-2">Dungeon Tile Visualizer</h2>
+        <button
+          onClick={rollTile}
+          className="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded font-bold flex justify-center items-center gap-2"
+        >
+          <Grid3x3 size={18} /> Roll d66 for Tile
+        </button>
+      </div>
+
+      {currentTile && (
+        <div className="bg-slate-800 rounded p-4 space-y-3">
+          <div className="text-center">
+            <div className="text-3xl font-bold text-amber-400">{currentTile}</div>
+            <div className="text-sm text-slate-300">{TILES[currentTile] || 'Unknown Tile'}</div>
+            {isCorridor(currentTile) && (
+              <div className="inline-block bg-blue-600 text-white text-xs px-2 py-1 rounded mt-1">
+                CORRIDOR
+              </div>
+            )}
+          </div>
+
+          <div className="bg-slate-900 rounded p-4 flex items-center justify-center min-h-[150px]">
+            {renderTile(currentTile)}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-slate-800 rounded p-3">
+        <div className="text-xs text-amber-400 font-bold mb-2">Tile Reference</div>
+        <div className="grid grid-cols-2 gap-2 text-xs text-slate-400">
+          <div>
+            <div className="font-bold text-blue-400 mb-1">Corridors (C)</div>
+            <div>11-16, 51-52</div>
+          </div>
+          <div>
+            <div className="font-bold text-amber-400 mb-1">Rooms</div>
+            <div>21-46, 53-66</div>
+          </div>
+        </div>
+        <div className="text-xs text-slate-500 mt-2">
+          Roll d66: First d6 = tens, second d6 = ones
+        </div>
+      </div>
+
+      <Dice />
+    </div>
+  );
+}
+
 export default function App() {
   const [s, d] = useReducer(reducer, init);
   const [tab, setTab] = useState('party');
-  const tabs = [{ id: 'party', icon: Users, label: 'Party' }, { id: 'dungeon', icon: Map, label: 'Dungeon' }, { id: 'combat', icon: Sword, label: 'Combat' }, { id: 'log', icon: Scroll, label: 'Log' }];
+  const tabs = [
+    { id: 'party', icon: Users, label: 'Party' },
+    { id: 'dungeon', icon: Map, label: 'Dungeon' },
+    { id: 'tiles', icon: Grid3x3, label: 'Tiles' },
+    { id: 'combat', icon: Sword, label: 'Combat' },
+    { id: 'log', icon: Scroll, label: 'Log' }
+  ];
   
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col">
@@ -293,6 +430,7 @@ export default function App() {
       <main className="flex-1 overflow-y-auto pb-16">
         {tab === 'party' && <Party s={s} d={d} />}
         {tab === 'dungeon' && <Dungeon s={s} d={d} />}
+        {tab === 'tiles' && <TileVisualizer d={d} />}
         {tab === 'combat' && <Combat s={s} d={d} />}
         {tab === 'log' && <Log s={s} d={d} />}
       </main>
