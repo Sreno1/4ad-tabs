@@ -33,7 +33,7 @@ import {
   useLightGladiatorParry,
   useBulwarkSacrifice,
   toggleDualWield
-} from '../utils/gameActions.js';
+} from "../utils/gameActions/index.js";
 import { isLifeThreatening, getRerollOptions } from '../data/saves.js';
 import { getAvailableSpells, SPELLS, getSpellSlots } from '../data/spells.js';
 import { MONSTER_ABILITIES, getAllMonsters, createMonsterFromTable, MONSTER_CATEGORIES, rollMonsterReaction, REACTION_TYPES } from '../data/monsters.js';

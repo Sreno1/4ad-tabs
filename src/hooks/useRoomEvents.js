@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { d66, d6, r2d6 } from '../utils/dice.js';
 import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE, SPECIAL_FEATURE_TABLE, SPECIAL_ROOMS, checkForBoss } from '../data/rooms.js';
-import { spawnMonster, rollTreasure, spawnMajorFoe } from '../utils/gameActions.js';
+import { spawnMonster, rollTreasure, spawnMajorFoe } from "../utils/gameActions/index.js";
 import { ACTION_MODES, EVENT_TYPES } from '../constants/gameConstants.js';
 
 export function useRoomEvents(state, dispatch, setActionMode) {

@@ -1,41 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 // Components
-import Party from './components/Party.jsx';
-import Dungeon from './components/Dungeon.jsx';
-import Combat from './components/Combat.jsx';
-import Analytics from './components/Analytics.jsx';
-import Log from './components/Log.jsx';
-import SettingsModal from './components/SettingsModal.jsx';
-import RulesReference from './components/RulesReference.jsx';
-import SaveLoadModal from './components/SaveLoadModal.jsx';
-import DungeonFeaturesModal from './components/DungeonFeaturesModal.jsx';
-import CampaignManagerModal from './components/CampaignManagerModal.jsx';
-import Equipment from './components/Equipment.jsx';
-import Abilities from './components/Abilities.jsx';
-import ActionPane from './components/ActionPane.jsx';
-import FloatingDice from './components/FloatingDice.jsx';
+import Party from "./components/Party.jsx";
+import Dungeon from "./components/Dungeon.jsx";
+import Combat from "./components/Combat.jsx";
+import Analytics from "./components/Analytics.jsx";
+import Log from "./components/Log.jsx";
+import SettingsModal from "./components/SettingsModal.jsx";
+import RulesReference from "./components/RulesReference.jsx";
+
+import DungeonFeaturesModal from "./components/DungeonFeaturesModal.jsx";
+import CampaignManagerModal from "./components/CampaignManagerModal.jsx";
+import CampaignManager from "./components/CampaignManager.jsx";
+import OnboardingScreen from "./components/OnboardingScreen.jsx";
+import Equipment from "./components/Equipment.jsx";
+import Abilities from "./components/Abilities.jsx";
+import ActionPane from "./components/ActionPane.jsx";
+import FloatingDice from "./components/FloatingDice.jsx";
 
 // Layout Components
-import AppHeader from './components/layout/AppHeader.jsx';
-import MobileNavigation from './components/layout/MobileNavigation.jsx';
-import DesktopSidebar from './components/layout/DesktopSidebar.jsx';
-import LogBar from './components/layout/LogBar.jsx';
+import AppHeader from "./components/layout/AppHeader.jsx";
+import MobileNavigation from "./components/layout/MobileNavigation.jsx";
+import DesktopSidebar from "./components/layout/DesktopSidebar.jsx";
+import LogBar from "./components/layout/LogBar.jsx";
 
 // Hooks
-import { useGameState } from './hooks/useGameState.js';
-import { useCombatFlow } from './hooks/useCombatFlow.js';
-import { useRoomEvents } from './hooks/useRoomEvents.js';
+import { useGameState } from "./hooks/useGameState.js";
+import { useCombatFlow } from "./hooks/useCombatFlow.js";
+import { useRoomEvents } from "./hooks/useRoomEvents.js";
 
 // Constants
-import { ACTION_MODES } from './constants/gameConstants.js';
+import { ACTION_MODES } from "./constants/gameConstants.js";
+
+// Campaign utilities
+import {
+  createCampaign,
+  setActiveCampaign,
+  clearActiveCampaign,
+} from "./utils/campaignStorage.js";
+import { initialState } from "./state/initialState.js";
 
 export default function App() {
-  const [state, dispatch] = useGameState();
-  const [tab, setTab] = useState('party'); // For mobile
+  const [state, dispatch, campaignControls] = useGameState();
+  const { currentCampaignId, setCurrentCampaignId } = campaignControls;
+  const [tab, setTab] = useState("party"); // For mobile
+  const [showCampaignManager, setShowCampaignManager] =
+    useState(!currentCampaignId);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showRules, setShowRules] = useState(false);
-  const [showSaveLoad, setShowSaveLoad] = useState(false);
+
   const [showDungeonFeatures, setShowDungeonFeatures] = useState(false);
   const [showCampaign, setShowCampaign] = useState(false);
   const [showEquipment, setShowEquipment] = useState(false);
@@ -45,7 +59,7 @@ export default function App() {
 
   // Layout state
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
-  const [leftPanelTab, setLeftPanelTab] = useState('party'); // 'party', 'stats', 'log', or 'rules'
+  const [leftPanelTab, setLeftPanelTab] = useState("party"); // 'party', 'stats', 'log', or 'rules'
   const [actionMode, setActionMode] = useState(ACTION_MODES.IDLE);
 
   // Custom hooks for game logic
@@ -57,6 +71,56 @@ export default function App() {
     roomEvents.clearTile();
     combatFlow.resetCombat();
   };
+
+  // Handler for loading an existing campaign
+  const handleLoadCampaign = (campaignId) => {
+    setActiveCampaign(campaignId);
+    setCurrentCampaignId(campaignId);
+    setShowCampaignManager(false);
+    window.location.reload(); // Reload to load campaign state
+  };
+
+  // Handler for starting new campaign creation
+  const handleNewCampaign = () => {
+    setShowCampaignManager(false);
+    setShowOnboarding(true);
+  };
+
+  // Handler for completing onboarding
+  const handleOnboardingComplete = ({ campaignName, party, gold }) => {
+    const newCampaignId = createCampaign(campaignName, {
+      ...initialState,
+      party,
+      gold,
+      name: campaignName,
+      marchingOrder: [0, 1, 2, 3], // Hero 1 in pos 0, Hero 2 in pos 1, etc.
+    });
+    setActiveCampaign(newCampaignId);
+    setCurrentCampaignId(newCampaignId);
+    setShowOnboarding(false);
+    window.location.reload(); // Reload to load new campaign state
+  };
+
+  // Handler for returning to campaign manager
+  const handleBackToCampaigns = () => {
+    clearActiveCampaign();
+    setShowCampaignManager(true);
+  };
+
+  // Show campaign manager if no active campaign
+  if (showCampaignManager) {
+    return (
+      <CampaignManager
+        onLoadCampaign={handleLoadCampaign}
+        onNewCampaign={handleNewCampaign}
+      />
+    );
+  }
+
+  // Show onboarding screen when creating new campaign
+  if (showOnboarding) {
+    return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+  }
 
   if (!state) {
     return (
@@ -78,8 +142,8 @@ export default function App() {
         onShowEquipment={() => setShowEquipment(true)}
         onShowAbilities={() => setShowAbilities(true)}
         onShowCampaign={() => setShowCampaign(true)}
-        onShowSaveLoad={() => setShowSaveLoad(true)}
         onShowSettings={() => setShowSettings(true)}
+        onBackToCampaigns={handleBackToCampaigns}
       />
 
       {/* Main Content */}
@@ -87,8 +151,15 @@ export default function App() {
         {/* Mobile: Tabbed interface */}
         <div className="md:hidden flex-1 overflow-y-auto pb-16">
           <div className="p-3">
-            {tab === 'party' && <Party state={state} dispatch={dispatch} />}
-            {tab === 'dungeon' && (
+            {tab === "party" && (
+              <Party
+                state={state}
+                dispatch={dispatch}
+                selectedHero={selectedHero}
+                onSelectHero={setSelectedHero}
+              />
+            )}
+            {tab === "dungeon" && (
               <Dungeon
                 state={state}
                 dispatch={dispatch}
@@ -99,7 +170,7 @@ export default function App() {
                 roomDetails={roomEvents.roomDetails}
               />
             )}
-            {tab === 'combat' && (
+            {tab === "combat" && (
               <Combat
                 state={state}
                 dispatch={dispatch}
@@ -107,14 +178,15 @@ export default function App() {
                 setSelectedHero={setSelectedHero}
               />
             )}
-            {tab === 'analytics' && <Analytics state={state} />}
-            {tab === 'log' && <Log state={state} dispatch={dispatch} />}
+            {tab === "analytics" && <Analytics state={state} />}
+            {tab === "log" && <Log state={state} dispatch={dispatch} />}
           </div>
         </div>
 
         {/* Desktop: Flexible equal-width columns layout */}
-        <div className={`hidden md:flex flex-1 overflow-hidden relative ${leftPanelTab !== 'log' ? 'pb-8' : ''}`}>
-
+        <div
+          className={`hidden md:flex flex-1 overflow-hidden relative ${leftPanelTab !== "log" ? "pb-8" : ""}`}
+        >
           {/* Left Column - Party/Stats (Collapsible) */}
           <DesktopSidebar
             state={state}
@@ -123,6 +195,8 @@ export default function App() {
             activeTab={leftPanelTab}
             onToggle={setLeftPanelOpen}
             onTabChange={setLeftPanelTab}
+            selectedHero={selectedHero}
+            onSelectHero={setSelectedHero}
           />
 
           {/* Middle Column - Dungeon Map */}
@@ -146,17 +220,23 @@ export default function App() {
           <div className="flex-1 overflow-y-auto p-3 bg-slate-850 min-w-0">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-bold text-slate-400">
-                {actionMode === ACTION_MODES.COMBAT ? 'Combat' :
-                 actionMode === ACTION_MODES.SPECIAL ? 'Special' :
-                 actionMode === ACTION_MODES.TREASURE ? 'Treasure' :
-                 actionMode === ACTION_MODES.QUEST ? 'Quest' :
-                 actionMode === ACTION_MODES.WEIRD ? 'Weird' :
-                 actionMode === ACTION_MODES.EMPTY ? 'Empty' :
-                 'Actions'}
+                {actionMode === ACTION_MODES.COMBAT
+                  ? "Combat"
+                  : actionMode === ACTION_MODES.SPECIAL
+                    ? "Special"
+                    : actionMode === ACTION_MODES.TREASURE
+                      ? "Treasure"
+                      : actionMode === ACTION_MODES.QUEST
+                        ? "Quest"
+                        : actionMode === ACTION_MODES.WEIRD
+                          ? "Weird"
+                          : actionMode === ACTION_MODES.EMPTY
+                            ? "Empty"
+                            : "Actions"}
               </span>
               {state.monsters?.length > 0 && (
                 <span className="text-xs text-red-400">
-                  {state.monsters.filter(m => m.hp > 0).length} active
+                  {state.monsters.filter((m) => m.hp > 0).length} active
                 </span>
               )}
             </div>
@@ -185,7 +265,7 @@ export default function App() {
           </div>
 
           {/* Log Bar - Hidden when log tab is open in sidebar */}
-          {leftPanelTab !== 'log' && (
+          {leftPanelTab !== "log" && (
             <LogBar
               state={state}
               dispatch={dispatch}
@@ -200,13 +280,39 @@ export default function App() {
       <MobileNavigation activeTab={tab} onTabChange={setTab} />
 
       {/* Modals */}
-      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} state={state} dispatch={dispatch} />
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        state={state}
+        dispatch={dispatch}
+      />
       <RulesReference isOpen={showRules} onClose={() => setShowRules(false)} />
-      <SaveLoadModal isOpen={showSaveLoad} onClose={() => setShowSaveLoad(false)} state={state} dispatch={dispatch} />
-      <DungeonFeaturesModal isOpen={showDungeonFeatures} onClose={() => setShowDungeonFeatures(false)} state={state} dispatch={dispatch} selectedHero={selectedHero} />
-      <CampaignManagerModal isOpen={showCampaign} onClose={() => setShowCampaign(false)} state={state} dispatch={dispatch} />
-      <Equipment isOpen={showEquipment} state={state} dispatch={dispatch} onClose={() => setShowEquipment(false)} />
-      <Abilities isOpen={showAbilities} state={state} dispatch={dispatch} onClose={() => setShowAbilities(false)} />
+
+      <DungeonFeaturesModal
+        isOpen={showDungeonFeatures}
+        onClose={() => setShowDungeonFeatures(false)}
+        state={state}
+        dispatch={dispatch}
+        selectedHero={selectedHero}
+      />
+      <CampaignManagerModal
+        isOpen={showCampaign}
+        onClose={() => setShowCampaign(false)}
+        state={state}
+        dispatch={dispatch}
+      />
+      <Equipment
+        isOpen={showEquipment}
+        state={state}
+        dispatch={dispatch}
+        onClose={() => setShowEquipment(false)}
+      />
+      <Abilities
+        isOpen={showAbilities}
+        state={state}
+        dispatch={dispatch}
+        onClose={() => setShowAbilities(false)}
+      />
 
       {/* Floating Dice Roller (Desktop) */}
       <FloatingDice />

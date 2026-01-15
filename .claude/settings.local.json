@@ -5,7 +5,8 @@
       "Bash(npm run build:*)",
       "Bash(grep:*)",
       "Bash(dir \"C:\\\\Users\\\\slipv\\\\Documents\\\\4ad\\\\4ad-tabs\" /B)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__acp__Bash"
     ]
   }
 }

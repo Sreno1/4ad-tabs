@@ -3,170 +3,190 @@
  */
 
 export const CLASSES = {
-  warrior: { 
-    name: 'Warrior', 
-    atk: '+L', 
-    def: '0', 
-    life: 6, 
-    sp: 'All weapons/armor',
-    abilities: []
+  warrior: {
+    name: "Warrior",
+    atk: "+L",
+    def: "0",
+    life: 6,
+    sp: "All weapons/armor",
+    abilities: [],
+    startingWealth: "3d6",
   },
-  cleric: { 
-    name: 'Cleric', 
-    atk: '+½L (+L undead)', 
-    def: '0', 
-    life: 4, 
-    sp: 'Heal×3, Bless×3',
-    abilities: ['heal', 'bless']
+  cleric: {
+    name: "Cleric",
+    atk: "+½L (+L undead)",
+    def: "0",
+    life: 4,
+    sp: "Heal×3, Bless×3",
+    abilities: ["heal", "bless"],
+    startingWealth: "3d6",
   },
-  rogue: { 
-    name: 'Rogue', 
-    atk: '+L outnumbered', 
-    def: '+L', 
-    life: 3, 
-    sp: 'Traps+L',
-    abilities: []
+  rogue: {
+    name: "Rogue",
+    atk: "+L outnumbered",
+    def: "+L",
+    life: 3,
+    sp: "Traps+L",
+    abilities: [],
+    startingWealth: "2d6",
   },
-  wizard: { 
-    name: 'Wizard', 
-    atk: '+L spells', 
-    def: '0', 
-    life: 2, 
-    sp: 'L+2 slots',
-    abilities: ['spells']
+  wizard: {
+    name: "Wizard",
+    atk: "+L spells",
+    def: "0",
+    life: 2,
+    sp: "L+2 slots",
+    abilities: ["spells"],
+    startingWealth: "2d6",
   },
-  barbarian: { 
-    name: 'Barbarian', 
-    atk: '+L', 
-    def: '0', 
-    life: 7, 
-    sp: 'Rage, no magic',
-    abilities: ['rage']
+  barbarian: {
+    name: "Barbarian",
+    atk: "+L",
+    def: "0",
+    life: 7,
+    sp: "Rage, no magic",
+    abilities: ["rage"],
+    startingWealth: "3d6",
   },
-  halfling: { 
-    name: 'Halfling', 
-    atk: '+L sling', 
-    def: '+L large', 
-    life: 3, 
-    sp: 'L+1 Luck',
-    abilities: ['luck']
+  halfling: {
+    name: "Halfling",
+    atk: "+L sling",
+    def: "+L large",
+    life: 3,
+    sp: "L+1 Luck",
+    abilities: ["luck"],
+    startingWealth: "2d6",
   },
-  dwarf: { 
-    name: 'Dwarf', 
-    atk: '+L melee', 
-    def: '+1 large', 
-    life: 5, 
-    sp: 'Gold sense',
-    abilities: []
+  dwarf: {
+    name: "Dwarf",
+    atk: "+L melee",
+    def: "+1 large",
+    life: 5,
+    sp: "Gold sense",
+    abilities: [],
+    startingWealth: "4d6",
   },
   elf: {
-    name: 'Elf',
-    atk: '+L (not 2H)',
-    def: '0',
+    name: "Elf",
+    atk: "+L (not 2H)",
+    def: "0",
     life: 4,
-    sp: 'L spells',
-    abilities: ['spells']
+    sp: "L spells",
+    abilities: ["spells"],
+    startingWealth: "3d6",
   },
   paladin: {
-    name: 'Paladin',
-    atk: '+L',
-    def: '0',
+    name: "Paladin",
+    atk: "+L",
+    def: "0",
     life: 6,
-    sp: 'L+1 prayer pts, mount',
-    abilities: ['prayer', 'mount'],
-    restrictions: 'Lx10gp tithe, never flee'
+    sp: "L+1 prayer pts, mount",
+    abilities: ["prayer", "mount"],
+    restrictions: "Lx10gp tithe, never flee",
+    startingWealth: "5d6",
   },
   ranger: {
-    name: 'Ranger',
-    atk: '+L, dual wield ½L',
-    def: '0',
+    name: "Ranger",
+    atk: "+L, dual wield ½L",
+    def: "0",
     life: 6,
-    sp: 'Sworn enemy, survival',
-    abilities: ['dualWield', 'swornEnemy']
+    sp: "Sworn enemy, survival",
+    abilities: ["dualWield", "swornEnemy"],
+    startingWealth: "4d6",
   },
   druid: {
-    name: 'Druid',
-    atk: '+½L',
-    def: '0',
+    name: "Druid",
+    atk: "+½L",
+    def: "0",
     life: 3,
-    sp: 'L+2 druid spells, companion',
-    abilities: ['druidSpells', 'animalCompanion']
+    sp: "L+2 druid spells, companion",
+    abilities: ["druidSpells", "animalCompanion"],
+    startingWealth: "2d6",
   },
   acrobat: {
-    name: 'Acrobat',
-    atk: '+½L',
-    def: '+L',
+    name: "Acrobat",
+    atk: "+½L",
+    def: "+L",
     life: 3,
-    sp: 'L+3 tricks',
-    abilities: ['tricks']
+    sp: "L+3 tricks",
+    abilities: ["tricks"],
+    startingWealth: "2d6",
   },
   assassin: {
-    name: 'Assassin',
-    atk: '+L',
-    def: '0',
+    name: "Assassin",
+    atk: "+L",
+    def: "0",
     life: 3,
-    sp: 'Hide in shadows, 3x dmg',
-    abilities: ['hideInShadows']
+    sp: "Hide in shadows, 3x dmg",
+    abilities: ["hideInShadows"],
+    startingWealth: "3d6",
   },
   illusionist: {
-    name: 'Illusionist',
-    atk: '+L spells',
-    def: '0',
+    name: "Illusionist",
+    atk: "+L spells",
+    def: "0",
     life: 2,
-    sp: 'L+3 illusion spells',
-    abilities: ['illusionSpells', 'distractingLights']
+    sp: "L+3 illusion spells",
+    abilities: ["illusionSpells", "distractingLights"],
+    startingWealth: "2d6",
   },
   swashbuckler: {
-    name: 'Swashbuckler',
-    atk: '+½L, dual wield',
-    def: '+½L',
+    name: "Swashbuckler",
+    atk: "+½L, dual wield",
+    def: "+½L",
     life: 4,
-    sp: 'Panache points',
-    abilities: ['panache', 'dualWield']
+    sp: "Panache points",
+    abilities: ["panache", "dualWield"],
+    startingWealth: "4d6",
   },
   bulwark: {
-    name: 'Bulwark',
-    atk: '+½L melee, +Tier ranged',
-    def: '+½L',
+    name: "Bulwark",
+    atk: "+½L melee, +Tier ranged",
+    def: "+½L",
     life: 7,
-    sp: 'Sacrifice, limited heal',
-    abilities: ['sacrifice'],
-    restrictions: 'Rare, heal last'
+    sp: "Sacrifice, limited heal",
+    abilities: ["sacrifice"],
+    restrictions: "Rare, heal last",
+    startingWealth: "5d6",
   },
   gnome: {
-    name: 'Gnome',
-    atk: '+½L',
-    def: '+½L',
+    name: "Gnome",
+    atk: "+½L",
+    def: "+½L",
     life: 5,
-    sp: 'L+6 gadgets, 1 illusion',
-    abilities: ['gadgets', 'oneIllusion']
+    sp: "L+6 gadgets, 1 illusion",
+    abilities: ["gadgets", "oneIllusion"],
+    startingWealth: "3d6",
   },
   kukla: {
-    name: 'Kukla',
-    atk: '+1 light blade',
-    def: '+½L',
+    name: "Kukla",
+    atk: "+1 light blade",
+    def: "+½L",
     life: 5,
-    sp: 'Artificial, compartment',
-    abilities: ['artificial', 'secretCompartment'],
-    restrictions: 'Rare, unhealing'
+    sp: "Artificial, compartment",
+    abilities: ["artificial", "secretCompartment"],
+    restrictions: "Rare, unhealing",
+    startingWealth: "d6",
   },
   lightGladiator: {
-    name: 'Light Gladiator',
-    atk: '+½L light only',
-    def: '+½L',
+    name: "Light Gladiator",
+    atk: "+½L light only",
+    def: "+½L",
     life: 5,
-    sp: 'Dual wield, parry',
-    abilities: ['dualWield', 'parry']
+    sp: "Dual wield, parry",
+    abilities: ["dualWield", "parry"],
+    startingWealth: "4d6",
   },
   mushroomMonk: {
-    name: 'Mushroom Monk',
-    atk: '+L martial, +½L other',
-    def: '+½L',
+    name: "Mushroom Monk",
+    atk: "+L martial, +½L other",
+    def: "+½L",
     life: 3,
-    sp: 'Flurry, Tier spores',
-    abilities: ['flurry', 'spores'],
-    restrictions: 'Rare'
-  }
+    sp: "Flurry, Tier spores",
+    abilities: ["flurry", "spores"],
+    restrictions: "Rare",
+    startingWealth: "d6",
+  },
 };
 
 /**
@@ -176,11 +196,11 @@ export const CLASSES = {
  * @returns {number} Number of spell slots
  */
 export const getSpellSlots = (classKey, level) => {
-  if (classKey === 'wizard') return level + 2;
-  if (classKey === 'druid') return level + 2;
-  if (classKey === 'illusionist') return level + 3;
-  if (classKey === 'elf') return level;
-  if (classKey === 'gnome') return level; // 1 spell from illusion list
+  if (classKey === "wizard") return level + 2;
+  if (classKey === "druid") return level + 2;
+  if (classKey === "illusionist") return level + 3;
+  if (classKey === "elf") return level;
+  if (classKey === "gnome") return level; // 1 spell from illusion list
   return 0;
 };
 

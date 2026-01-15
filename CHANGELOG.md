@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Week 3: Component Decomposition & Campaign Manager
+
+#### Task 3.5: Campaign Manager System (✅ Complete)
+
+**Files Created:**
+- `src/utils/campaignStorage.js` - Campaign storage utilities for multi-campaign support
+- `src/components/OnboardingScreen.jsx` - Campaign creation and party setup flow
+
+**Files Modified:**
+- `src/components/CampaignManager.jsx` - Rewritten to show 3 save slots with load/delete/export/import
+- `src/data/classes.js` - Added `startingWealth` property to all character classes
+- `src/hooks/useGameState.js` - Updated for multi-campaign localStorage support
+- `src/App.jsx` - Integrated campaign manager flow with onboarding screen
+- `src/components/layout/AppHeader.jsx` - Added "Back to Campaigns" button and campaign name display
+
+**Features Implemented:**
+- ✅ Campaign Manager with 3 save slots
+- ✅ Create, load, delete campaigns
+- ✅ Export campaigns to JSON files
+- ✅ Import campaigns from JSON files
+- ✅ OnboardingScreen with multi-step flow:
+  - Campaign naming
+  - Welcome/introduction
+  - Party creation (4 heroes)
+  - Per-hero class and trait selection
+  - Per-class starting gold rolling with dice formulas
+  - Gold pooling and confirmation
+  - Ready to adventure summary
+- ✅ Campaign metadata tracking (name, created date, last played, hero names, rooms explored, gold)
+- ✅ Auto-save after state changes to campaign storage
+- ✅ Seamless campaign switching
+- ✅ "Back to Campaigns" button in app header
+- ✅ Campaign name display in header
+- ✅ All components accessible with ARIA labels
+- ✅ No existing functionality broken
+
+**Technical Details:**
+- LocalStorage structure uses `4ad-campaign-{id}` keys for each campaign
+- Active campaign tracked with `4ad-active-campaign` key
+- Campaign storage functions: `getAllCampaigns()`, `loadCampaign()`, `saveCampaign()`, `createCampaign()`, `deleteCampaign()`, `exportCampaign()`, `importCampaign()`
+- Gold rolling function supports dice formulas: "d6", "2d6", "3d6", "4d6", "5d6"
+- Starting wealth varies by class (2d6 to 5d6)
+- Campaign state persists hero names, party composition, gold, rooms explored
+- useGameState hook now returns campaign controls as third element
+
+---
+
 ### Week 1: Foundation & Critical Fixes
 
 #### Added

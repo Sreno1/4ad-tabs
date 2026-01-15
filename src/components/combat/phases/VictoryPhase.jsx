@@ -3,7 +3,7 @@ import {
   rollTreasure,
   awardXP,
   checkLevelUp
-} from '../../../utils/gameActions.js';
+} from "../../../utils/gameActions/index.js";
 
 export default function VictoryPhase({
   monsters,

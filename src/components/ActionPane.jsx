@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { Dices } from 'lucide-react';
-import { d6 } from '../utils/dice.js';
-import { rollTreasure, performCastSpell } from '../utils/gameActions.js';
-import { SPELLS, getAvailableSpells } from '../data/spells.js';
-import { COMBAT_PHASES, ACTION_MODES } from '../constants/gameConstants.js';
-import EventCard from './actionPane/EventCard.jsx';
-import ActiveMonsters from './actionPane/ActiveMonsters.jsx';
-import CombatInitiative from './actionPane/CombatInitiative.jsx';
-import { PartyTurnPhase, MonsterTurnPhase } from './actionPane/combat';
-import AbilityButtons from './actionPane/combat/AbilityButtons.jsx';
+import React, { useState } from "react";
+import { Dices } from "lucide-react";
+import { d6 } from "../utils/dice.js";
+import { rollTreasure, performCastSpell } from "../utils/gameActions/index.js";
+import { SPELLS, getAvailableSpells } from "../data/spells.js";
+import { COMBAT_PHASES, ACTION_MODES } from "../constants/gameConstants.js";
+import EventCard from "./actionPane/EventCard.jsx";
+import ActiveMonsters from "./actionPane/ActiveMonsters.jsx";
+import CombatInitiative from "./actionPane/CombatInitiative.jsx";
+import { PartyTurnPhase, MonsterTurnPhase } from "./actionPane/combat";
+import AbilityButtons from "./actionPane/combat/AbilityButtons.jsx";
 
 export default function ActionPane({
   state,
@@ -32,7 +32,7 @@ export default function ActionPane({
   setCombatPhase,
   setRoomEvents,
   // Modal handlers
-  setShowDungeonFeatures
+  setShowDungeonFeatures,
 }) {
   const [showSpells, setShowSpells] = useState(null);
   const [showHealTarget, setShowHealTarget] = useState(null);
@@ -51,17 +51,19 @@ export default function ActionPane({
     const context = {};
 
     // Protection spell: open target selection popup
-    if (spellKey === 'protection') {
+    if (spellKey === "protection") {
       setShowProtectionTarget(casterIdx);
       return;
     }
 
     // For attack spells, target first alive monster
-    if (spell.type === 'attack') {
+    if (spell.type === "attack") {
       const activeMonsters = getActiveMonsters();
       if (activeMonsters.length > 0) {
         const targetMonster = activeMonsters[0];
-        const targetIdx = state.monsters.findIndex(m => m.id === targetMonster.id);
+        const targetIdx = state.monsters.findIndex(
+          (m) => m.id === targetMonster.id,
+        );
         context.targetMonsterIdx = targetIdx;
         context.targetMonster = targetMonster;
         context.targets = [targetMonster];
@@ -69,9 +71,16 @@ export default function ActionPane({
     }
 
     // For healing spells, find lowest HP ally
-    if (spell.type === 'healing') {
-      const lowestHP = state.party.reduce((min, h, idx) =>
-        h.hp > 0 && h.hp < h.maxHp && (min === null || h.hp < state.party[min].hp) ? idx : min, null);
+    if (spell.type === "healing") {
+      const lowestHP = state.party.reduce(
+        (min, h, idx) =>
+          h.hp > 0 &&
+          h.hp < h.maxHp &&
+          (min === null || h.hp < state.party[min].hp)
+            ? idx
+            : min,
+        null,
+      );
       if (lowestHP !== null) {
         context.targetHeroIdx = lowestHP;
         context.targetHero = state.party[lowestHP];
@@ -84,7 +93,12 @@ export default function ActionPane({
 
     // Track spell usage
     const abilities = state.abilities?.[casterIdx] || {};
-    dispatch({ type: 'SET_ABILITY', heroIdx: casterIdx, ability: 'spellsUsed', value: (abilities.spellsUsed || 0) + 1 });
+    dispatch({
+      type: "SET_ABILITY",
+      heroIdx: casterIdx,
+      ability: "spellsUsed",
+      value: (abilities.spellsUsed || 0) + 1,
+    });
 
     // Close spell selection
     setShowSpells(null);
@@ -102,7 +116,9 @@ export default function ActionPane({
           >
             <Dices size={18} /> Generate Tile
           </button>
-          <div className="text-slate-500 text-xs mt-2">Rolls d66 for shape + 2d6 for contents</div>
+          <div className="text-slate-500 text-xs mt-2">
+            Rolls d66 for shape + 2d6 for contents
+          </div>
         </div>
       </div>
     );
@@ -178,7 +194,7 @@ export default function ActionPane({
           <div className="flex gap-2">
             <button
               onClick={() => {
-                dispatch({ type: 'LOG', t: `Party attempts to flee!` });
+                dispatch({ type: "LOG", t: `Party attempts to flee!` });
                 setCombatPhase(COMBAT_PHASES.FLED);
               }}
               className="flex-1 bg-yellow-700 hover:bg-yellow-600 px-3 py-1.5 rounded text-sm"
@@ -197,14 +213,21 @@ export default function ActionPane({
           {combatWon && (
             <div className="mt-2 pt-2 border-t-2 border-green-500/50 space-y-2">
               <div className="bg-green-900/50 rounded p-3 text-center border-2 border-green-500/50">
-                <div className="text-green-400 font-bold text-xl">🎉 VICTORY!</div>
-                <div className="text-slate-300 text-sm">All foes have been defeated!</div>
+                <div className="text-green-400 font-bold text-xl">
+                  🎉 VICTORY!
+                </div>
+                <div className="text-slate-300 text-sm">
+                  All foes have been defeated!
+                </div>
               </div>
 
               <button
                 onClick={() => {
                   rollTreasure(dispatch);
-                  setRoomEvents(prev => [...prev, { type: 'TREASURE', data: {}, timestamp: Date.now() }]);
+                  setRoomEvents((prev) => [
+                    ...prev,
+                    { type: "TREASURE", data: {}, timestamp: Date.now() },
+                  ]);
                 }}
                 className="w-full bg-amber-600 hover:bg-amber-500 px-3 py-2 rounded text-sm font-bold"
               >
@@ -228,95 +251,109 @@ export default function ActionPane({
       )}
 
       {/* DEFEAT - Show below combat if party wiped */}
-      {!hasActiveMonsters && state.party.every(h => h.hp <= 0) && combatPhase !== COMBAT_PHASES.NONE && (
-        <div className="mt-2 pt-2 border-t border-slate-700 space-y-2">
-          <div className="bg-red-900/50 rounded p-3 text-center border-2 border-red-500/50">
-            <div className="text-red-400 font-bold text-xl">DEFEAT</div>
-            <div className="text-slate-300 text-sm">The party has fallen...</div>
-          </div>
+      {!hasActiveMonsters &&
+        state.party.every((h) => h.hp <= 0) &&
+        combatPhase !== COMBAT_PHASES.NONE && (
+          <div className="mt-2 pt-2 border-t border-slate-700 space-y-2">
+            <div className="bg-red-900/50 rounded p-3 text-center border-2 border-red-500/50">
+              <div className="text-red-400 font-bold text-xl">DEFEAT</div>
+              <div className="text-slate-300 text-sm">
+                The party has fallen...
+              </div>
+            </div>
 
-          <button
-            onClick={() => {
-              handleEndCombat();
-              clearTile();
-            }}
-            className="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm"
-          >
-            End Adventure
-          </button>
-        </div>
-      )}
+            <button
+              onClick={() => {
+                handleEndCombat();
+                clearTile();
+              }}
+              className="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm"
+            >
+              End Adventure
+            </button>
+          </div>
+        )}
 
       {/* NON-COMBAT MODES - Only show when not in combat at all */}
-      {!hasActiveMonsters && combatPhase === COMBAT_PHASES.NONE && tileResult && (
-        <div className="mt-2 pt-2 border-t border-slate-700 space-y-2">
-          {/* Special Feature */}
-          {actionMode === ACTION_MODES.SPECIAL && roomDetails?.special && (
-            <div className="bg-purple-900/30 rounded p-3">
-              <div className="text-purple-400 font-bold">{roomDetails.special.name}</div>
-              <div className="text-slate-300 text-sm mt-1">{roomDetails.special.description}</div>
-              {roomDetails.special.effect && (
-                <button
-                  onClick={() => setShowDungeonFeatures(true)}
-                  className="mt-2 w-full bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded text-sm"
-                >
-                  ✨ Interact with Feature
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Empty Room/Corridor */}
-          {actionMode === ACTION_MODES.EMPTY && (
-            <div className="bg-slate-700/50 rounded p-3">
-              <div className="text-slate-400 font-bold">
-                {corridor ? '📦 Empty Corridor' : '📦 Empty Room'}
+      {!hasActiveMonsters &&
+        combatPhase === COMBAT_PHASES.NONE &&
+        tileResult && (
+          <div className="mt-2 pt-2 border-t border-slate-700 space-y-2">
+            {/* Special Feature */}
+            {actionMode === ACTION_MODES.SPECIAL && roomDetails?.special && (
+              <div className="bg-purple-900/30 rounded p-3">
+                <div className="text-purple-400 font-bold">
+                  {roomDetails.special.name}
+                </div>
+                <div className="text-slate-300 text-sm mt-1">
+                  {roomDetails.special.description}
+                </div>
+                {roomDetails.special.effect && (
+                  <button
+                    onClick={() => setShowDungeonFeatures(true)}
+                    className="mt-2 w-full bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded text-sm"
+                  >
+                    ✨ Interact with Feature
+                  </button>
+                )}
               </div>
-              <div className="text-slate-300 text-sm mt-1">
-                {corridor
-                  ? 'Corridors can be searched but have fewer features.'
-                  : 'You may search the room for hidden treasure or secrets.'}
+            )}
+
+            {/* Empty Room/Corridor */}
+            {actionMode === ACTION_MODES.EMPTY && (
+              <div className="bg-slate-700/50 rounded p-3">
+                <div className="text-slate-400 font-bold">
+                  {corridor ? "📦 Empty Corridor" : "📦 Empty Room"}
+                </div>
+                <div className="text-slate-300 text-sm mt-1">
+                  {corridor
+                    ? "Corridors can be searched but have fewer features."
+                    : "You may search the room for hidden treasure or secrets."}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Treasure Room (non-combat) */}
-          {actionMode === ACTION_MODES.TREASURE && (
-            <div className="bg-amber-900/30 rounded p-3">
-              <div className="text-amber-400 font-bold">💰 Treasure!</div>
-              <div className="text-slate-300 text-sm mt-1">Check the log for details of what you found.</div>
-            </div>
-          )}
-
-          {/* Quest Room */}
-          {actionMode === ACTION_MODES.QUEST && (
-            <div className="bg-amber-900/30 rounded p-3">
-              <div className="text-amber-500 font-bold">🏆 Quest Room!</div>
-              <div className="text-slate-300 text-sm mt-1">
-                This is the dungeon's final objective! Complete your quest here.
+            {/* Treasure Room (non-combat) */}
+            {actionMode === ACTION_MODES.TREASURE && (
+              <div className="bg-amber-900/30 rounded p-3">
+                <div className="text-amber-400 font-bold">💰 Treasure!</div>
+                <div className="text-slate-300 text-sm mt-1">
+                  Check the log for details of what you found.
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Search Button - for rooms, not corridors in some cases */}
-          {(actionMode === ACTION_MODES.EMPTY || actionMode === ACTION_MODES.TREASURE) && (
+            {/* Quest Room */}
+            {actionMode === ACTION_MODES.QUEST && (
+              <div className="bg-amber-900/30 rounded p-3">
+                <div className="text-amber-500 font-bold">🏆 Quest Room!</div>
+                <div className="text-slate-300 text-sm mt-1">
+                  This is the dungeon's final objective! Complete your quest
+                  here.
+                </div>
+              </div>
+            )}
+
+            {/* Search Button - for rooms, not corridors in some cases */}
+            {(actionMode === ACTION_MODES.EMPTY ||
+              actionMode === ACTION_MODES.TREASURE) && (
+              <button
+                onClick={() => setShowDungeonFeatures(true)}
+                className="w-full bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded text-sm"
+              >
+                🔍 Search {corridor ? "Corridor" : "Room"}
+              </button>
+            )}
+
+            {/* Done Button */}
             <button
-              onClick={() => setShowDungeonFeatures(true)}
-              className="w-full bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded text-sm"
+              onClick={clearTile}
+              className="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm"
             >
-              🔍 Search {corridor ? 'Corridor' : 'Room'}
+              ✓ Done / Continue
             </button>
-          )}
-
-          {/* Done Button */}
-          <button
-            onClick={clearTile}
-            className="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm"
-          >
-            ✓ Done / Continue
-          </button>
-        </div>
-      )}
+          </div>
+        )}
     </div>
   );
 }

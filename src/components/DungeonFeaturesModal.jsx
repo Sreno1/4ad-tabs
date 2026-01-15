@@ -5,7 +5,7 @@ import {
   rollTrap, attemptDetectTrap, attemptDisarmTrap, triggerTrap,
   rollSpecialRoom, interactShrine, interactFountain, interactStatue, interactAltar, interactLibrary, interactArmory,
   rollPuzzle, attemptPuzzle
-} from '../utils/gameActions.js';
+} from "../utils/gameActions/index.js";
 
 export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch, selectedHero }) {
   const [currentDoor, setCurrentDoor] = useState(null);

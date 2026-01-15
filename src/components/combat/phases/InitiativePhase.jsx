@@ -1,5 +1,5 @@
 import React from 'react';
-import { determineInitiative, rollSurprise } from '../../../utils/gameActions.js';
+import { determineInitiative, rollSurprise } from "../../../utils/gameActions/index.js";
 
 const PHASE_LABELS = {
   'party_ranged': '🏹Party Ranged',

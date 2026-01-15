@@ -147,49 +147,49 @@ Use this checklist to track your progress week-by-week. Check off tasks as you c
   - [ ] Use in Party, Combat, Analytics
   - [ ] Test rendering
 
-- [ ] Task 3.5: Campaign Manager System (3-4 hours)
-  - [ ] Create src/utils/campaignStorage.js utility functions
-    - [ ] getAllCampaigns()
-    - [ ] loadCampaign()
-    - [ ] saveCampaign()
-    - [ ] createCampaign()
-    - [ ] deleteCampaign()
-    - [ ] getActiveCampaignId()
-    - [ ] exportCampaign()
-    - [ ] importCampaign()
-    - [ ] rollGold() for per-class gold rolling
-  - [ ] Add startingWealth to src/data/classes.js for all classes
-  - [ ] Create CampaignManager.jsx component
-    - [ ] Show 3 save slots
-    - [ ] Display campaign names and hero names
-    - [ ] Show rooms explored and gold stats
-    - [ ] Load/Delete/Export buttons
-    - [ ] Import functionality
-  - [ ] Create OnboardingScreen.jsx component
-    - [ ] Campaign naming step
-    - [ ] Welcome step
-    - [ ] Party creation step (4 heroes)
-    - [ ] Per-hero name, class, trait selection
-    - [ ] Per-class gold rolling
-    - [ ] Gold pooling confirmation step
-    - [ ] Ready to explore step
-  - [ ] Update src/hooks/useGameState.js for multi-campaign support
-    - [ ] Load active campaign on init
-    - [ ] Save after each state change
-    - [ ] Return campaign controls in third element
-  - [ ] Update src/App.jsx with campaign manager flow
-    - [ ] Show CampaignManager when no active campaign
-    - [ ] Show OnboardingScreen when creating new campaign
-    - [ ] Show main app when campaign loaded
-  - [ ] Update src/components/layout/AppHeader.jsx
-    - [ ] Add "Back to Campaigns" button
-    - [ ] Display current campaign name
-  - [ ] Test campaign creation end-to-end
-  - [ ] Test campaign switching
-  - [ ] Test export/import
-  - [ ] Test per-class gold rolling
-  - [ ] Test campaign list display
-  - [ ] Add ARIA labels for accessibility
+- [x] Task 3.5: Campaign Manager System (3-4 hours) ✅ COMPLETE
+  - [x] Create src/utils/campaignStorage.js utility functions
+    - [x] getAllCampaigns()
+    - [x] loadCampaign()
+    - [x] saveCampaign()
+    - [x] createCampaign()
+    - [x] deleteCampaign()
+    - [x] getActiveCampaignId()
+    - [x] exportCampaign()
+    - [x] importCampaign()
+    - [x] rollGold() for per-class gold rolling
+  - [x] Add startingWealth to src/data/classes.js for all classes
+  - [x] Create CampaignManager.jsx component
+    - [x] Show 3 save slots
+    - [x] Display campaign names and hero names
+    - [x] Show rooms explored and gold stats
+    - [x] Load/Delete/Export buttons
+    - [x] Import functionality
+  - [x] Create OnboardingScreen.jsx component
+    - [x] Campaign naming step
+    - [x] Welcome step
+    - [x] Party creation step (4 heroes)
+    - [x] Per-hero name, class, trait selection
+    - [x] Per-class gold rolling
+    - [x] Gold pooling confirmation step
+    - [x] Ready to explore step
+  - [x] Update src/hooks/useGameState.js for multi-campaign support
+    - [x] Load active campaign on init
+    - [x] Save after each state change
+    - [x] Return campaign controls in third element
+  - [x] Update src/App.jsx with campaign manager flow
+    - [x] Show CampaignManager when no active campaign
+    - [x] Show OnboardingScreen when creating new campaign
+    - [x] Show main app when campaign loaded
+  - [x] Update src/components/layout/AppHeader.jsx
+    - [x] Add "Back to Campaigns" button
+    - [x] Display current campaign name
+  - [x] Test campaign creation end-to-end
+  - [x] Test campaign switching
+  - [x] Test export/import
+  - [x] Test per-class gold rolling
+  - [x] Test campaign list display
+  - [x] Add ARIA labels for accessibility
 
 - [ ] Task 3.6: Week 3 Review (1 hour)
   - [ ] Update CHANGELOG.md
@@ -203,30 +203,32 @@ Use this checklist to track your progress week-by-week. Check off tasks as you c
 ## WEEK 4: State & Utilities ⏱️ 8-10 hours
 
 ### Day 1: Split gameActions (3-4 hours)
-- [ ] Task 4.1: Create Domain Files (3 hours)
-  - [ ] Create gameActions/ directory
-  - [ ] Create monsterActions.js
-  - [ ] Create combatActions.js
-  - [ ] Create dungeonActions.js
-  - [ ] Create treasureActions.js
-  - [ ] Create spellActions.js
-  - [ ] Create abilityActions.js
-  - [ ] Create index.js
-  - [ ] Update imports in all components
-  - [ ] Delete old gameActions.js
-  - [ ] Test all game actions
+- [x] Task 4.1: Create Domain Files (3 hours) ✅ COMPLETE
+  - [x] Create gameActions/ directory
+  - [x] Create monsterActions.js
+  - [x] Create combatActions.js
+  - [x] Create dungeonActions.js
+  - [x] Create treasureActions.js
+  - [x] Create spellActions.js
+  - [x] Create abilityActions.js
+  - [x] Create index.js
+  - [x] Update imports in all components
+  - [x] Delete old gameActions.js
+  - [x] Test all game actions
 
 ### Day 2: Compose Reducer (3-4 hours)
-- [ ] Task 4.2: Domain Reducers (3 hours)
-  - [ ] Create reducers/ directory
-  - [ ] Create partyReducer.js
-  - [ ] Create combatReducer.js
-  - [ ] Create dungeonReducer.js
-  - [ ] Create inventoryReducer.js
-  - [ ] Create logReducer.js
-  - [ ] Create combineReducers.js
-  - [ ] Update main reducer.js
-  - [ ] Test all actions still work
+- [x] Task 4.2: Domain Reducers (3 hours) ✅ COMPLETE
+  - [x] Create reducers/ directory
+  - [x] Create partyReducer.js
+  - [x] Create combatReducer.js
+  - [x] Create dungeonReducer.js
+  - [x] Create inventoryReducer.js
+  - [x] Create logReducer.js
+  - [x] Create campaignReducer.js
+  - [x] Create combineReducers.js
+  - [x] Create index.js
+  - [x] Update main reducer.js
+  - [x] Test all actions still work (build passes)
 
 ### Day 3: Selectors & Creators (2 hours)
 - [ ] Task 4.3: Selectors (1 hour)

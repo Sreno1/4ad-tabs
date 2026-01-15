@@ -8,7 +8,7 @@ import {
   PUZZLE_TABLE, PUZZLE_TYPES,
   checkForBoss, BOSS_RULES
 } from '../data/rooms.js';
-import { spawnMonster, rollTreasure, performSearch, rollWanderingMonster, spawnMajorFoe } from '../utils/gameActions.js';
+import { spawnMonster, rollTreasure, performSearch, rollWanderingMonster, spawnMajorFoe } from "../utils/gameActions/index.js";
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import DoorEdge from './DoorEdge.jsx';
 

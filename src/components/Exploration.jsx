@@ -14,7 +14,7 @@ import {
   rollPuzzle, attemptPuzzle,
   generateCorridor,
   spawnMajorFoe
-} from '../utils/gameActions.js';
+} from "../utils/gameActions/index.js";
 
 export default function Exploration({ state, dispatch }) {
   const [currentDoor, setCurrentDoor] = useState(null);
