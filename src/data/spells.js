@@ -49,6 +49,15 @@ export const SPELLS = {
     charges: 1,
     target: 'self'
   },
+  protection: {
+    name: 'Protection',
+    type: 'defense',
+    description: 'Creates an invisible barrier around the caster or an ally, giving +1 to Defense rolls until the end of the current encounter. No spellcasting roll required.',
+    effect: 'defense_buff',
+    bonus: 1,
+    duration: 'encounter',
+    target: 'single_ally'
+  },
   
   // Utility Spells
   light: {
@@ -301,13 +310,13 @@ export const SPELLS = {
 // Spells available to Wizards
 export const WIZARD_SPELLS = [
   'fireball', 'lightning', 'sleep', 'shield', 'mirror_image', 
-  'light', 'detect_magic', 'telekinesis'
+  'light', 'detect_magic', 'telekinesis', 'protection'
 ];
 
 // Spells available to Elves (more nature/support focused)
 export const ELF_SPELLS = [
   'lightning', 'sleep', 'shield', 'light', 'detect_magic',
-  'healing_word', 'escape'
+  'healing_word', 'escape', 'protection'
 ];
 
 // Spells available to Druids (nature and transformation magic)

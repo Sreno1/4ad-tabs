@@ -100,6 +100,7 @@ export default function App() {
   const [showSpells, setShowSpells] = useState(null); // Track which hero is selecting spells
   const [showHealTarget, setShowHealTarget] = useState(null); // Track cleric index for heal target selection
   const [showBlessTarget, setShowBlessTarget] = useState(null); // Track cleric index for bless target selection
+  const [showProtectionTarget, setShowProtectionTarget] = useState(null); // Track spellcaster index for Protection target selection
   
   const tabs = [
     { id: 'party', icon: Users, label: 'Party' }, 
@@ -368,6 +369,12 @@ export default function App() {
     setCombatPhase(COMBAT_PHASES.NONE);
     setMonsterReaction(null);
     setShowSpells(null);
+    // Clear protected status
+    state.party.forEach((hero, idx) => {
+      if (hero.status?.protected) {
+        dispatch({ type: 'SET_HERO_STATUS', heroIdx: idx, statusKey: 'protected', value: false });
+      }
+    });
   };
   
   // Handle spell casting
@@ -375,7 +382,13 @@ export default function App() {
     const caster = state.party[casterIdx];
     const spell = SPELLS[spellKey];
     const context = {};
-    
+  
+    // Protection spell: open target selection popup
+    if (spellKey === 'protection') {
+      setShowProtectionTarget(casterIdx);
+      return;
+    }
+  
     // For attack spells, target first alive monster
     if (spell.type === 'attack') {
       const activeMonsters = getActiveMonsters();
@@ -387,7 +400,7 @@ export default function App() {
         context.targets = [targetMonster];
       }
     }
-    
+  
     // For healing spells, find lowest HP ally
     if (spell.type === 'healing') {
       const lowestHP = state.party.reduce((min, h, idx) => 
@@ -398,14 +411,14 @@ export default function App() {
         context.targets = [state.party[lowestHP]];
       }
     }
-    
+  
     // Cast the spell
     performCastSpell(dispatch, caster, casterIdx, spellKey, context);
-    
+  
     // Track spell usage
     const abilities = state.abilities?.[casterIdx] || {};
     dispatch({ type: 'SET_ABILITY', heroIdx: casterIdx, ability: 'spellsUsed', value: (abilities.spellsUsed || 0) + 1 });
-    
+  
     // Close spell selection
     setShowSpells(null);
   };
@@ -804,7 +817,8 @@ export default function App() {
                         const abilities = state.abilities?.[index] || {};
                         const defBonus = hero.key === 'rogue' ? hero.lvl : 0;
                         const ragePenalty = (hero.key === 'barbarian' && abilities.rageActive) ? -1 : 0;
-                        const totalBonus = defBonus + ragePenalty;
+                        const protectedBonus = hero.status?.protected ? 1 : 0;
+                        const totalBonus = defBonus + ragePenalty + protectedBonus;
                         
                         return (
                           <button
@@ -812,7 +826,7 @@ export default function App() {
                             onClick={() => {
                               const roll = d6();
                               const blessed = hero.status?.blessed ? 1 : 0;
-                              const total = roll + totalBonus + blessed;
+                              const total = roll + totalBonus + blessed + protectedBonus;
                               const monster = activeMonsters[0];
                               const targetNum = monster.level + 1;
                               const blocked = total >= targetNum;
@@ -828,6 +842,7 @@ export default function App() {
                                 bonusBreakdown += totalBonus > 0 ? `+${totalBonus}` : `${totalBonus}`;
                               }
                               if (blessed) bonusBreakdown += `+1(blessed)`;
+                              if (protectedBonus) bonusBreakdown += `+1(protected)`;
                               bonusBreakdown += `=${total}`;
                               
                               dispatch({ type: 'LOG', t: `🛡️ ${hero.name} defends: ${bonusBreakdown} vs ${targetNum}+ - ${blocked ? '✅ Blocked!' : '💔 HIT!'}` });
@@ -1070,6 +1085,56 @@ export default function App() {
                           <div className="font-bold">{target.name}</div>
                           <div className={canBless ? 'text-amber-200' : 'text-slate-500'}>
                             {target.hp <= 0 ? '💀 KO' : target.status?.blessed ? '✨ Already Blessed' : '⚔️ Ready'}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Protection Target Selection Popup */}
+              {showProtectionTarget !== null && (
+                <div className="mt-2 p-2 bg-slate-700 rounded border border-blue-400">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-bold text-blue-300">
+                      🛡️ {state.party[showProtectionTarget]?.name} - Select Protection Target
+                    </span>
+                    <button 
+                      onClick={() => setShowProtectionTarget(null)}
+                      className="text-slate-400 hover:text-white text-xs"
+                    >
+                      ✕ Cancel
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {state.party.map((target, targetIdx) => {
+                      const canProtect = target.hp > 0 && !target.status?.protected;
+                      return (
+                        <button
+                          key={target.id || targetIdx}
+                          onClick={() => {
+                            if (canProtect) {
+                              dispatch({ type: 'SET_HERO_STATUS', heroIdx: targetIdx, statusKey: 'protected', value: true });
+                              const caster = state.party[showProtectionTarget];
+                              dispatch({ type: 'LOG', t: `🛡️ ${caster.name} casts Protection on ${target.name}! (+1 Defense until end of encounter)` });
+                              // Track spell usage
+                              const abilities = state.abilities?.[showProtectionTarget] || {};
+                              dispatch({ type: 'SET_ABILITY', heroIdx: showProtectionTarget, ability: 'spellsUsed', value: (abilities.spellsUsed || 0) + 1 });
+                              setShowProtectionTarget(null);
+                              setShowSpells(null);
+                            }
+                          }}
+                          disabled={!canProtect}
+                          className={`px-2 py-1.5 rounded text-xs text-left ${
+                            canProtect 
+                              ? 'bg-blue-600 hover:bg-blue-500' 
+                              : 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="font-bold">{target.name}</div>
+                          <div className={canProtect ? 'text-blue-200' : 'text-slate-500'}>
+                            {target.hp <= 0 ? '💀 KO' : target.status?.protected ? '🛡️ Already Protected' : '🛡️ Ready'}
                           </div>
                         </button>
                       );

@@ -583,7 +583,64 @@ export function reducer(state, action) {
         }
       };
     }
-    
+
+    // ========== Advanced Class Abilities ==========
+    case A.SET_ABILITY_STATE: {
+      const heroAbilities = state.abilities[action.heroIdx] || {};
+      return {
+        ...state,
+        abilities: {
+          ...state.abilities,
+          [action.heroIdx]: {
+            ...heroAbilities,
+            [action.key]: action.value
+          }
+        }
+      };
+    }
+
+    case A.USE_PANACHE: {
+      const heroAbilities = state.abilities[action.heroIdx] || {};
+      return {
+        ...state,
+        abilities: {
+          ...state.abilities,
+          [action.heroIdx]: {
+            ...heroAbilities,
+            panacheUsed: (heroAbilities.panacheUsed || 0) + 1
+          }
+        }
+      };
+    }
+
+    case A.USE_TRICK: {
+      const heroAbilities = state.abilities[action.heroIdx] || {};
+      return {
+        ...state,
+        abilities: {
+          ...state.abilities,
+          [action.heroIdx]: {
+            ...heroAbilities,
+            tricksUsed: (heroAbilities.tricksUsed || 0) + 1
+          }
+        }
+      };
+    }
+
+    case A.USE_PRAYER: {
+      const heroAbilities = state.abilities[action.heroIdx] || {};
+      return {
+        ...state,
+        abilities: {
+          ...state.abilities,
+          [action.heroIdx]: {
+            ...heroAbilities,
+            prayersUsed: (heroAbilities.prayersUsed || 0) + 1
+          }
+        }
+      };
+    }
+
     // ========== Phase 4: Monster Reactions ==========
     case A.SET_MONSTER_REACTION: {
       return {

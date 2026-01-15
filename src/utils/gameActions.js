@@ -658,27 +658,64 @@ export const calculateAttack = (hero, foeLevel) => {
 
 /**
  * Calculate defense result
- * @param {object} hero - Hero object  
+ * @param {object} hero - Hero object
  * @param {number} foeLevel - Attacking foe level
+ * @param {object} options - Additional options (largeEnemy, parry, etc.)
  * @returns {object} Defense result
  */
-export const calculateDefense = (hero, foeLevel) => {
+export const calculateDefense = (hero, foeLevel, options = {}) => {
   const roll = d6();
   let mod = 0;
+  const modifiers = [];
 
-  // Rogue gets +L to defense
+  // Class-specific defense bonuses
   if (hero.key === 'rogue') {
-    mod = hero.lvl;
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (rogue)`);
+  } else if (hero.key === 'halfling' && options.largeEnemy) {
+    // Halfling gets +L vs large enemies
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (vs large)`);
+  } else if (hero.key === 'dwarf' && options.largeEnemy) {
+    // Dwarf gets +1 vs large enemies
+    mod += 1;
+    modifiers.push('+1 (vs large)');
+  } else if (['acrobat', 'swashbuckler', 'bulwark', 'gnome', 'kukla', 'lightGladiator', 'mushroomMonk'].includes(hero.key)) {
+    // These classes get +½L to defense
+    const bonus = Math.floor(hero.lvl / 2);
+    mod += bonus;
+    modifiers.push(`+${bonus} (½L)`);
   }
-  // Halfling gets +L vs large enemies (handled separately)
-  // Dwarf gets +1 vs large enemies (handled separately)
+
+  // Parry (Light Gladiator)
+  if (options.parry && hero.key === 'lightGladiator') {
+    mod += 2;
+    modifiers.push('+2 (parry)');
+  }
+
+  // Panache dodge (Swashbuckler)
+  if (options.panacheDodge) {
+    mod += 2;
+    modifiers.push('+2 (panache)');
+  }
+
+  // Acrobat trick
+  if (options.acrobatTrick) {
+    mod += 2;
+    modifiers.push('+2 (trick)');
+  }
 
   // Equipment bonuses (Phase 7b)
   const equipBonus = calculateEquipmentBonuses(hero);
-  mod += equipBonus.defenseMod;
+  if (equipBonus.defenseMod !== 0) {
+    mod += equipBonus.defenseMod;
+    modifiers.push(`${equipBonus.defenseMod >= 0 ? '+' : ''}${equipBonus.defenseMod} (equip)`);
+  }
 
   const total = roll + mod;
   const blocked = total > foeLevel;
+
+  const modStr = modifiers.length > 0 ? ` (${modifiers.join(' ')})` : '';
 
   return {
     roll,
@@ -686,7 +723,7 @@ export const calculateDefense = (hero, foeLevel) => {
     total,
     blocked,
     damage: blocked ? 0 : 1,
-    message: `${hero.name} DEF: ${roll}+${mod}=${total} vs L${foeLevel} → ${blocked ? 'Block!' : 'HIT -1 Life'}`
+    message: `${hero.name} DEF: ${roll}${modStr}=${total} vs L${foeLevel} → ${blocked ? 'Block!' : 'HIT -1 Life'}`
   };
 };
 
@@ -885,8 +922,177 @@ export const useBarbarianRage = (dispatch, barbarianIdx, activate = true) => {
 export const useHalflingLuck = (dispatch, halflingIdx) => {
   dispatch({ type: 'USE_LUCK', heroIdx: halflingIdx });
   dispatch({ type: 'LOG', t: `🍀 Halfling uses Luck! Re-roll available.` });
-  
+
   return { luckUsed: true };
+};
+
+// ========== Phase 7c: Advanced Class Abilities ==========
+
+/**
+ * Toggle Assassin hide in shadows
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {number} assassinIdx - Assassin's index
+ * @param {boolean} hidden - Whether to hide or unhide
+ */
+export const useAssassinHide = (dispatch, assassinIdx, hidden = true) => {
+  dispatch({
+    type: 'SET_ABILITY_STATE',
+    heroIdx: assassinIdx,
+    key: 'hidden',
+    value: hidden
+  });
+
+  if (hidden) {
+    dispatch({ type: 'LOG', t: `🥷 Assassin hides in shadows! Next attack deals 3x damage!` });
+  } else {
+    dispatch({ type: 'LOG', t: `Assassin revealed.` });
+  }
+};
+
+/**
+ * Set Ranger sworn enemy
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {number} rangerIdx - Ranger's index
+ * @param {string} enemyType - Type of sworn enemy
+ */
+export const setRangerSwornEnemy = (dispatch, rangerIdx, enemyType) => {
+  dispatch({
+    type: 'SET_ABILITY_STATE',
+    heroIdx: rangerIdx,
+    key: 'swornEnemy',
+    value: enemyType
+  });
+  dispatch({ type: 'LOG', t: `🎯 Ranger declares ${enemyType} as sworn enemy! +2 vs this type.` });
+};
+
+/**
+ * Use Swashbuckler panache point
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {number} swashIdx - Swashbuckler's index
+ * @param {string} action - Action type (dodge, riposte, flourish)
+ */
+export const useSwashbucklerPanache = (dispatch, swashIdx, action = 'dodge') => {
+  dispatch({
+    type: 'USE_PANACHE',
+    heroIdx: swashIdx
+  });
+
+  const actions = {
+    dodge: '🤺 Swashbuckler dodges with style! +2 Defense this turn.',
+    riposte: '⚔️ Swashbuckler ripostes! Counter-attack on next hit.',
+    flourish: '✨ Swashbuckler flourishes! +2 Attack this turn.'
+  };
+
+  dispatch({ type: 'LOG', t: actions[action] || actions.dodge });
+};
+
+/**
+ * Activate Mushroom Monk flurry
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {number} monkIdx - Monk's index
+ * @param {number} level - Monk's level
+ */
+export const useMonkFlurry = (dispatch, monkIdx, level) => {
+  const attacks = getFlurryAttacks(level);
+  dispatch({
+    type: 'SET_ABILITY_STATE',
+    heroIdx: monkIdx,
+    key: 'flurryActive',
+    value: attacks
+  });
+  dispatch({ type: 'LOG', t: `🥋 Mushroom Monk activates Flurry! ${attacks} attacks this turn!` });
+};
+
+/**
+ * Use Acrobat trick
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {number} acrobatIdx - Acrobat's index
+ * @param {string} trick - Trick type
+ */
+export const useAcrobatTrick = (dispatch, acrobatIdx, trick = 'dodge') => {
+  dispatch({
+    type: 'USE_TRICK',
+    heroIdx: acrobatIdx
+  });
+
+  const tricks = {
+    dodge: '🤸 Acrobat tumbles! +2 Defense this turn.',
+    leap: '🦘 Acrobat leaps! Move to any position.',
+    distract: '👋 Acrobat distracts! Target at -1 to attack.'
+  };
+
+  dispatch({ type: 'LOG', t: tricks[trick] || tricks.dodge });
+};
+
+/**
+ * Use Paladin prayer point
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {number} paladinIdx - Paladin's index
+ * @param {string} prayer - Prayer type (smite, protect, heal)
+ */
+export const usePaladinPrayer = (dispatch, paladinIdx, prayer = 'smite') => {
+  dispatch({
+    type: 'USE_PRAYER',
+    heroIdx: paladinIdx
+  });
+
+  const prayers = {
+    smite: '⚡ Paladin smites evil! +2 damage vs undead/demons.',
+    protect: '🛡️ Divine protection! +2 Defense for party this turn.',
+    heal: '✨ Lay on hands! Restore 1d6 HP to target.'
+  };
+
+  dispatch({ type: 'LOG', t: prayers[prayer] || prayers.smite });
+};
+
+/**
+ * Activate Light Gladiator parry
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {number} gladiatorIdx - Light Gladiator's index
+ */
+export const useLightGladiatorParry = (dispatch, gladiatorIdx) => {
+  dispatch({
+    type: 'SET_ABILITY_STATE',
+    heroIdx: gladiatorIdx,
+    key: 'parryActive',
+    value: true
+  });
+  dispatch({ type: 'LOG', t: `⚔️ Light Gladiator parries! Next attack blocked, riposte on attacker.` });
+};
+
+/**
+ * Use Bulwark sacrifice to protect ally
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {number} bulwarkIdx - Bulwark's index
+ * @param {number} targetIdx - Ally to protect
+ */
+export const useBulwarkSacrifice = (dispatch, bulwarkIdx, targetIdx) => {
+  dispatch({
+    type: 'SET_ABILITY_STATE',
+    heroIdx: bulwarkIdx,
+    key: 'protecting',
+    value: targetIdx
+  });
+  dispatch({ type: 'LOG', t: `🛡️ Bulwark protects ally! Takes damage for them this turn.` });
+};
+
+/**
+ * Toggle dual wielding mode
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {number} heroIdx - Hero's index
+ * @param {boolean} active - Whether dual wielding
+ */
+export const toggleDualWield = (dispatch, heroIdx, active = true) => {
+  dispatch({
+    type: 'SET_ABILITY_STATE',
+    heroIdx,
+    key: 'dualWielding',
+    value: active
+  });
+
+  if (active) {
+    dispatch({ type: 'LOG', t: `⚔️⚔️ Dual wielding activated! +½L to attacks.` });
+  }
 };
 
 // ========== Phase 4: Flee/Escape ==========

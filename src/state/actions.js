@@ -97,3 +97,9 @@ export const USE_BLESS = 'USE_BLESS';
 export const ATTEMPT_FLEE = 'ATTEMPT_FLEE';
 export const SET_MONSTER_REACTION = 'SET_MONSTER_REACTION';
 export const APPLY_MONSTER_ABILITY = 'APPLY_MONSTER_ABILITY';
+
+// Advanced Class Abilities (Phase 7c)
+export const SET_ABILITY_STATE = 'SET_ABILITY_STATE';
+export const USE_PANACHE = 'USE_PANACHE';
+export const USE_TRICK = 'USE_TRICK';
+export const USE_PRAYER = 'USE_PRAYER';

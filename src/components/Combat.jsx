@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { d6 } from '../utils/dice.js';
-import { 
-  rollWanderingMonster, 
-  rollTreasure, 
-  calculateAttack, 
+import {
+  rollWanderingMonster,
+  rollTreasure,
+  calculateAttack,
   calculateDefense,
   calculateEnhancedAttack,
   performSaveRoll,
@@ -25,12 +25,23 @@ import {
   checkMinorFoeMorale,
   checkMajorFoeLevelReduction,
   determineInitiative,
-  rollSurprise
+  rollSurprise,
+  // Phase 7c: Advanced Class Abilities
+  useAssassinHide,
+  setRangerSwornEnemy,
+  useSwashbucklerPanache,
+  useMonkFlurry,
+  useAcrobatTrick,
+  usePaladinPrayer,
+  useLightGladiatorParry,
+  useBulwarkSacrifice,
+  toggleDualWield
 } from '../utils/gameActions.js';
 import { isLifeThreatening, getRerollOptions } from '../data/saves.js';
 import { getAvailableSpells, SPELLS, getSpellSlots } from '../data/spells.js';
 import { MONSTER_ABILITIES, getAllMonsters, createMonsterFromTable, MONSTER_CATEGORIES, rollMonsterReaction, REACTION_TYPES } from '../data/monsters.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
+import { getPrayerPoints, getTrickPoints, getMaxPanache, getFlurryAttacks } from '../data/classes.js';
 
 export default function Combat({ state, dispatch, selectedHero, setSelectedHero }) {
   const [foeLevel, setFoeLevel] = useState(4);
@@ -780,7 +791,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
         <div className="space-y-1">
           {state.party.map((hero, index) => {
             const abilities = getAbilityUsage(index);
-            const hasAbilities = ['cleric', 'wizard', 'elf', 'druid', 'illusionist', 'barbarian', 'halfling'].includes(hero.key);
+            const hasAbilities = ['cleric', 'wizard', 'elf', 'druid', 'illusionist', 'barbarian', 'halfling',
+              'paladin', 'ranger', 'assassin', 'swashbuckler', 'acrobat', 'mushroomMonk', 'lightGladiator'].includes(hero.key);
 
             if (!hasAbilities || hero.hp <= 0) return null;
             
@@ -842,6 +854,89 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                         className="bg-green-600 hover:bg-green-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
                       >
                         🍀Luck ({hero.lvl + 1 - (abilities.luckUsed || 0)})
+                      </button>
+                    )}
+
+                    {/* Paladin Prayer */}
+                    {hero.key === 'paladin' && (
+                      <button
+                        onClick={() => usePaladinPrayer(dispatch, index, 'smite')}
+                        disabled={(abilities.prayersUsed || 0) >= getPrayerPoints(hero.lvl)}
+                        className="bg-yellow-600 hover:bg-yellow-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
+                      >
+                        ⚡Prayer ({getPrayerPoints(hero.lvl) - (abilities.prayersUsed || 0)})
+                      </button>
+                    )}
+
+                    {/* Ranger Dual Wield */}
+                    {['ranger', 'lightGladiator', 'swashbuckler'].includes(hero.key) && (
+                      <button
+                        onClick={() => toggleDualWield(dispatch, index, !abilities.dualWielding)}
+                        className={`px-1.5 py-0.5 rounded text-xs ${
+                          abilities.dualWielding
+                            ? 'bg-orange-500 hover:bg-orange-400'
+                            : 'bg-orange-700 hover:bg-orange-600'
+                        }`}
+                      >
+                        ⚔️⚔️{abilities.dualWielding ? 'Single' : 'Dual Wield'}
+                      </button>
+                    )}
+
+                    {/* Assassin Hide */}
+                    {hero.key === 'assassin' && (
+                      <button
+                        onClick={() => useAssassinHide(dispatch, index, !abilities.hidden)}
+                        className={`px-1.5 py-0.5 rounded text-xs ${
+                          abilities.hidden
+                            ? 'bg-purple-500 hover:bg-purple-400'
+                            : 'bg-purple-700 hover:bg-purple-600'
+                        }`}
+                      >
+                        🥷{abilities.hidden ? 'Reveal' : 'Hide'}
+                      </button>
+                    )}
+
+                    {/* Swashbuckler Panache */}
+                    {hero.key === 'swashbuckler' && (
+                      <button
+                        onClick={() => useSwashbucklerPanache(dispatch, index, 'dodge')}
+                        disabled={(abilities.panacheUsed || 0) >= getMaxPanache(hero.lvl)}
+                        className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
+                      >
+                        🤺Panache ({getMaxPanache(hero.lvl) - (abilities.panacheUsed || 0)})
+                      </button>
+                    )}
+
+                    {/* Acrobat Trick */}
+                    {hero.key === 'acrobat' && (
+                      <button
+                        onClick={() => useAcrobatTrick(dispatch, index, 'dodge')}
+                        disabled={(abilities.tricksUsed || 0) >= getTrickPoints(hero.lvl)}
+                        className="bg-pink-600 hover:bg-pink-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
+                      >
+                        🤸Trick ({getTrickPoints(hero.lvl) - (abilities.tricksUsed || 0)})
+                      </button>
+                    )}
+
+                    {/* Mushroom Monk Flurry */}
+                    {hero.key === 'mushroomMonk' && (
+                      <button
+                        onClick={() => useMonkFlurry(dispatch, index, hero.lvl)}
+                        disabled={abilities.flurryActive}
+                        className="bg-green-700 hover:bg-green-600 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
+                      >
+                        🥋Flurry ({getFlurryAttacks(hero.lvl)}x)
+                      </button>
+                    )}
+
+                    {/* Light Gladiator Parry */}
+                    {hero.key === 'lightGladiator' && (
+                      <button
+                        onClick={() => useLightGladiatorParry(dispatch, index)}
+                        disabled={abilities.parryActive}
+                        className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
+                      >
+                        ⚔️Parry
                       </button>
                     )}
                   </div>
