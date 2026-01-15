@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Plus, X, Heart, Star } from 'lucide-react';
+import { Plus, X, Heart, Star, Target } from 'lucide-react';
 import { CLASSES, getMaxHP, getSpellSlots, getLuckPoints } from '../data/classes.js';
 import { d6 } from '../utils/dice.js';
 import { getXPForNextLevel, canLevelUp } from '../data/monsters.js';
+import { hasTraits, getTrait } from '../data/traits.js';
 import BossMechanics from './BossMechanics.jsx';
+import TraitSelector from './TraitSelector.jsx';
 
 export default function Party({ state, dispatch }) {
   const [showClassPicker, setShowClassPicker] = useState(false);
+  const [traitSelectorHero, setTraitSelectorHero] = useState(null);
   
   const addHero = (classKey) => {
     const classData = CLASSES[classKey];
@@ -274,13 +277,46 @@ export default function Party({ state, dispatch }) {
               >+</button>
             </div>
           </div>
-          
+
           {/* Status Effects */}
           {(hero.status?.blessed || hero.status?.wounded || hero.status?.dead) && (
             <div className="flex gap-1 mt-1 text-xs">
               {hero.status?.blessed && <span className="bg-amber-600 px-1 rounded">✨ Blessed</span>}
               {hero.status?.wounded && <span className="bg-orange-600 px-1 rounded">🩹 Wounded</span>}
               {hero.status?.dead && <span className="bg-red-800 px-1 rounded">💀 Dead</span>}
+            </div>
+          )}
+
+          {/* Character Trait */}
+          {hasTraits(hero.key) && (
+            <div className="flex gap-2 items-center mt-1">
+              {hero.trait ? (
+                <div className="flex-1 bg-cyan-900 border border-cyan-600 rounded px-2 py-1 flex justify-between items-center">
+                  <div>
+                    <span className="text-cyan-400 text-xs font-bold">
+                      🎯 {getTrait(hero.key, hero.trait)?.name || hero.trait}
+                    </span>
+                    {hero.traitChoice && (
+                      <span className="text-cyan-300 text-xs ml-1">({hero.traitChoice})</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setTraitSelectorHero({ hero, index })}
+                    className="text-cyan-400 hover:text-cyan-300 text-xs ml-2"
+                    title="Change Trait"
+                  >
+                    ✏️
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setTraitSelectorHero({ hero, index })}
+                  className="flex-1 bg-slate-600 hover:bg-slate-500 rounded px-2 py-1 text-xs text-slate-300 flex items-center justify-center gap-1"
+                >
+                  <Target size={12} />
+                  <span>Select Trait</span>
+                </button>
+              )}
             </div>
           )}
             {/* Class Abilities */}
@@ -314,6 +350,17 @@ export default function Party({ state, dispatch }) {
       
       {/* Boss Mechanics */}
       <BossMechanics state={state} dispatch={dispatch} />
+
+      {/* Trait Selector Modal */}
+      {traitSelectorHero && (
+        <TraitSelector
+          isOpen={true}
+          hero={traitSelectorHero.hero}
+          heroIdx={traitSelectorHero.index}
+          dispatch={dispatch}
+          onClose={() => setTraitSelectorHero(null)}
+        />
+      )}
     </div>
   );
 }

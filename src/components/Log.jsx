@@ -7,10 +7,10 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
       dispatch({ type: 'ARCHIVE_LOG' });
     }
   };
-    // Bottom panel layout (desktop)
+  // Bottom panel layout (desktop)
   if (isBottomPanel) {
     return (
-      <div className="h-full flex flex-col bg-slate-900">
+      <div className="h-full flex flex-col bg-slate-900" data-component="log">
         {/* Log content */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex justify-between items-center px-3 py-2 border-b border-slate-700 bg-slate-800">
@@ -29,9 +29,9 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
             )}
           </div>
           
-          <div className="flex-1 overflow-y-auto p-3 text-xs space-y-1">
+          <div className="flex-1 overflow-y-auto p-3 text-xs space-y-1 log-content">
             {state.log.map((entry, index) => (
-              <div key={index} className="text-slate-400 border-b border-slate-800 pb-1 font-mono">
+              <div key={index} className="text-slate-400 border-b border-slate-800 pb-1 font-mono log-entry">
                 {entry}
               </div>
             ))}
@@ -45,7 +45,7 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
   }
     // Mobile/tablet layout (original)
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-component="log">
       {/* Log Section */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
@@ -61,10 +61,9 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
             <Archive size={12} /> Archive
           </button>
         </div>
-        
-        <div className="bg-slate-800 rounded p-2 max-h-96 md:max-h-[400px] overflow-y-auto text-xs space-y-1">
+          <div className="bg-slate-800 rounded p-2 max-h-96 md:max-h-[400px] overflow-y-auto text-xs space-y-1 log-content">
           {state.log.map((entry, index) => (
-            <div key={index} className="text-slate-400 border-b border-slate-700 pb-1">
+            <div key={index} className="text-slate-400 border-b border-slate-700 pb-1 log-entry">
               {entry}
             </div>
           ))}

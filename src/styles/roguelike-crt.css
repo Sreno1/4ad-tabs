@@ -30,14 +30,34 @@
 
 /* Base CRT styles when .roguelike class is on body */
 body.roguelike {
-  font-family: 'DungeonMode', 'Courier New', monospace;
+  font-family: 'Monogram', 'DungeonMode', 'Courier New', monospace;
   background-color: var(--crt-bg);
   color: var(--crt-text);
-  font-size: 16px;
-  line-height: 1.2;
+  font-size: 18px;
+  line-height: 1.3;
   image-rendering: pixelated;
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Override Tailwind text sizes for better readability */
+body.roguelike .text-xs {
+  font-size: 1.5rem;
+  line-height: .7;
+}
+
+body.roguelike .text-sm {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+/* Log uses Courier New for a classic terminal feel */
+body.roguelike [data-component="log"],
+body.roguelike .log-entry,
+body.roguelike .log-content {
+  font-family: 'Courier New', 'Courier', monospace;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 /* Root container - NO global CRT effect */
@@ -229,7 +249,7 @@ body.roguelike .bg-slate-800\/95 {
 
 /* Buttons */
 body.roguelike button {
-  font-family: 'DungeonMode', 'Courier New', monospace;
+  font-family: 'Monogram', 'DungeonMode', 'Courier New', monospace;
   background-color: rgba(30, 30, 35, 0.9) !important;
   border: 1px solid var(--crt-green) !important;
   color: var(--crt-green) !important;
@@ -290,7 +310,7 @@ body.roguelike button.bg-green-500 {
 body.roguelike input,
 body.roguelike select,
 body.roguelike textarea {
-  font-family: 'DungeonMode', 'Courier New', monospace;
+  font-family: 'Monogram', 'DungeonMode', 'Courier New', monospace;
   background-color: rgba(10, 10, 15, 0.9) !important;
   border: 1px solid var(--crt-green) !important;
   color: var(--crt-text) !important;
@@ -606,7 +626,10 @@ body.roguelike .dungeon-marker {
 
 /* Expanded dungeon view when sidebar is collapsed */
 body.roguelike [data-dungeon-grid="true"][data-expanded="true"] {
-  min-height: 500px;
+  min-height: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 body.roguelike [data-dungeon-grid="true"][data-expanded="true"] .dungeon-cell {
@@ -630,7 +653,10 @@ body.roguelike .dungeon-rotated {
 
 /* Expanded dungeon view for default theme */
 [data-dungeon-grid="true"][data-expanded="true"] {
-  min-height: 450px;
+  min-height: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 [data-dungeon-grid="true"][data-expanded="true"] .dungeon-cell {

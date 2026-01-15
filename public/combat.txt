@@ -224,7 +224,7 @@ Masterwork weapons can be found as loot. They are not magical but they are so we
 Reactions
 
 Reactions
-nless surprised, the party has the option to act before the Foes. The PCs may attack right away, or let the Foes act first to see what they'll do. This is called "checking a foe's reactions". Every Foe has a Reactions Table in its description. Roll d6 on the Reactions Table. For Minor Foes, roll once for the whole group. Many different results are possible:
+unless surprised, the party has the option to act before the Foes. The PCs may attack right away, or let the Foes act first to see what they'll do. This is called "checking a foe's reactions". Every Foe has a Reactions Table in its description. Roll d6 on the Reactions Table. For Minor Foes, roll once for the whole group. Many different results are possible:
 Offer food and rest: The Foe is a friend! They offer food, rest, and tending of wounds. Each PC may eat 1 Food and heal 1 Life. If you return here later, they will be gone.
 Peaceful: The Foe will not fight. You may move through the tile as desired. The Foe will not help you. You may not take its Treasure. If you return here later, they remain peaceful.
 Ignore: The Foe is preoccupied with other things. It will just ignore you. You may move through the tile. The Foe will not help you. You may not take its Treasure. If you return here later, roll for its Reaction again. On an Ignore Reaction, a PC of your choice may attempt a Stealth Save to steal a single item from the Foe's Treasure (1 magic item, 1 gem or jewel, or a pouch con- taining up to half the Foe's gp, if any). If the Stealth Save fails, the Foe will fight, striking first.

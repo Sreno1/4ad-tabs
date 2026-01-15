@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sword, Map, Users, Scroll, Settings, Book, Save, DoorOpen, TrendingUp, Trophy, ChevronLeft, ChevronRight, Dices, Sparkles, AlertTriangle, HelpCircle } from 'lucide-react';
+import { Sword, Map, Users, Scroll, Settings, Book, Save, DoorOpen, TrendingUp, Trophy, ChevronLeft, ChevronRight, Dices, Sparkles, AlertTriangle, HelpCircle, Package, Zap } from 'lucide-react';
 
 // Components
 import Dice from './components/Dice.jsx';
@@ -15,6 +15,8 @@ import DungeonFeaturesModal from './components/DungeonFeaturesModal.jsx';
 import MarchingOrder from './components/MarchingOrder.jsx';
 import Analytics from './components/Analytics.jsx';
 import CampaignManagerModal from './components/CampaignManagerModal.jsx';
+import Equipment from './components/Equipment.jsx';
+import Abilities from './components/Abilities.jsx';
 
 // Hooks
 import { useGameState } from './hooks/useGameState.js';
@@ -75,6 +77,8 @@ export default function App() {
   const [showSaveLoad, setShowSaveLoad] = useState(false);
   const [showDungeonFeatures, setShowDungeonFeatures] = useState(false);
   const [showCampaign, setShowCampaign] = useState(false);
+  const [showEquipment, setShowEquipment] = useState(false);
+  const [showAbilities, setShowAbilities] = useState(false);
   const [selectedHero, setSelectedHero] = useState(0);
   const [logCollapsed, setLogCollapsed] = useState(true);
   
@@ -540,13 +544,19 @@ export default function App() {
     const combatWon = isCombatWon();
     const corridor = isCorridor();
     
-    // If no tile generated yet, show idle state
+    // If no tile generated yet, show idle state with Generate Tile button
     if (!tileResult && roomEvents.length === 0) {
       return (
         <div className="space-y-3">
-          <div className="bg-slate-800 rounded p-3 text-center">
-            <div className="text-slate-400 text-sm mb-2">No room generated yet</div>
-            <div className="text-slate-500 text-xs">Generate a tile to begin exploring</div>
+          <div className="bg-slate-800 rounded p-4 text-center">
+            <div className="text-slate-400 text-sm mb-3">Ready to explore</div>
+            <button
+              onClick={generateTile}
+              className="w-full bg-gradient-to-r from-blue-600 to-amber-600 hover:from-blue-500 hover:to-amber-500 px-4 py-3 rounded font-bold text-sm flex items-center justify-center gap-2"
+            >
+              <Dices size={18} /> Generate Tile
+            </button>
+            <div className="text-slate-500 text-xs mt-2">Rolls d66 for shape + 2d6 for contents</div>
           </div>
         </div>
       );
@@ -1254,7 +1264,13 @@ export default function App() {
             <button onClick={() => setShowDungeonFeatures(true)} className="text-slate-400 hover:text-amber-400 p-1" title="Features">
               <DoorOpen size={18} />
             </button>
-            <button onClick={() => setShowCampaign(true)} className="text-purple-400 hover:text-purple-300 p-1" title="Campaign">
+            <button onClick={() => setShowEquipment(true)} className="text-orange-400 hover:text-orange-300 p-1" title="Equipment">
+              <Package size={18} />
+            </button>
+            <button onClick={() => setShowAbilities(true)} className="text-purple-400 hover:text-purple-300 p-1" title="Abilities">
+              <Zap size={18} />
+            </button>
+            <button onClick={() => setShowCampaign(true)} className="text-indigo-400 hover:text-indigo-300 p-1" title="Campaign">
               <Trophy size={18} />
             </button>
             <button onClick={() => setShowSaveLoad(true)} className="text-slate-400 hover:text-amber-400 p-1" title="Save/Load">
@@ -1386,39 +1402,6 @@ export default function App() {
           
           {/* Middle Column - Dungeon Map */}
           <div className="flex-1 overflow-hidden flex flex-col min-w-0 border-r border-slate-700">
-            {/* Tile Generation Bar */}
-            <div className="bg-slate-800 border-b border-slate-700 p-2 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                {!tileResult ? (
-                  <button
-                    onClick={generateTile}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-amber-600 hover:from-blue-500 hover:to-amber-500 px-4 py-2 rounded font-bold text-sm flex items-center justify-center gap-2"
-                  >
-                    <Dices size={18} /> Generate Tile (d66 + 2d6)
-                  </button>
-                ) : (
-                  <div className="flex-1 flex items-center gap-2 text-sm flex-wrap">
-                    <div className={`px-2 py-1 rounded ${tileResult.shape.shape?.includes('corridor') ? 'bg-slate-700/50 border border-slate-500' : 'bg-blue-900/50'}`}>
-                      <span className="text-blue-400 font-bold">📐 {tileResult.shape.roll}:</span>
-                      <span className="text-slate-300 ml-1">{tileResult.shape.description}</span>
-                      {tileResult.shape.shape?.includes('corridor') && (
-                        <span className="text-yellow-400 ml-1 text-xs">(Corridor)</span>
-                      )}
-                    </div>
-                    <div className="bg-amber-900/50 px-2 py-1 rounded">
-                      <span className="text-amber-400 font-bold">📦 {tileResult.contents.roll}:</span>
-                      <span className="text-slate-300 ml-1">{tileResult.contents.description}</span>
-                    </div>
-                    {bossCheckResult?.isBoss && (
-                      <div className="bg-red-900/50 px-2 py-1 rounded text-red-400 font-bold">
-                        👑 BOSS!
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            
             {/* Dungeon Grid - Full width */}
             <div className="flex-1 overflow-y-auto p-2">
               <Dungeon 
@@ -1515,6 +1498,8 @@ export default function App() {
       <SaveLoadModal isOpen={showSaveLoad} onClose={() => setShowSaveLoad(false)} state={state} dispatch={dispatch} />
       <DungeonFeaturesModal isOpen={showDungeonFeatures} onClose={() => setShowDungeonFeatures(false)} state={state} dispatch={dispatch} selectedHero={selectedHero} />
       <CampaignManagerModal isOpen={showCampaign} onClose={() => setShowCampaign(false)} state={state} dispatch={dispatch} />
+      <Equipment isOpen={showEquipment} state={state} dispatch={dispatch} onClose={() => setShowEquipment(false)} />
+      <Abilities isOpen={showAbilities} state={state} dispatch={dispatch} onClose={() => setShowAbilities(false)} />
     </div>
   );
 }

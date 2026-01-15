@@ -10,6 +10,14 @@
   font-style: normal;
 }
 
+/* Monogram Font - For roguelike CRT theme */
+@font-face {
+  font-family: 'Monogram';
+  src: url('/fonts/monogram.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -31,12 +39,19 @@ body {
   font-family: 'DungeonMode', monospace;
 }
 
-/* Expanded dungeon view when sidebar is collapsed */
-[data-dungeon-grid="true"][data-expanded="true"] {
-  min-height: 450px;
+/* Alternate UI font utility (Monogram) */
+.alt-font {
+  font-family: 'Monogram', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Rotated grid smooth transition */
 .dungeon-rotated {
   transition: transform 0.3s ease;
+}
+
+/* Ensure dungeon grid container centers content properly */
+[data-dungeon-grid="true"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

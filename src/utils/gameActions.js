@@ -15,6 +15,8 @@ import {
 } from '../data/rooms.js';
 import { getSaveThreshold, getSaveModifier, getRerollOptions, isLifeThreatening, rollSave } from '../data/saves.js';
 import { SPELLS, getAvailableSpells, getSpellSlots, castSpell } from '../data/spells.js';
+import { calculateEquipmentBonuses } from '../data/equipment.js';
+import { getTier, getFlurryAttacks } from '../data/classes.js';
 
 /**
  * Spawn a monster and dispatch it to state
@@ -627,7 +629,7 @@ export const enterBossRoom = (dispatch, clues, hcl) => {
 export const calculateAttack = (hero, foeLevel) => {
   const roll = d6();
   let mod = 0;
-  
+
   // Class-specific attack bonuses
   if (['warrior', 'barbarian', 'elf', 'dwarf'].includes(hero.key)) {
     mod = hero.lvl;
@@ -635,11 +637,15 @@ export const calculateAttack = (hero, foeLevel) => {
     mod = Math.floor(hero.lvl / 2);
   }
   // Rogue gets +L when outnumbered (handled separately)
-  
+
+  // Equipment bonuses (Phase 7b)
+  const equipBonus = calculateEquipmentBonuses(hero);
+  mod += equipBonus.attackMod;
+
   const total = roll + mod;
   const hits = roll === 1 ? 0 : Math.floor(total / foeLevel);
   const exploded = roll === 6;
-  
+
   return {
     roll,
     mod,
@@ -659,17 +665,21 @@ export const calculateAttack = (hero, foeLevel) => {
 export const calculateDefense = (hero, foeLevel) => {
   const roll = d6();
   let mod = 0;
-  
+
   // Rogue gets +L to defense
   if (hero.key === 'rogue') {
     mod = hero.lvl;
   }
   // Halfling gets +L vs large enemies (handled separately)
   // Dwarf gets +1 vs large enemies (handled separately)
-  
+
+  // Equipment bonuses (Phase 7b)
+  const equipBonus = calculateEquipmentBonuses(hero);
+  mod += equipBonus.defenseMod;
+
   const total = roll + mod;
   const blocked = total > foeLevel;
-  
+
   return {
     roll,
     mod,
@@ -693,10 +703,19 @@ export const calculateDefense = (hero, foeLevel) => {
 export const performSaveRoll = (dispatch, hero, heroIdx, damageSource = 'default') => {
   const threshold = getSaveThreshold(damageSource);
   const { bonus, reasons } = getSaveModifier(hero);
-  const result = rollSave(threshold, bonus);
-  
-  const modStr = reasons.length > 0 ? ` (${reasons.join(', ')})` : '';
-  
+
+  // Equipment bonuses (Phase 7b)
+  const equipBonus = calculateEquipmentBonuses(hero);
+  const totalBonus = bonus + equipBonus.saveMod;
+  const allReasons = [...reasons];
+  if (equipBonus.saveMod !== 0) {
+    allReasons.push(`${equipBonus.saveMod >= 0 ? '+' : ''}${equipBonus.saveMod} equip`);
+  }
+
+  const result = rollSave(threshold, totalBonus);
+
+  const modStr = allReasons.length > 0 ? ` (${allReasons.join(', ')})` : '';
+
   if (result.success) {
     // Survived - set to 1 HP and mark as wounded
     dispatch({ type: 'UPD_HERO', i: heroIdx, u: { hp: 1 } });
@@ -710,7 +729,7 @@ export const performSaveRoll = (dispatch, hero, heroIdx, damageSource = 'default
     dispatch({ type: 'LOG', t: `💀 ${hero.name} makes a SAVE ROLL!${modStr}` });
     dispatch({ type: 'LOG', t: `❌ ${result.message}` });
   }
-  
+
   return result;
 };
 
@@ -1030,34 +1049,112 @@ export const calculateEnhancedAttack = (hero, foeLevel, options = {}) => {
   const { total, rolls, exploded } = explodingD6();
   let mod = 0;
   const modifiers = [];
-  
+
   // Class-specific attack bonuses
-  if (['warrior', 'barbarian', 'elf', 'dwarf'].includes(hero.key)) {
+  if (['warrior', 'barbarian', 'paladin', 'assassin'].includes(hero.key)) {
     mod += hero.lvl;
     modifiers.push(`+${hero.lvl} (class)`);
+  } else if (hero.key === 'elf' && !options.using2H) {
+    // Elf gets +L but not with 2H weapons
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (elf)`);
+  } else if (hero.key === 'dwarf' && options.melee) {
+    // Dwarf gets +L melee only
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (melee)`);
+  } else if (hero.key === 'halfling' && options.usingSling) {
+    // Halfling gets +L with sling
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (sling)`);
   } else if (hero.key === 'cleric') {
     mod += Math.floor(hero.lvl / 2);
     modifiers.push(`+${Math.floor(hero.lvl / 2)} (cleric)`);
+  } else if (['druid', 'acrobat', 'gnome', 'swashbuckler', 'bulwark'].includes(hero.key)) {
+    // These classes get +½L
+    const bonus = Math.floor(hero.lvl / 2);
+    mod += bonus;
+    modifiers.push(`+${bonus} (½L)`);
+  } else if (hero.key === 'ranger') {
+    // Ranger gets +L base
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (ranger)`);
+  } else if (hero.key === 'kukla' && options.lightBlade) {
+    // Kukla gets +1 with light blades
+    mod += 1;
+    modifiers.push(`+1 (light blade)`);
+  } else if (hero.key === 'lightGladiator' && options.lightWeapon) {
+    // Light Gladiator gets +½L with light weapons only
+    const bonus = Math.floor(hero.lvl / 2);
+    mod += bonus;
+    modifiers.push(`+${bonus} (light)`);
+  } else if (hero.key === 'mushroomMonk') {
+    // Mushroom Monk gets +L martial, +½L other
+    if (options.martialWeapon) {
+      mod += hero.lvl;
+      modifiers.push(`+${hero.lvl} (martial)`);
+    } else {
+      const bonus = Math.floor(hero.lvl / 2);
+      mod += bonus;
+      modifiers.push(`+${bonus} (½L)`);
+    }
   }
-  
+
+  // Dual wield bonus (Ranger, Swashbuckler, Light Gladiator)
+  if (options.dualWielding) {
+    if (hero.key === 'ranger' || hero.key === 'lightGladiator') {
+      const dualBonus = Math.floor(hero.lvl / 2);
+      mod += dualBonus;
+      modifiers.push(`+${dualBonus} (dual wield)`);
+    } else if (hero.key === 'swashbuckler') {
+      // Swashbuckler dual wield is built into base attack
+      modifiers.push('(dual wield)');
+    }
+  }
+
+  // Ranger sworn enemy
+  if (options.swornEnemy && hero.key === 'ranger') {
+    mod += 2;
+    modifiers.push('+2 (sworn enemy)');
+  }
+
+  // Assassin hide in shadows (3x damage = +2L to attack)
+  if (options.hiddenStrike && hero.key === 'assassin') {
+    mod += hero.lvl * 2;
+    modifiers.push(`+${hero.lvl * 2} (3x dmg)`);
+  }
+
+  // Equipment bonuses (Phase 7b)
+  const equipBonus = calculateEquipmentBonuses(hero);
+  if (equipBonus.attackMod !== 0) {
+    mod += equipBonus.attackMod;
+    modifiers.push(`${equipBonus.attackMod >= 0 ? '+' : ''}${equipBonus.attackMod} (equip)`);
+  }
+
   // Rage bonus
   if (options.rageActive && hero.key === 'barbarian') {
     mod += 2;
     modifiers.push('+2 (rage)');
   }
-  
+
   // Blessed bonus
   if (options.blessed) {
     mod += 1;
     modifiers.push('+1 (blessed)');
   }
-  
+
+  // Bulwark ranged bonus (uses Tier instead of level)
+  if (options.ranged && hero.key === 'bulwark') {
+    const tier = getTier(hero.lvl);
+    mod += tier;
+    modifiers.push(`+${tier} (tier ranged)`);
+  }
+
   const finalTotal = total + mod;
   const hits = rolls[0] === 1 ? 0 : Math.floor(finalTotal / foeLevel); // Natural 1 always misses
-  
+
   const rollStr = exploded ? `[${rolls.join('+')}]` : `${total}`;
   const modStr = modifiers.length > 0 ? ` ${modifiers.join(' ')}` : '';
-  
+
   return {
     rolls,
     total,
@@ -1111,11 +1208,20 @@ export const attackMinorFoe = (hero, foe, options = {}) => {
   const { total, rolls, exploded } = explodingD6();
   let mod = 0;
   const modifiers = [];
-  
+
   // Class-specific attack bonuses
-  if (['warrior', 'barbarian', 'elf', 'dwarf'].includes(hero.key)) {
+  if (['warrior', 'barbarian', 'paladin', 'assassin'].includes(hero.key)) {
     mod += hero.lvl;
     modifiers.push(`+${hero.lvl} (class)`);
+  } else if (hero.key === 'elf' && !options.using2H) {
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (elf)`);
+  } else if (hero.key === 'dwarf' && options.melee) {
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (melee)`);
+  } else if (hero.key === 'halfling' && options.usingSling) {
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (sling)`);
   } else if (hero.key === 'cleric') {
     // Clerics get +L vs undead
     const isUndead = foe.special?.includes('undead');
@@ -1126,6 +1232,29 @@ export const attackMinorFoe = (hero, foe, options = {}) => {
       mod += Math.floor(hero.lvl / 2);
       modifiers.push(`+${Math.floor(hero.lvl / 2)} (cleric)`);
     }
+  } else if (['druid', 'acrobat', 'gnome', 'swashbuckler', 'bulwark'].includes(hero.key)) {
+    const bonus = Math.floor(hero.lvl / 2);
+    mod += bonus;
+    modifiers.push(`+${bonus} (½L)`);
+  } else if (hero.key === 'ranger') {
+    mod += hero.lvl;
+    modifiers.push(`+${hero.lvl} (ranger)`);
+  } else if (hero.key === 'kukla' && options.lightBlade) {
+    mod += 1;
+    modifiers.push(`+1 (light blade)`);
+  } else if (hero.key === 'lightGladiator' && options.lightWeapon) {
+    const bonus = Math.floor(hero.lvl / 2);
+    mod += bonus;
+    modifiers.push(`+${bonus} (light)`);
+  } else if (hero.key === 'mushroomMonk') {
+    if (options.martialWeapon) {
+      mod += hero.lvl;
+      modifiers.push(`+${hero.lvl} (martial)`);
+    } else {
+      const bonus = Math.floor(hero.lvl / 2);
+      mod += bonus;
+      modifiers.push(`+${bonus} (½L)`);
+    }
   } else if (hero.key === 'rogue') {
     // Rogue gets +L when attacking outnumbered Minor Foes
     if (options.rogueOutnumbers) {
@@ -1133,19 +1262,54 @@ export const attackMinorFoe = (hero, foe, options = {}) => {
       modifiers.push(`+${hero.lvl} (outnumbered)`);
     }
   }
-  
+
+  // Dual wield bonus
+  if (options.dualWielding) {
+    if (hero.key === 'ranger' || hero.key === 'lightGladiator') {
+      const dualBonus = Math.floor(hero.lvl / 2);
+      mod += dualBonus;
+      modifiers.push(`+${dualBonus} (dual wield)`);
+    }
+  }
+
+  // Ranger sworn enemy
+  if (options.swornEnemy && hero.key === 'ranger') {
+    mod += 2;
+    modifiers.push('+2 (sworn enemy)');
+  }
+
+  // Assassin hide in shadows
+  if (options.hiddenStrike && hero.key === 'assassin') {
+    mod += hero.lvl * 2;
+    modifiers.push(`+${hero.lvl * 2} (3x dmg)`);
+  }
+
+  // Equipment bonuses
+  const equipBonus = calculateEquipmentBonuses(hero);
+  if (equipBonus.attackMod !== 0) {
+    mod += equipBonus.attackMod;
+    modifiers.push(`${equipBonus.attackMod >= 0 ? '+' : ''}${equipBonus.attackMod} (equip)`);
+  }
+
   // Rage bonus
   if (options.rageActive && hero.key === 'barbarian') {
     mod += 2;
     modifiers.push('+2 (rage)');
   }
-  
+
   // Blessed bonus
   if (options.blessed) {
     mod += 1;
     modifiers.push('+1 (blessed)');
   }
-  
+
+  // Bulwark ranged bonus
+  if (options.ranged && hero.key === 'bulwark') {
+    const tier = getTier(hero.lvl);
+    mod += tier;
+    modifiers.push(`+${tier} (tier ranged)`);
+  }
+
   const finalTotal = total + mod;
   
   // Calculate multi-kill

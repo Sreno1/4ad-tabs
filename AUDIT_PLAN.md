@@ -179,13 +179,10 @@ Elf                 | ✅ Implemented | L spells
 
 ### Gaps Remaining
 
-- ❌ **9 additional character classes** (see table above)
-- ❌ Character equipment UI (structure exists, no UI)
 - ❌ Equipment bonuses applied to rolls
-- ❌ Character traits (each class has d6 trait table)
+- ❌ Character traits application to data after selected
 - ❌ Dwarf Gold Sense ability
 - ❌ Stealth modifiers per class
-- ❌ Advanced Skills system (L5+ unlocks)
 
 ### Class-Specific Missing Abilities
 
@@ -231,16 +228,14 @@ All   | Stealth modifiers
 - [x] Monster special abilities (regenerate, breath, etc.)
 - [x] Flee mechanic
 - [x] Basic reactions (4 types)
+- [x] 13 additional Reaction types**
 
 ### Critical Missing Combat Rules
 
-1. ❌ **Minor Foe Multi-Kill** (attack ÷ level = kills)
-2. ❌ **Initiative System** (surprise, ranged first)
-3. ❌ **Marching Order in combat** (corridor restrictions)
-4. ❌ **Withdraw vs Flee** mechanics
-5. ❌ **Morale checks** (50% triggers d6 roll)
-6. ❌ **Major Foe level reduction** at half HP
-7. ❌ **13 additional Reaction types**
+1. ❌ **Marching Order in combat** (corridor restrictions based on what has been selected/displayed in header)
+2. ❌ **Withdraw vs Flee** mechanics
+3. ❌ **Morale checks** (50% triggers d6 roll)
+4. ❌ **Major Foe level reduction** at half HP
 
 ### Combat Tables Status
 
@@ -257,14 +252,13 @@ All   | Stealth modifiers
 
 - [x] 9 basic spells (Fireball, Lightning, Sleep, Shield, etc.)
 - [x] Spell slot tracking
-- [x] Wizard (L+2) and Elf (L) spell counts
+- [x] Wizard (L+2) and Elf (L) spell counts- ❌ **Druid spells** (12 nature spells)
+- [X] **Illusionist spells** (12+ illusion spells)
+- [X] **Protection spell** (basic wizard, +1 Defense)
+- [X] **Scroll usage** (find/use scrolls as loot)
 
 ### Missing Spell Systems
 
-- ❌ **Druid spells** (12 nature spells)
-- ❌ **Illusionist spells** (12+ illusion spells)
-- ❌ **Protection spell** (basic wizard, +1 Defense)
-- ❌ **Scroll usage** (find/use scrolls as loot)
 - ❌ **Magic Resistance** mechanic (MR rating)
 - ❌ **Spell targeting** (single vs AoE vs Minor Foe groups)
 
@@ -335,8 +329,6 @@ Complete as of Phase 5.
 
 ### Missing
 
-- ❌ Equipment management UI
-- ❌ Marching order combat display
 - ❌ Corridor vs Room indicator
 - ❌ Victory/defeat screens
 
@@ -358,42 +350,142 @@ Mostly complete:
 
 ## PRIORITY IMPLEMENTATION ROADMAP
 
-### Phase 7a: Core Combat Fixes (HIGH PRIORITY)
+### ✅ Phase 7a: Core Combat Fixes (COMPLETE)
 
-1. **Minor Foe Multi-Kill** - Attack roll ÷ level = kills
-2. **Initiative System** - Surprise, ranged first
-3. **Morale Checks** - 50% triggers flee roll
-4. **Major Foe HP reduction** - -1 Level at half HP
+1. ✅ **Minor Foe Multi-Kill** - Attack roll ÷ level = kills (processMinorFoeAttack)
+2. ✅ **Initiative System** - Surprise, ranged first (determineInitiative, rollSurprise)
+3. ✅ **Morale Checks** - 50% triggers flee roll (checkMinorFoeMorale)
+4. ✅ **Major Foe HP reduction** - -1 Level at half HP (checkMajorFoeLevelReduction)
 
-### Phase 7b: Equipment System
+**Implementation Details:**
 
-1. Equipment data structures
-2. Equipment UI (equip/unequip)
-3. Weapon/armor bonuses to rolls
-4. Consumable usage (bandages, potions)
+- All functions added to `src/utils/gameActions.js` (lines 1177-1397)
+- Integrated into Combat component with UI controls
+- Initiative panel shows combat order and surprise checks
+- Minor foes show multi-kill calculations
+- Major foes display level reduction indicator
 
-### Phase 7c: Missing Classes (9 classes)
+### ✅ Phase 7b: Equipment System (COMPLETE)
 
-Priority order based on unique mechanics:
+1. ✅ Equipment data structures (`src/data/equipment.js`)
 
-1. Paladin (prayer points, mount)
-2. Ranger (dual weapons, sworn enemy)
-3. Druid (animal companion, druid spells)
-4. Acrobat (tricks system)
-5. Assassin (hide in shadows)
-6. Illusionist (illusion spells)
-7. Others...
+  - Weapons: hand, light, two-handed, bow, crossbow, sling, silver, torch
+  - Armor: light (+1), heavy (+2)
+  - Shields: +1 Defense, +1 Save
+  - Consumables: bandages, healing potions, holy water, oil, torches, lanterns, rope, pole, rations
+  - Magic items: amulets, talismans, scrolls, potions, rings
 
-### Phase 7d: Complete Reaction System
+2. ✅ Equipment modal component (`src/components/Equipment.jsx`)
 
-Add all 13+ reaction types with proper resolution.
+  - Hero selection, equipped items display, inventory management
+  - Shop with categories (weapon, armor, shield, consumable, magic)
+  - Equipment bonuses summary panel
+  - Starting equipment button per class
+
+3. ✅ Equipment state & reducer actions
+
+  - Array-based equipment system in initialState
+  - EQUIP_ITEM, UNEQUIP_ITEM actions updated for array format
+  - ADD_TO_INVENTORY, REMOVE_FROM_INVENTORY for consumables
+
+4. ✅ Equipment bonuses integrated into combat
+
+  - calculateAttack: includes attackMod from equipment
+  - calculateDefense: includes defenseMod from equipment
+  - calculateEnhancedAttack: shows equipment modifiers
+  - performSaveRoll: includes saveMod from shields/talismans
+
+5. ✅ Equipment button in header (Package icon, orange color)
+
+  - Opens Equipment modal on click
+
+### ✅ Phase 7c: Character Classes (12 classes) - COMPLETE
+
+All character classes from core 4AD rules added to `src/data/classes.js`:
+
+**Major Classes:**
+
+1. ✅ **Paladin** - L+1 prayer points, mount summoning, restrictions
+2. ✅ **Ranger** - Dual wield (½L), sworn enemy, survival
+3. ✅ **Druid** - L+2 druid spells, animal companion
+4. ✅ **Acrobat** - L+3 trick points
+5. ✅ **Assassin** - Hide in shadows, 3x damage
+6. ✅ **Illusionist** - L+3 illusion spells, distracting lights
+7. ✅ **Swashbuckler** - Panache (max=L), dual wield
+8. ✅ **Bulwark** - Sacrifice, L+7 life (rare)
+
+**Rare Classes:**
+
+1. ✅ **Gnome** - L+6 gadgets, 1 illusion
+2. ✅ **Kukla** - Artificial, unhealing (rare)
+3. ✅ **Light Gladiator** - Dual wield light weapons
+4. ✅ **Mushroom Monk** - Flurry (Tier), spores (rare)
+
+**Implementation:**
+
+- Helper functions: getPrayerPoints, getTrickPoints, getGadgetPoints, getMaxPanache, getFlurryAttacks, getTier
+- initialState.abilities tracks: prayerUsed, tricksUsed, gadgetsUsed, panacheCurrent, sporesUsed, etc.
+- ✅ **Abilities Modal** (`src/components/Abilities.jsx`) - Class-specific ability UI
+
+  - Acrobat: 11 tricks menu (Leap, Shift Position, Distract, Flip Kick, Double Kick, Evade, etc.)
+  - Gnome: 6 gadgets (Mechanical Weapon, Lockpick, Smokescreen, Grenade, etc.)
+  - Paladin: Prayer points UI (Heal, Reroll Save, Summon Steed)
+  - Swashbuckler: Panache display and spending
+  - Assassin: Hide in Shadows button
+  - Mushroom Monk: Spore Cloud + Flurry info
+
+- ✅ Abilities button in header (Zap icon, purple color)
+
+**Remaining:**
+
+- ⚠️ Druid/Illusionist spell lists
+- ⚠️ Full combat integration for dual wield, flurry, etc.
+
+### ✅ Phase 7d: Complete Reaction System (MOSTLY COMPLETE)
+
+**Current Status:**
+
+- ✅ All 15 reaction types defined in REACTION_TYPES
+
+  - offerFoodAndRest, peaceful, ignore, flee, fleeIfOutnumbered
+  - bribe, fight, fightToTheDeath, puzzle, quest
+  - magicChallenge, tradeInformation, capture, bloodOffering, trialOfChampions
+
+- ✅ Default reaction table (d6 → reaction mapping)
+
+- ✅ Monster-specific custom reaction tables implemented
+
+- ✅ rollMonsterReaction function working
+
+- ✅ Basic reaction UI in Combat component (roll button + display)
+- ✅ Initiative integration based on reactions
+
+**Minor Gaps:**
+
+- ⚠️ Special reaction handlers need UI (bribe amounts, puzzle resolution, quest selection, etc.)
+- ⚠️ Stealth steal attempt on "Ignore" reaction not implemented
+- ⚠️ Trade information (Clue buying/selling) needs UI
+- ⚠️ Capture/hideout rescue mechanics not implemented
+- ⚠️ Trial of Champions duel system not implemented
+
+**Implementation Details:**
+
+- Reaction system in `src/data/monsters.js` (lines 149-269)
+- Combat component displays reactions with color coding (hostile/peaceful/conditional)
+- Reactions influence initiative determination
+
+SPLIT APP.JSX INTO PARTS AND REFACTOR AS NEEDED FOR SCALABILITY
 
 ### Phase 7e: Spell Expansion
 
 1. Protection spell (basic, missing)
-2. Druid spell list (12 spells)
-3. Illusionist spell list (12+ spells)
-4. Scroll system (find/use)
+2. Scroll system (find/use)
+
+FIX ALL INCOMPLETE/GAPS LISTED ABOVE IN NUMBERED ITEMS 1 - 11
+
+### Phase 8: Later
+
+- ❌ Advanced Skills system (L5+ unlocks)
 
 --------------------------------------------------------------------------------
 

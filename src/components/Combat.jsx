@@ -363,7 +363,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
       case 'luck':
         return hero.key === 'halfling' && (usage.luckUsed || 0) < (hero.lvl + 1);
       case 'spell':
-        return ['wizard', 'elf'].includes(hero.key) && 
+        return ['wizard', 'elf', 'druid', 'illusionist'].includes(hero.key) &&
           (usage.spellsUsed || 0) < getSpellSlots(hero.key, hero.lvl);
       default:
         return false;
@@ -780,8 +780,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
         <div className="space-y-1">
           {state.party.map((hero, index) => {
             const abilities = getAbilityUsage(index);
-            const hasAbilities = ['cleric', 'wizard', 'elf', 'barbarian', 'halfling'].includes(hero.key);
-            
+            const hasAbilities = ['cleric', 'wizard', 'elf', 'druid', 'illusionist', 'barbarian', 'halfling'].includes(hero.key);
+
             if (!hasAbilities || hero.hp <= 0) return null;
             
             return (
@@ -809,8 +809,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                       </>
                     )}
                     
-                    {/* Wizard/Elf Spells */}
-                    {['wizard', 'elf'].includes(hero.key) && (
+                    {/* Wizard/Elf/Druid/Illusionist Spells */}
+                    {['wizard', 'elf', 'druid', 'illusionist'].includes(hero.key) && (
                       <button
                         onClick={() => setShowSpells(showSpells === index ? null : index)}
                         disabled={(abilities.spellsUsed || 0) >= getSpellSlots(hero.key, hero.lvl)}

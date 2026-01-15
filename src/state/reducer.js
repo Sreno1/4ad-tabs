@@ -337,46 +337,44 @@ export function reducer(state, action) {
       };
     }
     
-    // ========== Equipment (Phase 3+) ==========
+    // ========== Equipment (Phase 7b+) ==========
     case A.EQUIP_ITEM: {
       const newParty = state.party.map((h, i) => {
         if (i !== action.heroIdx) return h;
+        // Add item to equipment array if not already there
+        const equipment = h.equipment || [];
+        if (equipment.includes(action.itemKey)) return h;
         return {
           ...h,
-          equipment: {
-            ...h.equipment,
-            [action.slot]: action.item
-          }
+          equipment: [...equipment, action.itemKey]
         };
       });
       return { ...state, party: newParty };
     }
-    
+
     case A.UNEQUIP_ITEM: {
       const newParty = state.party.map((h, i) => {
         if (i !== action.heroIdx) return h;
         return {
           ...h,
-          equipment: {
-            ...h.equipment,
-            [action.slot]: null
-          }
+          equipment: (h.equipment || []).filter(key => key !== action.itemKey)
         };
       });
       return { ...state, party: newParty };
     }
-    
+
     case A.ADD_TO_INVENTORY: {
       const newParty = state.party.map((h, i) => {
         if (i !== action.heroIdx) return h;
         return {
           ...h,
-          inventory: [...(h.inventory || []), action.item]
+          inventory: [...(h.inventory || []), action.itemKey]
         };
       });
       return { ...state, party: newParty };
     }
-      case A.REMOVE_FROM_INVENTORY: {
+
+    case A.REMOVE_FROM_INVENTORY: {
       const newParty = state.party.map((h, i) => {
         if (i !== action.heroIdx) return h;
         return {

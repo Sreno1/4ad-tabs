@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, AlertTriangle, DoorOpen, Puzzle, Skull, Coins, HelpCircle, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, AlertTriangle, DoorOpen, Puzzle, Skull, Coins, HelpCircle } from 'lucide-react';
 import { d66, d6, r2d6 } from '../utils/dice.js';
 import { 
   TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE, 
@@ -17,9 +17,13 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   const [roomDetails, setRoomDetails] = useState(null); // Additional info for special rooms
   const [bossCheckResult, setBossCheckResult] = useState(null); // Boss check result
   const [showMarkers, setShowMarkers] = useState(true); // Toggle markers visibility
-  const [roomMarkers, setRoomMarkers] = useState({}); // {cellKey: {type, label, tooltip}}
-  const [hoveredCell, setHoveredCell] = useState(null); // For showing tooltip
-  
+  const [roomMarkers, setRoomMarkers] = useState({}); // {cellKey: {type, label, tooltip}}  const [hoveredCell, setHoveredCell] = useState(null); // For showing tooltip
+  const [cellSize, setCellSize] = useState(20); // Dynamic cell size
+  const [shouldRotate, setShouldRotate] = useState(false); // Whether to rotate based on aspect ratio
+  const gridContainerRef = React.useRef(null);
+  const isCalculatingRef = React.useRef(false); // Persistent flag across renders
+  const lastCalculatedSizeRef = React.useRef({ width: 0, height: 0 }); // Track container size to prevent loops
+
   // Use external state if provided, otherwise use internal state
   const effectiveTileResult = externalTileResult || (lastShapeRoll && lastContentsRoll ? { shape: lastShapeRoll, contents: lastContentsRoll } : null);
   const effectiveBossCheck = externalBossCheck || bossCheckResult;
@@ -94,11 +98,119 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     e.stopPropagation();
     dispatch({ type: 'TOGGLE_DOOR', x, y, edge });
   };
-  
-  const hasDoor = (x, y, edge) => {
+    const hasDoor = (x, y, edge) => {
     return state.doors.some(d => d.x === x && d.y === y && d.edge === edge);
   };
-  
+  // Calculate optimal cell size based on container dimensions
+  React.useEffect(() => {
+    const calculateCellSize = () => {
+      if (!gridContainerRef.current || isCalculatingRef.current) return;
+
+      const container = gridContainerRef.current;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+
+      if (containerWidth <= 0 || containerHeight <= 0) {
+        return;
+      }
+
+      // Check if container size actually changed (with tolerance for rounding)
+      const lastSize = lastCalculatedSizeRef.current;
+      const widthDiff = Math.abs(containerWidth - lastSize.width);
+      const heightDiff = Math.abs(containerHeight - lastSize.height);
+
+      // Only recalculate if the size changed by more than 5px
+      if (widthDiff < 5 && heightDiff < 5) {
+        return;
+      }
+
+      isCalculatingRef.current = true;
+
+      try {
+        // Update the last calculated size
+        lastCalculatedSizeRef.current = { width: containerWidth, height: containerHeight };
+
+        const gridWidth = state.grid[0]?.length || 30;
+        const gridHeight = state.grid.length || 30;
+
+        const containerIsPortrait = containerHeight > containerWidth;
+        const gridIsPortrait = gridHeight > gridWidth;
+
+        // Determine if rotation is needed
+        const needsRotation = containerIsPortrait !== gridIsPortrait;
+
+        // Calculate cell size based on rotation
+        // When rotated 90°, the grid's dimensions swap in the viewport
+        const padding = 16;
+        let maxCellWidth, maxCellHeight;
+
+        if (needsRotation) {
+          // After rotation: grid width (in cells) becomes viewport height, grid height becomes viewport width
+          // So: containerWidth must fit gridHeight cells, containerHeight must fit gridWidth cells
+          maxCellWidth = Math.floor((containerWidth - padding) / gridHeight);
+          maxCellHeight = Math.floor((containerHeight - padding) / gridWidth);
+        } else {
+          // No rotation: straightforward mapping
+          maxCellWidth = Math.floor((containerWidth - padding) / gridWidth);
+          maxCellHeight = Math.floor((containerHeight - padding) / gridHeight);
+        }
+
+        // Use the smaller dimension to ensure the entire grid fits
+        const optimalSize = Math.max(4, Math.min(maxCellWidth, maxCellHeight, 48));
+
+        console.log('Grid calc:', {
+          containerWidth, containerHeight,
+          gridWidth, gridHeight,
+          needsRotation,
+          maxCellWidth, maxCellHeight,
+          optimalSize,
+          gridPixelWidth: gridWidth * optimalSize,
+          gridPixelHeight: gridHeight * optimalSize,
+          rotatedWidth: needsRotation ? gridHeight * optimalSize : gridWidth * optimalSize,
+          rotatedHeight: needsRotation ? gridWidth * optimalSize : gridHeight * optimalSize
+        });
+
+        // Update state only if values changed
+        setCellSize(prev => prev !== optimalSize ? optimalSize : prev);
+        setShouldRotate(prev => prev !== needsRotation ? needsRotation : prev);
+
+      } finally {
+        // Reset flag after delay
+        setTimeout(() => {
+          isCalculatingRef.current = false;
+        }, 200);
+      }
+    };
+
+    // Debounced calculation
+    let debounceTimer;
+    const debouncedCalculate = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(calculateCellSize, 100);
+    };
+
+    // Initial calculation
+    debouncedCalculate();
+
+    // Resize listener
+    window.addEventListener('resize', debouncedCalculate);
+
+    // Only observe if container exists
+    let resizeObserver;
+    if (gridContainerRef.current) {
+      resizeObserver = new ResizeObserver(debouncedCalculate);
+      resizeObserver.observe(gridContainerRef.current);
+    }
+
+    return () => {
+      clearTimeout(debounceTimer);
+      window.removeEventListener('resize', debouncedCalculate);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      isCalculatingRef.current = false;
+    };
+  }, [state.grid, sidebarCollapsed]);
   // Step 1: Roll d66 for tile SHAPE (room layout and doors)
   const generateTileShape = () => {
     const roll = d66();
@@ -180,13 +292,8 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
         break;
     }
   };
-  
-  const handleSearch = () => {
-    performSearch(dispatch);
-  };
-  
-  return (
-    <div className="space-y-2">
+    return (
+    <div className="space-y-2 h-full flex flex-col">
       {/* Tile Generation - Two-Roll System (Hidden when hideGenerationUI is true) */}
       {!hideGenerationUI && (
       <div className="bg-slate-800 rounded p-2">
@@ -286,115 +393,142 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
           Major Foes Faced: <span className="text-amber-400 font-bold">{state.majorFoes || 0}</span>
           <span className="text-slate-500 ml-2">(Boss appears on d6 + this ≥ 6)</span>
         </div>
-      </div>
-      )}
-        {/* Dungeon Grid */}
-      <div className="bg-slate-800 rounded p-2" data-dungeon-section="true">
-        <div className="flex justify-between items-center mb-2">
-          <div className="text-amber-400 font-bold text-sm">
-            Draw Dungeon (20×28 Grid)
-            {sidebarCollapsed && <span className="text-cyan-400 ml-2 text-xs">[Expanded View]</span>}
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => dispatch({ type: 'CLEAR_GRID' })}
-              className="bg-red-600 hover:bg-red-500 px-2 py-1 rounded text-xs"
-            >
-              Clear
-            </button>
-            <button 
-              onClick={handleSearch}
-              className="bg-amber-600 hover:bg-amber-500 px-2 py-1 rounded text-xs"
-            >
-              <Sparkles size={12} className="inline" /> Search
-            </button>
-            <button
-              onClick={() => setRoomMarkers({})}
-              className="bg-slate-600 hover:bg-slate-500 px-2 py-1 rounded text-xs"
-            >
-              Clear Markers
-            </button>
-            <button
-              onClick={() => setShowMarkers(!showMarkers)}
-              className="text-slate-400 hover:text-amber-400 p-1"
-              title={showMarkers ? 'Hide Markers' : 'Show Markers'}
-            >
-              {showMarkers ? <Eye size={14} /> : <EyeOff size={14} />}
-            </button>
-          </div>
-        </div>
-        
-        <div 
-          className={`w-full bg-slate-900 p-2 overflow-auto ${sidebarCollapsed ? 'dungeon-expanded' : ''}`} 
+      </div>      )}      {/* Dungeon Grid - No extra outline/container, never scrolls */}
+      <div className="flex-1 flex flex-col overflow-hidden" data-dungeon-section="true">
+        <div
+          ref={gridContainerRef}
+          className="flex-1 w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden"
           data-dungeon-grid="true"
-          data-expanded={sidebarCollapsed ? 'true' : 'false'}
+          style={{ padding: 0, minHeight: 0, minWidth: 0 }}
         >
-          <div 
-            className={`inline-block ${sidebarCollapsed ? 'dungeon-rotated' : ''}`}
-            style={sidebarCollapsed ? { transform: 'rotate(90deg)', transformOrigin: 'top left', marginLeft: '560px' } : {}}
+          {/* Grid container - only this rotates */}
+          <div
+            className="inline-block"
+            style={{
+              transform: shouldRotate ? 'rotate(90deg)' : 'none',
+              transformOrigin: 'center center',
+              width: 'fit-content',
+              height: 'fit-content',
+            }}
           >
           {state.grid.map((row, y) => (
             <div key={y} className="flex leading-[0]">
               {row.map((cell, x) => {
                 const cellColor = cell === 0 ? 'bg-slate-900' : cell === 1 ? 'bg-amber-700' : 'bg-blue-700';
                 const marker = getMarker(x, y);
-                const markerStyle = marker ? MARKER_STYLES[marker.type] : null;
-                const isHovered = hoveredCell && hoveredCell.x === x && hoveredCell.y === y;
-                  return (
-                  <div key={x} className="relative inline-block">
+                const markerStyle = marker ? MARKER_STYLES[marker.type] : null;                  return (
+                  <div key={x} className="relative inline-block group/cell">
                     <button
                       onClick={() => handleCellClick(x, y)}
                       onContextMenu={(e) => handleCellRightClick(x, y, e)}
-                      onMouseEnter={() => setHoveredCell({ x, y })}
-                      onMouseLeave={() => setHoveredCell(null)}
-                      className={`${sidebarCollapsed ? 'w-7 h-7' : 'w-5 h-5'} ${cellColor} border border-slate-700 hover:opacity-80 block relative dungeon-cell`}
+                      className={`${cellColor} border border-slate-700 hover:opacity-80 block relative dungeon-cell`}
                       data-dungeon-cell="true"
-                    >
-                      {/* Marker indicator */}
+                      style={{
+                        width: `${cellSize}px`,
+                        height: `${cellSize}px`,
+                      }}
+                    >                      {/* Marker indicator */}
                       {showMarkers && marker && (
                         <span 
-                          className={`absolute inset-0 flex items-center justify-center ${sidebarCollapsed ? 'text-sm' : 'text-[10px]'} font-bold text-white ${markerStyle.color} bg-opacity-80 dungeon-marker`}
+                          className={`absolute inset-0 flex items-center justify-center font-bold text-white ${markerStyle.color} bg-opacity-80 dungeon-marker`}
+                          style={{
+                            fontSize: `${Math.max(8, cellSize * 0.6)}px`,
+                            transform: shouldRotate ? 'rotate(-90deg)' : 'none'
+                          }}
                           title={marker.tooltip}
                         >
                           {markerStyle.rogueChar || markerStyle.label}
                         </span>
-                      )}
-                    </button>
-                    
-                    {/* Tooltip on hover */}
-                    {isHovered && marker && (
-                      <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs whitespace-nowrap shadow-lg">
-                        <span className="mr-1">{markerStyle.icon}</span>
-                        {marker.tooltip}
-                      </div>
-                    )}
-                    
-                    {/* Door edges - only show for room/corridor cells */}
+                      )}                    </button>
+                      {/* Door edges - only show for room/corridor cells when hovered or door placed */}
                     {cell > 0 && ['N', 'S', 'E', 'W'].map(edge => {
+                      const isDoorPlaced = hasDoor(x, y, edge);
+                      
+                      // Calculate edge button sizes based on cell size
+                      const edgeThickness = Math.max(2, Math.floor(cellSize * 0.15));
+                      const lineThickness = Math.max(1, Math.floor(cellSize * 0.08));
+                      
+                      // Only render if door is placed (interactive edges will show on hover via CSS)
+                      if (!isDoorPlaced) {
+                        // Return invisible button that shows on hover
+                        const posClass = {
+                          N: `absolute left-0 right-0`,
+                          S: `absolute left-0 right-0`,
+                          E: `absolute top-0 bottom-0`,
+                          W: `absolute top-0 bottom-0`
+                        }[edge];
+                        
+                        const posStyle = {
+                          N: { top: `-${edgeThickness}px`, height: `${edgeThickness * 2}px` },
+                          S: { bottom: `-${edgeThickness}px`, height: `${edgeThickness * 2}px` },
+                          E: { right: `-${edgeThickness}px`, width: `${edgeThickness * 2}px` },
+                          W: { left: `-${edgeThickness}px`, width: `${edgeThickness * 2}px` }
+                        }[edge];
+                        
+                        const lineClass = {
+                          N: 'absolute top-0 left-0 right-0',
+                          S: 'absolute bottom-0 left-0 right-0',
+                          E: 'absolute right-0 top-0 bottom-0',
+                          W: 'absolute left-0 top-0 bottom-0'
+                        }[edge];
+                        
+                        const lineStyle = {
+                          N: { height: `${lineThickness}px` },
+                          S: { height: `${lineThickness}px` },
+                          E: { width: `${lineThickness}px` },
+                          W: { width: `${lineThickness}px` }
+                        }[edge];
+                        
+                        return (
+                          <button
+                            key={edge}
+                            onClick={(e) => handleDoorClick(x, y, edge, e)}
+                            className={`${posClass} z-10 opacity-0 group-hover/cell:opacity-100 transition-opacity`}
+                            style={posStyle}
+                          >
+                            <div className={`${lineClass} bg-amber-500 opacity-0 hover:opacity-100 transition-opacity`} style={lineStyle} />
+                          </button>
+                        );
+                      }
+                      
+                      // Door is placed, show it permanently
                       const posClass = {
-                        N: 'absolute -top-1 left-0 right-0 h-2',
-                        S: 'absolute -bottom-1 left-0 right-0 h-2',
-                        E: 'absolute -right-1 top-0 bottom-0 w-2',
-                        W: 'absolute -left-1 top-0 bottom-0 w-2'
+                        N: `absolute left-0 right-0`,
+                        S: `absolute left-0 right-0`,
+                        E: `absolute top-0 bottom-0`,
+                        W: `absolute top-0 bottom-0`
+                      }[edge];
+                      
+                      const posStyle = {
+                        N: { top: `-${edgeThickness}px`, height: `${edgeThickness * 2}px` },
+                        S: { bottom: `-${edgeThickness}px`, height: `${edgeThickness * 2}px` },
+                        E: { right: `-${edgeThickness}px`, width: `${edgeThickness * 2}px` },
+                        W: { left: `-${edgeThickness}px`, width: `${edgeThickness * 2}px` }
                       }[edge];
                       
                       const lineClass = {
-                        N: 'absolute top-0 left-0 right-0 h-0.5',
-                        S: 'absolute bottom-0 left-0 right-0 h-0.5',
-                        E: 'absolute right-0 top-0 bottom-0 w-0.5',
-                        W: 'absolute left-0 top-0 bottom-0 w-0.5'
+                        N: 'absolute top-0 left-0 right-0',
+                        S: 'absolute bottom-0 left-0 right-0',
+                        E: 'absolute right-0 top-0 bottom-0',
+                        W: 'absolute left-0 top-0 bottom-0'
+                      }[edge];
+                      
+                      const lineStyle = {
+                        N: { height: `${lineThickness}px` },
+                        S: { height: `${lineThickness}px` },
+                        E: { width: `${lineThickness}px` },
+                        W: { width: `${lineThickness}px` }
                       }[edge];
                       
                       return (
                         <button
                           key={edge}
                           onClick={(e) => handleDoorClick(x, y, edge, e)}
-                          className={`${posClass} z-10 group`}
+                          className={`${posClass} z-10`}
+                          style={posStyle}
                         >
-                          <div className={`${lineClass} bg-amber-500 opacity-0 group-hover:opacity-100 transition-opacity`} />
-                          {hasDoor(x, y, edge) && (
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-green-400" />
-                          )}
+                          {/* Door indicator when placed - shows as a solid line */}
+                          <div className={`${lineClass} bg-amber-500 opacity-100`} style={lineStyle} />
                         </button>
                       );
                     })}
@@ -405,31 +539,6 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
           ))}
           </div>
         </div>
-          <div className="text-xs text-slate-400 mt-2">
-          Click squares to cycle: Empty → Room (amber) → Corridor (blue)<br/>
-          Click on room/corridor edges to add doors (green dots)<br/>
-          <span className="text-amber-300">Right-click</span> to cycle markers: <span className="dungeon-marker">♠</span>Monster → <span className="dungeon-marker">☠</span>Boss → <span className="dungeon-marker">★</span>Treasure → <span className="dungeon-marker">†</span>Trap → <span className="dungeon-marker">♦</span>Special → <span className="dungeon-marker">⊙</span>Cleared → <span className="dungeon-marker">⌂</span>Entrance → <span className="dungeon-marker">⛨</span>Exit
-        </div>
-          {/* Marker Legend */}
-        {showMarkers && Object.keys(roomMarkers).length > 0 && (
-          <div className="mt-2 p-2 bg-slate-700 rounded text-xs">
-            <div className="text-slate-300 font-bold mb-1">Markers:</div>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(MARKER_STYLES).map(([type, style]) => {
-                const count = Object.values(roomMarkers).filter(m => m.type === type).length;
-                if (count === 0) return null;
-                return (
-                  <span key={type} className="flex items-center gap-1">
-                    <span className={`w-5 h-5 ${style.color} text-white text-xs flex items-center justify-center rounded dungeon-marker`}>
-                      {style.rogueChar || style.label}
-                    </span>
-                    <span className="text-slate-400">{type}: {count}</span>
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

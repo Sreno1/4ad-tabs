@@ -48,23 +48,24 @@ export const createHero = (classKey, classData, name = null) => ({
   hp: classData.life + 1,
   maxHp: classData.life + 1,
   
-  // Equipment (Phase 3+)
-  equipment: {
-    weapon: null,
-    offhand: null,
-    armor: null,
-    ring: null,
-    amulet: null
-  },
-  inventory: [], // Consumables, treasures
+  // Equipment (Phase 7b+) - array of equipment keys
+  equipment: [], // e.g., ['hand_weapon', 'shield', 'light_armor']
+  inventory: [], // Consumables, treasures (also equipment keys)
   
   // Class-specific ability uses (reset per adventure)
   abilities: {
-    healsUsed: 0,     // Cleric: 3 max
-    blessingsUsed: 0, // Cleric: 3 max
-    spellsUsed: 0,    // Wizard: L+2 max, Elf: L max
-    luckUsed: 0,      // Halfling: L+1 max
-    rageActive: false // Barbarian
+    healsUsed: 0,          // Cleric: 3 max
+    blessingsUsed: 0,      // Cleric: 3 max
+    spellsUsed: 0,         // Wizard: L+2 max, Elf: L max, Druid: L+2, Illusionist: L+3
+    luckUsed: 0,           // Halfling: L+1 max
+    rageActive: false,     // Barbarian
+    prayerUsed: 0,         // Paladin: L+1 max
+    tricksUsed: 0,         // Acrobat: L+3 max
+    gadgetsUsed: 0,        // Gnome: L+6 max
+    panacheCurrent: 0,     // Swashbuckler: current panache (gained from kills, max = L)
+    sporesUsed: 0,         // Mushroom Monk: Tier uses max
+    hideInShadowsUsed: 0,  // Assassin: unlimited but one at a time
+    mountSummoned: false   // Paladin: can summon once per day
   },
   
   // Status effects
