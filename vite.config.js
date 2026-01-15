@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/4ad-tabs/'
+  base: process.env.NODE_ENV === 'production' ? '/4ad-tabs/' : '/'
 })
