@@ -16,18 +16,11 @@ export default function AppHeader({
   onShowSettings
 }) {
   return (
-    <header className="bg-slate-800 p-2 border-b border-slate-700 flex-shrink-0">
+  <header className="bg-slate-800 p-1 border-b border-slate-700 flex-shrink-0">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} />
           <div className="hidden sm:block">
             <h1 className="text-lg font-bold text-amber-400">Four Against Darkness</h1>
-            {state.party[selectedHero] && (
-              <div className="text-xs text-slate-400">
-                Active: <span className="text-amber-300">{state.party[selectedHero].name}</span>
-                <span className="text-slate-500 ml-1">({state.party[selectedHero].key})</span>
-              </div>
-            )}
           </div>
           <h1 className="text-lg font-bold text-amber-400 sm:hidden">4AD</h1>
         </div>

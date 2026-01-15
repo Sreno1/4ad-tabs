@@ -26,7 +26,7 @@ export default function CampaignManagerModal({ isOpen, onClose, state, dispatch 
     // Show completion message
     const msg = success 
       ? '🎉 Adventure Complete! Stats saved to campaign.'
-      : '💀 Adventure Failed. Better luck next time.';
+  : 'Adventure Failed. Better luck next time.';
     dispatch({ type: 'LOG', t: msg });
   };
 

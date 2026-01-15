@@ -4,10 +4,10 @@ import { CLASSES, getMaxHP, getSpellSlots, getLuckPoints } from '../data/classes
 import { d6 } from '../utils/dice.js';
 import { getXPForNextLevel, canLevelUp } from '../data/monsters.js';
 import { hasTraits, getTrait } from '../data/traits.js';
-import BossMechanics from './BossMechanics.jsx';
+import MarchingOrder from './MarchingOrder.jsx';
 import TraitSelector from './TraitSelector.jsx';
 
-export default function Party({ state, dispatch }) {
+export default function Party({ state, dispatch, selectedHero = 0, onSelectHero }) {
   const [showClassPicker, setShowClassPicker] = useState(false);
   const [traitSelectorHero, setTraitSelectorHero] = useState(null);
   
@@ -171,6 +171,17 @@ export default function Party({ state, dispatch }) {
   
   return (
     <div className="p-3 space-y-2">
+      {/* Marching Order UI */}
+      <div className="mb-3">
+        <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} />
+      </div>
+      {/* Active Hero Info */}
+      {state.party[selectedHero] && (
+        <div className="text-xs text-slate-400 mb-2">
+          Active: <span className="text-amber-300">{state.party[selectedHero].name}</span>
+          <span className="text-slate-500 ml-1">({state.party[selectedHero].key})</span>
+        </div>
+      )}
       {/* Header */}
       <div className="flex justify-between items-center">
         <span className="font-bold text-amber-400">
@@ -348,8 +359,7 @@ export default function Party({ state, dispatch }) {
         </div>
       </div>
       
-      {/* Boss Mechanics */}
-      <BossMechanics state={state} dispatch={dispatch} />
+
 
       {/* Trait Selector Modal */}
       {traitSelectorHero && (

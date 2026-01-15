@@ -6,7 +6,7 @@ export default function EventCard({ event, index }) {
     case EVENT_TYPES.TILE_GENERATED:
       return (
         <div key={index} className="bg-slate-700/50 rounded p-2 text-xs border-l-2 border-blue-400">
-          <div className="text-blue-400 font-bold">📐 Tile Generated</div>
+          <div className="text-blue-400 font-bold">Tile Generated</div>
           <div className="text-slate-300">{event.data.shape?.description}</div>
           <div className="text-slate-400">Doors: {event.data.shape?.doors}</div>
         </div>

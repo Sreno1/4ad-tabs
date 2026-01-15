@@ -36,11 +36,11 @@ export function useCombatFlow(state, dispatch) {
     if (result.hostile === true) {
       setPartyGoesFirst(false);
       setCombatPhase(COMBAT_PHASES.MONSTER_TURN);
-      dispatch({ type: 'LOG', t: `⚡ ${monster.name} attacks first!` });
+  dispatch({ type: 'LOG', t: `${monster.name} attacks first!` });
     } else if (result.hostile === false) {
       setPartyGoesFirst(true);
       setCombatPhase(COMBAT_PHASES.PARTY_TURN);
-      dispatch({ type: 'LOG', t: `⚡ Party has initiative!` });
+  dispatch({ type: 'LOG', t: `Party has initiative!` });
     } else {
       setPartyGoesFirst(true);
       setCombatPhase(COMBAT_PHASES.INITIATIVE);
@@ -53,14 +53,14 @@ export function useCombatFlow(state, dispatch) {
   const handlePartyAttacks = () => {
     setPartyGoesFirst(true);
     setCombatPhase(COMBAT_PHASES.PARTY_TURN);
-    dispatch({ type: 'LOG', t: `⚔️ Party attacks!` });
+  dispatch({ type: 'LOG', t: `Party attacks!` });
   };
 
   // End party turn, monster turn begins
   const handleEndPartyTurn = () => {
     if (getActiveMonsters().length > 0) {
       setCombatPhase(COMBAT_PHASES.MONSTER_TURN);
-      dispatch({ type: 'LOG', t: `👹 Monsters' turn to attack!` });
+  dispatch({ type: 'LOG', t: `Monsters' turn to attack!` });
     } else {
       handleCombatVictory();
     }
@@ -69,7 +69,7 @@ export function useCombatFlow(state, dispatch) {
   // End monster turn, party turn begins
   const handleEndMonsterTurn = () => {
     setCombatPhase(COMBAT_PHASES.PARTY_TURN);
-    dispatch({ type: 'LOG', t: `⚔️ Party's turn!` });
+  dispatch({ type: 'LOG', t: `Party's turn!` });
   };
 
   // Handle combat victory

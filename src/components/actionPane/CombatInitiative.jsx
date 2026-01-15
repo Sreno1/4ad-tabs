@@ -11,7 +11,7 @@ export default function CombatInitiative({
 }) {
   return (
     <div className="bg-slate-800 rounded p-2">
-      <div className="text-sm font-bold text-cyan-400 mb-2">⚡ Initiative</div>
+  <div className="text-sm font-bold text-cyan-400 mb-2">Initiative</div>
 
       {/* Phase: Need to roll reaction */}
       {combatPhase === COMBAT_PHASES.NONE && !monsterReaction && (
@@ -70,7 +70,7 @@ export default function CombatInitiative({
       {/* Phase: Monster's turn */}
       {combatPhase === COMBAT_PHASES.MONSTER_TURN && (
         <div className="bg-red-900/30 rounded p-2">
-          <div className="text-red-400 font-bold text-sm mb-2">👹 Monster's Turn - DEFEND!</div>
+          <div className="text-red-400 font-bold text-sm mb-2">Monster's Turn - DEFEND!</div>
           <div className="text-xs text-slate-300">
             Roll defense for each hero being attacked.
           </div>

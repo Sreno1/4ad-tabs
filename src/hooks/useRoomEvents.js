@@ -55,7 +55,7 @@ export function useRoomEvents(state, dispatch, setActionMode) {
         const details = { type: 'special', specialKey, special, specialRoll };
         setRoomDetails(details);
         newEvents.push({ type: EVENT_TYPES.SPECIAL, data: details, timestamp: Date.now() });
-        dispatch({ type: 'LOG', t: `✨ Special Feature! ${special.name}` });
+  dispatch({ type: 'LOG', t: `Special Feature! ${special.name}` });
         dispatch({ type: 'LOG', t: `📜 ${special.description}` });
         setActionMode(ACTION_MODES.SPECIAL);
         break;
@@ -72,7 +72,7 @@ export function useRoomEvents(state, dispatch, setActionMode) {
       case 'minor_boss':
         spawnMonster(dispatch, 'boss', 3);
         dispatch({ type: 'MINOR' });
-        dispatch({ type: 'LOG', t: `⚔️ Minor Boss appears! (Level 3)` });
+  dispatch({ type: 'LOG', t: `Minor Boss appears! (Level 3)` });
         newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'boss', level: 3, isBoss: false }, timestamp: Date.now() });
         setActionMode(ACTION_MODES.COMBAT);
         break;
@@ -92,7 +92,7 @@ export function useRoomEvents(state, dispatch, setActionMode) {
         } else {
           spawnMajorFoe(dispatch, state.hcl, false);
           dispatch({ type: 'MAJOR' });
-          dispatch({ type: 'LOG', t: `⚔️ Major Foe appears! (Level ${state.hcl})` });
+          dispatch({ type: 'LOG', t: `Major Foe appears! (Level ${state.hcl})` });
           newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'major', level: state.hcl, isBoss: false }, timestamp: Date.now() });
         }
         setActionMode(ACTION_MODES.COMBAT);
@@ -123,7 +123,7 @@ export function useRoomEvents(state, dispatch, setActionMode) {
     const contentsResult = TILE_CONTENTS_TABLE[contentsRoll];
 
     dispatch({ type: 'LOG', t: `🎲 NEW TILE: Shape d66=${shapeRoll}, Contents 2d6=${contentsRoll}` });
-    dispatch({ type: 'LOG', t: `📐 ${shapeResult.description} | Doors: ${shapeResult.doors}` });
+  dispatch({ type: 'LOG', t: `${shapeResult.description} | Doors: ${shapeResult.doors}` });
     dispatch({ type: 'LOG', t: `📦 ${contentsResult.description}` });
 
     const result = {

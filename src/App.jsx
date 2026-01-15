@@ -145,13 +145,13 @@ export default function App() {
           <div className="flex-1 overflow-y-auto p-3 bg-slate-850 min-w-0">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-sm font-bold text-slate-400">
-                {actionMode === ACTION_MODES.COMBAT ? '⚔️ Combat' :
-                 actionMode === ACTION_MODES.SPECIAL ? '✨ Special' :
-                 actionMode === ACTION_MODES.TREASURE ? '💰 Treasure' :
-                 actionMode === ACTION_MODES.QUEST ? '🏆 Quest' :
-                 actionMode === ACTION_MODES.WEIRD ? '👾 Weird' :
-                 actionMode === ACTION_MODES.EMPTY ? '📦 Empty' :
-                 '🎮 Actions'}
+                {actionMode === ACTION_MODES.COMBAT ? 'Combat' :
+                 actionMode === ACTION_MODES.SPECIAL ? 'Special' :
+                 actionMode === ACTION_MODES.TREASURE ? 'Treasure' :
+                 actionMode === ACTION_MODES.QUEST ? 'Quest' :
+                 actionMode === ACTION_MODES.WEIRD ? 'Weird' :
+                 actionMode === ACTION_MODES.EMPTY ? 'Empty' :
+                 'Actions'}
               </span>
               {state.monsters?.length > 0 && (
                 <span className="text-xs text-red-400">

@@ -4,7 +4,7 @@ export default function ActiveMonsters({ activeMonsters, state, dispatch, corrid
   return (
     <div className="bg-slate-800 rounded p-2">
       <div className="text-sm font-bold text-red-400 mb-2">
-        🐉 Active Foes {corridor && <span className="text-yellow-400 text-xs ml-1">(Corridor)</span>}
+  Active Foes {corridor && <span className="text-yellow-400 text-xs ml-1">(Corridor)</span>}
       </div>
       <div className="space-y-1">
         {activeMonsters.map((monster) => {
@@ -17,7 +17,7 @@ export default function ActiveMonsters({ activeMonsters, state, dispatch, corrid
                   {isMinor ? (
                     <span className="text-blue-400">👥</span>
                   ) : (
-                    <span className="text-red-400">👹</span>
+                    <span className="text-red-400"></span>
                   )}
                   <span className="font-bold text-amber-400">{monster.name}</span>
                   <span className="text-slate-400">L{monster.level}</span>

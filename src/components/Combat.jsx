@@ -436,7 +436,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
       <div className="bg-slate-800 rounded p-2">
         <div className="flex justify-between items-center mb-2">
           <span className="text-amber-400 font-bold text-sm">
-            🐉 Active Monsters ({state.monsters.length})
+            Active Monsters ({state.monsters.length})
           </span>
           <div className="flex gap-1">
             {state.monsters.length > 0 && (
@@ -481,11 +481,11 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-1">
                   {isMinor && <span className="text-blue-400 text-xs">👥</span>}
-                  {!isMinor && <span className="text-red-400 text-xs">👹</span>}
+                  {!isMinor && <span className="text-red-400 text-xs"></span>}
                   <span className="text-amber-400 font-bold text-xs">{monster.name}</span>
                   {monster.special && MONSTER_ABILITIES[monster.special] && (
                     <span className="text-purple-400 text-xs" title={MONSTER_ABILITIES[monster.special].description}>
-                      ⚡{MONSTER_ABILITIES[monster.special].name}
+                      {MONSTER_ABILITIES[monster.special].name}
                     </span>
                   )}
                   {monster.levelReduced && (
@@ -650,14 +650,14 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
       {state.monsters.length > 0 && (
         <div className="bg-slate-800 rounded p-2">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-cyan-400 font-bold text-sm">⚡ Initiative</span>
+            <span className="text-cyan-400 font-bold text-sm">Initiative</span>
             {!combatInitiative && (
               <div className="flex gap-1">
                 <button
                   onClick={() => {
                     const init = determineInitiative({ partyAttacksFirst: true });
                     setCombatInitiative(init);
-                    addToCombatLog(`⚡ ${init.reason}`);
+                    addToCombatLog(`${init.reason}`);
                   }}
                   className="bg-green-600 hover:bg-green-500 px-2 py-0.5 rounded text-xs"
                 >
@@ -688,7 +688,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                       hasRanged: state.party.some(h => h.equipment?.ranged)
                     });
                     setCombatInitiative(init);
-                    addToCombatLog(`⚡ ${init.reason}`);
+                    addToCombatLog(`${init.reason}`);
                   }}
                   className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
                 >
@@ -707,10 +707,10 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                 Order: {combatInitiative.order.map(phase => {
                   const labels = {
                     'party_ranged': '🏹Party Ranged',
-                    'party_spells': '🔮Party Spells', 
-                    'party_melee': '⚔️Party Melee',
+                    'party_spells': 'Party Spells', 
+                    'party_melee': 'Party Melee',
                     'monster_ranged': '🎯Monster Ranged',
-                    'monster_melee': '👹Monster Melee'
+                    'monster_melee': 'Monster Melee'
                   };
                   return labels[phase] || phase;
                 }).join(' → ')}
@@ -864,7 +864,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                         disabled={(abilities.prayersUsed || 0) >= getPrayerPoints(hero.lvl)}
                         className="bg-yellow-600 hover:bg-yellow-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
                       >
-                        ⚡Prayer ({getPrayerPoints(hero.lvl) - (abilities.prayersUsed || 0)})
+                        Prayer ({getPrayerPoints(hero.lvl) - (abilities.prayersUsed || 0)})
                       </button>
                     )}
 

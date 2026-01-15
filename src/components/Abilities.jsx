@@ -200,7 +200,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
                   </div>
                   <div className="text-cyan-200 text-sm">{getTrait(hero.key, hero.trait)?.description}</div>
                   <div className="text-cyan-400 text-xs font-bold mt-2">
-                    ⚡ {getTrait(hero.key, hero.trait)?.benefit}
+                    {getTrait(hero.key, hero.trait)?.benefit}
                   </div>
                 </div>
               ) : (

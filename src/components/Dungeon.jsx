@@ -220,7 +220,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     setLastContentsRoll(null); // Reset contents
     setRoomDetails(null);
     setBossCheckResult(null);
-    dispatch({ type: 'LOG', t: `📐 Tile Shape d66=${roll}: ${result.description}` });
+  dispatch({ type: 'LOG', t: `Tile Shape d66=${roll}: ${result.description}` });
     dispatch({ type: 'LOG', t: `   Doors: ${result.doors}` });
   };
   
@@ -326,7 +326,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
         {/* Shape Result */}
         {lastShapeRoll && (
           <div className="p-2 bg-slate-700 rounded text-xs mb-2">
-            <div className="text-blue-400 font-bold">📐 Shape: d66 = {lastShapeRoll.roll}</div>
+            <div className="text-blue-400 font-bold">Shape: d66 = {lastShapeRoll.roll}</div>
             <div className="text-slate-300">{lastShapeRoll.result.description}</div>
             <div className="text-slate-400">Doors: {lastShapeRoll.result.doors}</div>
           </div>

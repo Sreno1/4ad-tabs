@@ -169,7 +169,7 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
                       </div>
                       <div className="text-slate-300 text-sm mb-1">{trait.description}</div>
                       <div className="text-cyan-400 text-xs font-bold">
-                        ⚡ {trait.benefit}
+                        {trait.benefit}
                       </div>
 
                       {/* Sub-choice for traits that require it */}

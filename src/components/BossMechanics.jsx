@@ -60,7 +60,7 @@ export default function BossMechanics({ state, dispatch }) {
             : 'bg-red-600 hover:bg-red-500'
         }`}
       >
-        {state.finalBoss ? '👑 Boss Already Faced' : '⚔️ Major Foe Encounter (Boss Check)'}
+  {state.finalBoss ? 'Boss Already Faced' : 'Major Foe Encounter (Boss Check)'}
       </button>
       
       {bossCheckResult && (

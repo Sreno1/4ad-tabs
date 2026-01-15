@@ -104,7 +104,7 @@ export default function DesktopSidebar({
       {/* Sidebar Content */}
       <div className={`flex-1 overflow-y-auto ${activeTab === 'rules' ? '' : 'p-3'}`}>
         {activeTab === 'party' ? (
-          <Party state={state} dispatch={dispatch} />
+          <Party state={state} dispatch={dispatch} selectedHero={state.selectedHero ?? 0} onSelectHero={dispatch ? (idx) => dispatch({ type: 'SET_SELECTED_HERO', idx }) : undefined} />
         ) : activeTab === 'stats' ? (
           <Analytics state={state} />
         ) : activeTab === 'log' ? (

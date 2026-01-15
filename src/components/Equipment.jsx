@@ -24,7 +24,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
         <div className="bg-slate-900 rounded-lg max-w-md w-full p-6 border-2 border-amber-500">
           <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-4 rounded-t-lg -m-6 mb-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-white">⚔️ Equipment</h2>
+              <h2 className="text-2xl font-bold text-white">Equipment</h2>
               <button onClick={onClose} className="text-white hover:text-red-300 text-2xl font-bold">✕</button>
             </div>
           </div>
@@ -130,7 +130,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
         {/* Header */}
         <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-4 sticky top-0 z-10">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-white">⚔️ Equipment</h2>
+            <h2 className="text-2xl font-bold text-white">Equipment</h2>
             <button
               onClick={onClose}
               className="text-white hover:text-red-300 text-2xl font-bold"

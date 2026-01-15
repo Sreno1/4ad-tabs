@@ -274,7 +274,7 @@ export default function Exploration({ state, dispatch }) {
               onClick={handleTriggerTrap}
               className="bg-red-600 hover:bg-red-500 px-3 py-1.5 rounded text-xs"
             >
-              💥 Trigger!
+              Trigger!
             </button>
           )}
         </div>
@@ -293,13 +293,13 @@ export default function Exploration({ state, dispatch }) {
               <div className="text-blue-400 mt-1">🔍 Trap Detected!</div>
             )}
             {currentTrap.disarmed && <div className="text-green-400 mt-1">✓ Trap Disarmed!</div>}
-            {currentTrap.triggered && <div className="text-red-400 mt-1">💀 Trap Triggered!</div>}
+            {currentTrap.triggered && <div className="text-red-400 mt-1">Trap Triggered!</div>}
           </div>
         )}
         
         {activeHero?.key === 'rogue' && (
           <div className="text-xs text-green-400 mt-2">
-            ✨ Rogue Bonus: +{activeHero.lvl} to detect/disarm
+            Rogue Bonus: +{activeHero.lvl} to detect/disarm
           </div>
         )}
       </div>
@@ -323,7 +323,7 @@ export default function Exploration({ state, dispatch }) {
               disabled={!activeHero}
               className="bg-purple-600 hover:bg-purple-500 disabled:bg-slate-600 px-3 py-1.5 rounded text-xs"
             >
-              ✨ Interact
+              Interact
             </button>
           )}
         </div>
@@ -383,12 +383,12 @@ export default function Exploration({ state, dispatch }) {
         
         {activeHero && ['wizard', 'elf'].includes(activeHero.key) && (
           <div className="text-xs text-cyan-400 mt-2">
-            ✨ {activeHero.key === 'wizard' ? 'Wizard' : 'Elf'} Bonus: +{activeHero.lvl} to riddles
+            {(activeHero.key === 'wizard' ? 'Wizard' : 'Elf')} Bonus: +{activeHero.lvl} to riddles
           </div>
         )}
         {activeHero && ['rogue', 'halfling'].includes(activeHero.key) && (
           <div className="text-xs text-cyan-400 mt-2">
-            ✨ {activeHero.key === 'rogue' ? 'Rogue' : 'Halfling'} Bonus: +{activeHero.lvl} to pressure plates
+            {(activeHero.key === 'rogue' ? 'Rogue' : 'Halfling')} Bonus: +{activeHero.lvl} to pressure plates
           </div>
         )}
       </div>
@@ -467,7 +467,7 @@ export default function Exploration({ state, dispatch }) {
               : 'bg-red-600 hover:bg-red-500'
           }`}
         >
-          {state.finalBoss ? '👑 Boss Already Faced' : '⚔️ Major Foe Encounter (Boss Check)'}
+          {state.finalBoss ? 'Boss Already Faced' : 'Major Foe Encounter (Boss Check)'}
         </button>
         
         {bossCheckResult && (
