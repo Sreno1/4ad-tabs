@@ -1,4 +1,4 @@
-import React, { useState, useReducer } from 'react';
+import React, { useState, useReducer, useEffect } from 'react';
 import { Sword, Shield, Heart, Scroll, Map, Users, Package, Plus, X, ChevronRight, Sparkles, RefreshCw } from 'lucide-react';
 
 // Dice utilities
@@ -39,8 +39,24 @@ const CONTENT = {
   11:'Boss→Boss Tbl',12:'Cor:Empty|Rm:Dragon Lair'
 };
 
+// d6 Entrance table
+const ENTRANCE = {
+  1:'Empty',2:'Empty',3:'Vermin→Vermin Tbl',
+  4:'Minions→Minions Tbl',5:'Special Feature Tbl',6:'Treasure→Treasure Tbl'
+};
+
+// Door configuration for each tile type [N, E, S, W]
+const DOORS = {
+  11:[1,1,0,0],12:[1,1,0,0],13:[1,1,0,0],14:[1,1,0,0],15:[1,1,1,0],16:[1,1,1,1],
+  21:[1,1,0,0],22:[1,1,0,0],23:[1,1,0,0],24:[1,1,0,0],25:[1,1,0,0],26:[1,1,0,0],
+  31:[1,1,0,0],32:[1,1,0,0],33:[1,1,0,0],34:[1,1,0,0],35:[1,1,0,0],36:[1,1,0,0],
+  41:[1,1,0,0],42:[1,1,0,0],43:[1,1,0,0],44:[1,1,0,0],45:[1,1,0,0],46:[1,1,0,0],
+  51:[1,1,0,0],52:[1,1,0,0],53:[1,1,0,0],54:[1,1,0,0],55:[1,1,1,0],56:[1,1,0,0],
+  61:[1,1,1,0],62:[1,1,1,0],63:[1,1,0,0],64:[1,1,0,0],65:[1,1,0,0],66:[1,1,0,0]
+};
+
 // State
-const init = { party: [], gold: 0, hcl: 1, rooms: [], log: [], minorEnc: 0, majorFoes: 0, finalBoss: false, clues: 0 };
+const init = { party: [], gold: 0, hcl: 1, rooms: [], log: [], minorEnc: 0, majorFoes: 0, finalBoss: false, clues: 0, selectedDoor: null };
 
 function reducer(s, a) {
   switch (a.type) {
@@ -54,6 +70,7 @@ function reducer(s, a) {
     case 'MAJOR': return { ...s, majorFoes: s.majorFoes + 1 };
     case 'BOSS': return { ...s, finalBoss: true };
     case 'CLUE': return { ...s, clues: s.clues + a.n };
+    case 'SELECT_DOOR': return { ...s, selectedDoor: a.door };
     case 'RESET': return init;
     default: return s;
   }
@@ -135,21 +152,40 @@ function Dungeon({ s, d }) {
   const [rolls, setRolls] = useState(null);
   
   const gen = () => {
-    const tileR = d66(), contR = r2d6();
+    const isEntrance = s.rooms.length === 0;
+    const tileR = d66();
+    const contR = isEntrance ? d6() : r2d6();
     const cor = isCorridor(tileR);
     const tile = TILES[tileR] || `? (${tileR})`;
-    let cont = CONTENT[contR];
+    let cont = isEntrance ? ENTRANCE[contR] : CONTENT[contR];
     if (cor && [4, 8, 10, 12].includes(contR)) cont = 'Empty (corridor)';
-    
-    const isMajor = [10, 11].includes(contR) || (contR === 12 && !cor);
+
+    const isMajor = !isEntrance && ([10, 11].includes(contR) || (contR === 12 && !cor));
     let fb = false;
     if (isMajor && !s.finalBoss && s.rooms.length >= 3 && d6() + s.majorFoes >= 6) { fb = true; d({ type: 'BOSS' }); }
-    
-    setRolls({ tileR, contR, cor, fb });
-    d({ type: 'ROOM', r: { id: Date.now(), n: s.rooms.length + 1, tileR, tile, cor, contR, cont, fb } });
-    d({ type: 'LOG', t: `#${s.rooms.length + 1}: d66=${tileR} (${tile}) | 2d6=${contR} → ${cont}${fb ? ' ★FINAL BOSS★' : ''}` });
+
+    // Position and doors
+    const doors = DOORS[tileR] || [1,1,0,0];
+    let pos = { x: 0, y: 0 };
+    let fromDoor = null;
+
+    if (!isEntrance && s.selectedDoor) {
+      const parent = s.rooms.find(r => r.id === s.selectedDoor.roomId);
+      if (parent) {
+        fromDoor = s.selectedDoor.dir;
+        // Place room adjacent to parent based on selected door
+        const offset = { N: {x:0,y:-1}, E: {x:1,y:0}, S: {x:0,y:1}, W: {x:-1,y:0} };
+        const off = offset[s.selectedDoor.dir];
+        pos = { x: parent.pos.x + off.x, y: parent.pos.y + off.y };
+      }
+    }
+
+    setRolls({ tileR, contR, cor, fb, isEntrance });
+    d({ type: 'ROOM', r: { id: Date.now(), n: s.rooms.length + 1, tileR, tile, cor, contR, cont, fb, doors, pos, fromDoor } });
+    d({ type: 'LOG', t: `#${s.rooms.length + 1}: d66=${tileR} (${tile}) | ${isEntrance ? 'd6' : '2d6'}=${contR} → ${cont}${fb ? ' ★FINAL BOSS★' : ''}` });
+    d({ type: 'SELECT_DOOR', door: null }); // Clear selection
     if (isMajor) d({ type: 'MAJOR' });
-    if ([6, 7].includes(contR) || (contR === 8 && !cor)) d({ type: 'MINOR' });
+    if (!isEntrance && ([6, 7].includes(contR) || (contR === 8 && !cor))) d({ type: 'MINOR' });
   };
   
   const search = () => {
@@ -159,19 +195,47 @@ function Dungeon({ s, d }) {
     d({ type: 'LOG', t: `Search ${r}: ${res}` });
   };
   
+  const DoorBtn = ({ room, dir, label }) => {
+    const [n, e, s, w] = room.doors;
+    const hasDoor = (dir === 'N' && n) || (dir === 'E' && e) || (dir === 'S' && s) || (dir === 'W' && w);
+    if (!hasDoor) return null;
+
+    const isSelected = s.selectedDoor?.roomId === room.id && s.selectedDoor?.dir === dir;
+    const posClass = {
+      N: 'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2',
+      E: 'right-0 top-1/2 -translate-y-1/2 translate-x-1/2',
+      S: 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2',
+      W: 'left-0 top-1/2 -translate-y-1/2 -translate-x-1/2'
+    }[dir];
+
+    return (
+      <button
+        onClick={() => d({ type: 'SELECT_DOOR', door: { roomId: room.id, dir } })}
+        className={`absolute ${posClass} w-6 h-6 rounded-full border-2 text-xs font-bold ${isSelected ? 'bg-amber-400 border-amber-600 text-black' : 'bg-slate-700 border-slate-500 text-amber-400 hover:bg-slate-600'}`}
+      >
+        {label}
+      </button>
+    );
+  };
+
   return (
     <div className="p-3 space-y-2">
-      <button onClick={gen} className="w-full bg-amber-600 hover:bg-amber-500 py-3 rounded font-bold flex justify-center items-center gap-2">
-        <ChevronRight size={18} /> New Room
+      <button
+        onClick={gen}
+        disabled={s.rooms.length > 0 && !s.selectedDoor}
+        className="w-full bg-amber-600 hover:bg-amber-500 disabled:bg-slate-600 disabled:text-slate-400 py-3 rounded font-bold flex justify-center items-center gap-2"
+      >
+        <ChevronRight size={18} /> {s.rooms.length === 0 ? 'Generate Entrance' : s.selectedDoor ? 'Place New Room' : 'Select a Door First'}
       </button>
       
       {rolls && (
         <div className="bg-slate-800 rounded p-3 text-center">
           <div className="flex justify-center gap-8">
             <div><div className="text-2xl font-bold text-amber-400">{rolls.tileR}</div><div className="text-xs text-slate-500">d66 Tile</div></div>
-            <div><div className="text-2xl font-bold text-amber-400">{rolls.contR}</div><div className="text-xs text-slate-500">2d6 Content</div></div>
+            <div><div className="text-2xl font-bold text-amber-400">{rolls.contR}</div><div className="text-xs text-slate-500">{rolls.isEntrance ? 'd6' : '2d6'} Content</div></div>
           </div>
           <div className="text-xs mt-1">
+            {rolls.isEntrance && <span className="text-green-400 mr-2">⭐ Entrance</span>}
             {rolls.cor && <span className="text-blue-400 mr-2">Corridor</span>}
             {rolls.fb && <span className="text-red-400 font-bold">★ FINAL BOSS ★</span>}
           </div>
@@ -188,7 +252,53 @@ function Dungeon({ s, d }) {
           <div className="text-xs text-slate-400 mt-1">{s.cur.cont}</div>
         </div>
       )}
-      
+
+      {s.rooms.length > 0 && (
+        <div className="bg-slate-800 rounded p-3">
+          <div className="text-amber-400 font-bold text-sm mb-2">Dungeon Map</div>
+          <div className="overflow-x-auto">
+            <div className="inline-block min-w-full">
+              {(() => {
+                const minX = Math.min(...s.rooms.map(r => r.pos.x));
+                const maxX = Math.max(...s.rooms.map(r => r.pos.x));
+                const minY = Math.min(...s.rooms.map(r => r.pos.y));
+                const maxY = Math.max(...s.rooms.map(r => r.pos.y));
+                const grid = [];
+                for (let y = minY; y <= maxY; y++) {
+                  const row = [];
+                  for (let x = minX; x <= maxX; x++) {
+                    const room = s.rooms.find(r => r.pos.x === x && r.pos.y === y);
+                    row.push(room);
+                  }
+                  grid.push(row);
+                }
+                return grid.map((row, y) => (
+                  <div key={y} className="flex">
+                    {row.map((room, x) => (
+                      <div key={x} className="w-20 h-20 p-1">
+                        {room ? (
+                          <div className={`relative w-full h-full rounded border-2 ${room.fb ? 'border-red-500 bg-red-900/30' : room.cor ? 'border-blue-500 bg-blue-900/30' : 'border-amber-500 bg-amber-900/30'} flex items-center justify-center`}>
+                            <div className="text-center">
+                              <div className="text-xs font-bold text-amber-400">#{room.n}</div>
+                              <div className="text-[8px] text-slate-400">{room.tileR}</div>
+                            </div>
+                            <DoorBtn room={room} dir="N" label="N" />
+                            <DoorBtn room={room} dir="E" label="E" />
+                            <DoorBtn room={room} dir="S" label="S" />
+                            <DoorBtn room={room} dir="W" label="W" />
+                          </div>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+          {s.selectedDoor && <div className="text-xs text-green-400 mt-2">✓ Door selected: Room #{s.rooms.find(r => r.id === s.selectedDoor.roomId)?.n} {s.selectedDoor.dir}</div>}
+        </div>
+      )}
+
       <Dice />
       
       <div className="bg-slate-800 rounded p-2 max-h-32 overflow-y-auto text-xs">
@@ -281,9 +391,23 @@ function Log({ s, d }) {
 }
 
 export default function App() {
-  const [s, d] = useReducer(reducer, init);
+  const loadState = () => {
+    try {
+      const saved = localStorage.getItem('4ad-state');
+      return saved ? JSON.parse(saved) : init;
+    } catch (e) {
+      return init;
+    }
+  };
+
+  const [s, d] = useReducer(reducer, null, loadState);
   const [tab, setTab] = useState('party');
   const tabs = [{ id: 'party', icon: Users, label: 'Party' }, { id: 'dungeon', icon: Map, label: 'Dungeon' }, { id: 'combat', icon: Sword, label: 'Combat' }, { id: 'log', icon: Scroll, label: 'Log' }];
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('4ad-state', JSON.stringify(s));
+  }, [s]);
   
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col">
