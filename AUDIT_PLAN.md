@@ -458,6 +458,7 @@ All character classes from core 4AD rules added to `src/data/classes.js`:
 - ✅ rollMonsterReaction function working
 
 - ✅ Basic reaction UI in Combat component (roll button + display)
+
 - ✅ Initiative integration based on reactions
 
 **Minor Gaps:**
@@ -474,12 +475,9 @@ All character classes from core 4AD rules added to `src/data/classes.js`:
 - Combat component displays reactions with color coding (hostile/peaceful/conditional)
 - Reactions influence initiative determination
 
-SPLIT APP.JSX INTO PARTS AND REFACTOR AS NEEDED FOR SCALABILITY
-
 ### Phase 7e: Spell Expansion
 
-1. Protection spell (basic, missing)
-2. Scroll system (find/use)
+1. can you implement the scroll system as outlined in /public/magic.txt
 
 FIX ALL INCOMPLETE/GAPS LISTED ABOVE IN NUMBERED ITEMS 1 - 11
 
