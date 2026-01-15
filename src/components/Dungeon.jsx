@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Sparkles, AlertTriangle, DoorOpen, Puzzle, Skull, Coins, HelpCircle } from 'lucide-react';
 import { d66, d6, r2d6 } from '../utils/dice.js';
-import { 
-  TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE, 
-  TRAP_TABLE, TRAP_TYPES, 
-  SPECIAL_FEATURE_TABLE, SPECIAL_ROOMS, 
+import {
+  TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE,
+  TRAP_TABLE, TRAP_TYPES,
+  SPECIAL_FEATURE_TABLE, SPECIAL_ROOMS,
   PUZZLE_TABLE, PUZZLE_TYPES,
   checkForBoss, BOSS_RULES
 } from '../data/rooms.js';
 import { spawnMonster, rollTreasure, performSearch, rollWanderingMonster, spawnMajorFoe } from '../utils/gameActions.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
+import DoorEdge from './DoorEdge.jsx';
 
 export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, hideGenerationUI = false, sidebarCollapsed = false }) {
   const [lastShapeRoll, setLastShapeRoll] = useState(null);
@@ -441,97 +442,17 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                         </span>
                       )}                    </button>
                       {/* Door edges - only show for room/corridor cells when hovered or door placed */}
-                    {cell > 0 && ['N', 'S', 'E', 'W'].map(edge => {
-                      const isDoorPlaced = hasDoor(x, y, edge);
-                      
-                      // Calculate edge button sizes based on cell size
-                      const edgeThickness = Math.max(2, Math.floor(cellSize * 0.15));
-                      const lineThickness = Math.max(1, Math.floor(cellSize * 0.08));
-                      
-                      // Only render if door is placed (interactive edges will show on hover via CSS)
-                      if (!isDoorPlaced) {
-                        // Return invisible button that shows on hover
-                        const posClass = {
-                          N: `absolute left-0 right-0`,
-                          S: `absolute left-0 right-0`,
-                          E: `absolute top-0 bottom-0`,
-                          W: `absolute top-0 bottom-0`
-                        }[edge];
-                        
-                        const posStyle = {
-                          N: { top: `-${edgeThickness}px`, height: `${edgeThickness * 2}px` },
-                          S: { bottom: `-${edgeThickness}px`, height: `${edgeThickness * 2}px` },
-                          E: { right: `-${edgeThickness}px`, width: `${edgeThickness * 2}px` },
-                          W: { left: `-${edgeThickness}px`, width: `${edgeThickness * 2}px` }
-                        }[edge];
-                        
-                        const lineClass = {
-                          N: 'absolute top-0 left-0 right-0',
-                          S: 'absolute bottom-0 left-0 right-0',
-                          E: 'absolute right-0 top-0 bottom-0',
-                          W: 'absolute left-0 top-0 bottom-0'
-                        }[edge];
-                        
-                        const lineStyle = {
-                          N: { height: `${lineThickness}px` },
-                          S: { height: `${lineThickness}px` },
-                          E: { width: `${lineThickness}px` },
-                          W: { width: `${lineThickness}px` }
-                        }[edge];
-                        
-                        return (
-                          <button
-                            key={edge}
-                            onClick={(e) => handleDoorClick(x, y, edge, e)}
-                            className={`${posClass} z-10 opacity-0 group-hover/cell:opacity-100 transition-opacity`}
-                            style={posStyle}
-                          >
-                            <div className={`${lineClass} bg-amber-500 opacity-0 hover:opacity-100 transition-opacity`} style={lineStyle} />
-                          </button>
-                        );
-                      }
-                      
-                      // Door is placed, show it permanently
-                      const posClass = {
-                        N: `absolute left-0 right-0`,
-                        S: `absolute left-0 right-0`,
-                        E: `absolute top-0 bottom-0`,
-                        W: `absolute top-0 bottom-0`
-                      }[edge];
-                      
-                      const posStyle = {
-                        N: { top: `-${edgeThickness}px`, height: `${edgeThickness * 2}px` },
-                        S: { bottom: `-${edgeThickness}px`, height: `${edgeThickness * 2}px` },
-                        E: { right: `-${edgeThickness}px`, width: `${edgeThickness * 2}px` },
-                        W: { left: `-${edgeThickness}px`, width: `${edgeThickness * 2}px` }
-                      }[edge];
-                      
-                      const lineClass = {
-                        N: 'absolute top-0 left-0 right-0',
-                        S: 'absolute bottom-0 left-0 right-0',
-                        E: 'absolute right-0 top-0 bottom-0',
-                        W: 'absolute left-0 top-0 bottom-0'
-                      }[edge];
-                      
-                      const lineStyle = {
-                        N: { height: `${lineThickness}px` },
-                        S: { height: `${lineThickness}px` },
-                        E: { width: `${lineThickness}px` },
-                        W: { width: `${lineThickness}px` }
-                      }[edge];
-                      
-                      return (
-                        <button
+                      {cell > 0 && ['N', 'S', 'E', 'W'].map(edge => (
+                        <DoorEdge
                           key={edge}
+                          x={x}
+                          y={y}
+                          edge={edge}
+                          isDoorPlaced={hasDoor(x, y, edge)}
+                          cellSize={cellSize}
                           onClick={(e) => handleDoorClick(x, y, edge, e)}
-                          className={`${posClass} z-10`}
-                          style={posStyle}
-                        >
-                          {/* Door indicator when placed - shows as a solid line */}
-                          <div className={`${lineClass} bg-amber-500 opacity-100`} style={lineStyle} />
-                        </button>
-                      );
-                    })}
+                        />
+                      ))}
                   </div>
                 );
               })}
