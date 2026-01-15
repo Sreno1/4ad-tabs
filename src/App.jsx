@@ -9,6 +9,7 @@ import Combat from './components/Combat.jsx';
 import Log from './components/Log.jsx';
 import SettingsModal from './components/SettingsModal.jsx';
 import RulesReference from './components/RulesReference.jsx';
+import RulesPdfViewer from './components/RulesPdfViewer.jsx';
 import SaveLoadModal from './components/SaveLoadModal.jsx';
 import DungeonFeaturesModal from './components/DungeonFeaturesModal.jsx';
 import MarchingOrder from './components/MarchingOrder.jsx';
@@ -79,7 +80,7 @@ export default function App() {
   
   // New layout state
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
-  const [leftPanelTab, setLeftPanelTab] = useState('party'); // 'party', 'stats', or 'log'
+  const [leftPanelTab, setLeftPanelTab] = useState('party'); // 'party', 'stats', 'log', or 'rules'
   const [actionMode, setActionMode] = useState(ACTION_MODES.IDLE);
   
   // Room state - progressive events that build up
@@ -93,6 +94,8 @@ export default function App() {
   const [monsterReaction, setMonsterReaction] = useState(null);
   const [partyGoesFirst, setPartyGoesFirst] = useState(true);
   const [showSpells, setShowSpells] = useState(null); // Track which hero is selecting spells
+  const [showHealTarget, setShowHealTarget] = useState(null); // Track cleric index for heal target selection
+  const [showBlessTarget, setShowBlessTarget] = useState(null); // Track cleric index for bless target selection
   
   const tabs = [
     { id: 'party', icon: Users, label: 'Party' }, 
@@ -865,17 +868,7 @@ export default function App() {
                       {/* Cleric Heal */}
                       {hero.key === 'cleric' && (abilities.healsUsed || 0) < 3 && (
                         <button 
-                          onClick={() => {
-                            // Show heal target selection
-                            const wounded = state.party.filter((h, i) => h.hp > 0 && h.hp < h.maxHp);
-                            if (wounded.length > 0) {
-                              const target = wounded[0];
-                              const targetIdx = state.party.findIndex(h => h.id === target.id);
-                              dispatch({ type: 'UPD_HERO', i: targetIdx, u: { hp: Math.min(target.maxHp, target.hp + 1) } });
-                              dispatch({ type: 'SET_ABILITY', heroIdx: index, ability: 'healsUsed', value: (abilities.healsUsed || 0) + 1 });
-                              dispatch({ type: 'LOG', t: `üíö ${hero.name} heals ${target.name} for 1 HP!` });
-                            }
-                          }}
+                          onClick={() => setShowHealTarget(index)}
                           className="bg-green-700 hover:bg-green-600 px-2 py-0.5 rounded text-xs"
                           title="Heal 1 HP to any hero (3 per adventure)"
                         >
@@ -886,15 +879,7 @@ export default function App() {
                       {/* Cleric Bless */}
                       {hero.key === 'cleric' && (abilities.blessingsUsed || 0) < 3 && (
                         <button 
-                          onClick={() => {
-                            // Bless first unbblessed hero
-                            const unblessedIdx = state.party.findIndex(h => h.hp > 0 && !h.status?.blessed);
-                            if (unblessedIdx >= 0) {
-                              dispatch({ type: 'SET_HERO_STATUS', heroIdx: unblessedIdx, statusKey: 'blessed', value: true });
-                              dispatch({ type: 'SET_ABILITY', heroIdx: index, ability: 'blessingsUsed', value: (abilities.blessingsUsed || 0) + 1 });
-                              dispatch({ type: 'LOG', t: `‚ú® ${hero.name} blesses ${state.party[unblessedIdx].name} (+1 to next attack/defense)!` });
-                            }
-                          }}
+                          onClick={() => setShowBlessTarget(index)}
                           className="bg-amber-700 hover:bg-amber-600 px-2 py-0.5 rounded text-xs"
                           title="Grant +1 to next attack/defense roll (3 per adventure)"
                         >
@@ -958,6 +943,130 @@ export default function App() {
                   );
                 })}
               </div>
+              
+              {/* Spell Selection Popup */}
+              {showSpells !== null && (
+                <div className="mt-2 p-2 bg-slate-700 rounded border border-blue-500">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-bold text-blue-400">
+                      üîÆ {state.party[showSpells]?.name} - Select Spell
+                    </span>
+                    <button 
+                      onClick={() => setShowSpells(null)}
+                      className="text-slate-400 hover:text-white text-xs"
+                    >
+                      ‚úï Cancel
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {getAvailableSpells(state.party[showSpells]?.key).map(spellKey => (
+                      <button
+                        key={spellKey}
+                        onClick={() => handleCastSpell(showSpells, spellKey)}
+                        className="bg-blue-600 hover:bg-blue-500 px-2 py-1.5 rounded text-xs text-left"
+                        title={SPELLS[spellKey].description}
+                      >
+                        <div className="font-bold">{SPELLS[spellKey].name}</div>
+                        <div className="text-blue-200 text-[10px]">{SPELLS[spellKey].description}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Heal Target Selection Popup */}
+              {showHealTarget !== null && (
+                <div className="mt-2 p-2 bg-slate-700 rounded border border-green-500">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-bold text-green-400">
+                      üíö {state.party[showHealTarget]?.name} - Select Heal Target
+                    </span>
+                    <button 
+                      onClick={() => setShowHealTarget(null)}
+                      className="text-slate-400 hover:text-white text-xs"
+                    >
+                      ‚úï Cancel
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {state.party.map((target, targetIdx) => {
+                      const canHeal = target.hp > 0 && target.hp < target.maxHp;
+                      return (
+                        <button
+                          key={target.id || targetIdx}
+                          onClick={() => {
+                            if (canHeal) {
+                              const clericAbilities = state.abilities?.[showHealTarget] || {};
+                              dispatch({ type: 'UPD_HERO', i: targetIdx, u: { hp: Math.min(target.maxHp, target.hp + 1) } });
+                              dispatch({ type: 'SET_ABILITY', heroIdx: showHealTarget, ability: 'healsUsed', value: (clericAbilities.healsUsed || 0) + 1 });
+                              dispatch({ type: 'LOG', t: `üíö ${state.party[showHealTarget].name} heals ${target.name} for 1 HP! (${target.hp + 1}/${target.maxHp})` });
+                              setShowHealTarget(null);
+                            }
+                          }}
+                          disabled={!canHeal}
+                          className={`px-2 py-1.5 rounded text-xs text-left ${
+                            canHeal 
+                              ? 'bg-green-600 hover:bg-green-500' 
+                              : 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="font-bold">{target.name}</div>
+                          <div className={canHeal ? 'text-green-200' : 'text-slate-500'}>
+                            ‚ù§Ô∏è {target.hp}/{target.maxHp} {target.hp <= 0 ? 'üíÄ' : target.hp >= target.maxHp ? '(Full)' : ''}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              {/* Bless Target Selection Popup */}
+              {showBlessTarget !== null && (
+                <div className="mt-2 p-2 bg-slate-700 rounded border border-amber-500">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-bold text-amber-400">
+                      ‚ú® {state.party[showBlessTarget]?.name} - Select Bless Target
+                    </span>
+                    <button 
+                      onClick={() => setShowBlessTarget(null)}
+                      className="text-slate-400 hover:text-white text-xs"
+                    >
+                      ‚úï Cancel
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {state.party.map((target, targetIdx) => {
+                      const canBless = target.hp > 0 && !target.status?.blessed;
+                      return (
+                        <button
+                          key={target.id || targetIdx}
+                          onClick={() => {
+                            if (canBless) {
+                              const clericAbilities = state.abilities?.[showBlessTarget] || {};
+                              dispatch({ type: 'SET_HERO_STATUS', heroIdx: targetIdx, statusKey: 'blessed', value: true });
+                              dispatch({ type: 'SET_ABILITY', heroIdx: showBlessTarget, ability: 'blessingsUsed', value: (clericAbilities.blessingsUsed || 0) + 1 });
+                              dispatch({ type: 'LOG', t: `‚ú® ${state.party[showBlessTarget].name} blesses ${target.name}! (+1 to next attack/defense)` });
+                              setShowBlessTarget(null);
+                            }
+                          }}
+                          disabled={!canBless}
+                          className={`px-2 py-1.5 rounded text-xs text-left ${
+                            canBless 
+                              ? 'bg-amber-600 hover:bg-amber-500' 
+                              : 'bg-slate-600 text-slate-400 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="font-bold">{target.name}</div>
+                          <div className={canBless ? 'text-amber-200' : 'text-slate-500'}>
+                            {target.hp <= 0 ? 'üíÄ KO' : target.status?.blessed ? '‚ú® Already Blessed' : '‚öîÔ∏è Ready'}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Flee/End Combat */}
@@ -1204,6 +1313,14 @@ export default function App() {
                   <Scroll size={16} /> Log
                 </button>
                 <button
+                  onClick={() => setLeftPanelTab('rules')}
+                  className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 ${
+                    leftPanelTab === 'rules' ? 'bg-slate-700 text-blue-400' : 'text-slate-400 hover:bg-slate-750'
+                  }`}
+                >
+                  <Book size={16} /> Rules
+                </button>
+                <button
                   onClick={() => setLeftPanelOpen(false)}
                   className="px-2 py-2 text-slate-400 hover:text-white hover:bg-slate-700"
                   title="Collapse Panel"
@@ -1213,13 +1330,15 @@ export default function App() {
               </div>
               
               {/* Left Panel Content */}
-              <div className="flex-1 overflow-y-auto p-3">
+              <div className={`flex-1 overflow-y-auto ${leftPanelTab === 'rules' ? '' : 'p-3'}`}>
                 {leftPanelTab === 'party' ? (
                   <Party state={state} dispatch={dispatch} />
                 ) : leftPanelTab === 'stats' ? (
                   <Analytics state={state} />
-                ) : (
+                ) : leftPanelTab === 'log' ? (
                   <Log state={state} dispatch={dispatch} />
+                ) : (
+                  <RulesPdfViewer />
                 )}
               </div>
             </div>
@@ -1247,6 +1366,13 @@ export default function App() {
               >
                 <Scroll size={20} />
               </button>
+              <button
+                onClick={() => { setLeftPanelOpen(true); setLeftPanelTab('rules'); }}
+                className={`p-2 rounded hover:bg-slate-700 ${leftPanelTab === 'rules' ? 'text-blue-400' : 'text-slate-400'}`}
+                title="Open Rules Panel"
+              >
+                <Book size={20} />
+              </button>
               <div className="border-t border-slate-700 w-full my-2" />
               <button
                 onClick={() => setLeftPanelOpen(true)}
@@ -1273,19 +1399,19 @@ export default function App() {
                 ) : (
                   <div className="flex-1 flex items-center gap-2 text-sm flex-wrap">
                     <div className={`px-2 py-1 rounded ${tileResult.shape.shape?.includes('corridor') ? 'bg-slate-700/50 border border-slate-500' : 'bg-blue-900/50'}`}>
-                      <span className="text-blue-400 font-bold">Ì≥ê {tileResult.shape.roll}:</span>
+                      <span className="text-blue-400 font-bold">üìê {tileResult.shape.roll}:</span>
                       <span className="text-slate-300 ml-1">{tileResult.shape.description}</span>
                       {tileResult.shape.shape?.includes('corridor') && (
                         <span className="text-yellow-400 ml-1 text-xs">(Corridor)</span>
                       )}
                     </div>
                     <div className="bg-amber-900/50 px-2 py-1 rounded">
-                      <span className="text-amber-400 font-bold">Ì≥¶ {tileResult.contents.roll}:</span>
+                      <span className="text-amber-400 font-bold">üì¶ {tileResult.contents.roll}:</span>
                       <span className="text-slate-300 ml-1">{tileResult.contents.description}</span>
                     </div>
                     {bossCheckResult?.isBoss && (
                       <div className="bg-red-900/50 px-2 py-1 rounded text-red-400 font-bold">
-                        Ì±ë BOSS!
+                        üëë BOSS!
                       </div>
                     )}
                   </div>
@@ -1304,6 +1430,7 @@ export default function App() {
                 bossCheckResult={bossCheckResult}
                 roomDetails={roomDetails}
                 hideGenerationUI={true}
+                sidebarCollapsed={!leftPanelOpen}
               />
             </div>
           </div>
@@ -1314,11 +1441,11 @@ export default function App() {
               <span className="text-sm font-bold text-slate-400">
                 {actionMode === ACTION_MODES.COMBAT ? '‚öîÔ∏è Combat' :
                  actionMode === ACTION_MODES.SPECIAL ? '‚ú® Special' :
-                 actionMode === ACTION_MODES.TREASURE ? 'Ì≤∞ Treasure' :
-                 actionMode === ACTION_MODES.QUEST ? 'ÌøÜ Quest' :
-                 actionMode === ACTION_MODES.WEIRD ? 'Ì±æ Weird' :
-                 actionMode === ACTION_MODES.EMPTY ? 'Ì≥¶ Empty' :
-                 'ÌæÆ Actions'}
+                 actionMode === ACTION_MODES.TREASURE ? 'üí∞ Treasure' :
+                 actionMode === ACTION_MODES.QUEST ? 'üèÜ Quest' :
+                 actionMode === ACTION_MODES.WEIRD ? 'üëæ Weird' :
+                 actionMode === ACTION_MODES.EMPTY ? 'üì¶ Empty' :
+                 'üéÆ Actions'}
               </span>
               {state.monsters?.length > 0 && (
                 <span className="text-xs text-red-400">

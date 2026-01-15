@@ -591,3 +591,58 @@ body.roguelike .heal-number {
   color: var(--crt-green);
   font-weight: bold;
 }
+
+/* ============================================
+   Dungeon Grid - Roguelike Font Markers
+   ============================================ */
+
+/* Dungeon markers using DungeonMode font */
+body.roguelike .dungeon-marker {
+  font-family: 'DungeonMode', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1;
+  text-shadow: 0 0 4px currentColor;
+}
+
+/* Expanded dungeon view when sidebar is collapsed */
+body.roguelike [data-dungeon-grid="true"][data-expanded="true"] {
+  min-height: 500px;
+}
+
+body.roguelike [data-dungeon-grid="true"][data-expanded="true"] .dungeon-cell {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+body.roguelike [data-dungeon-grid="true"][data-expanded="true"] .dungeon-marker {
+  font-size: 16px;
+}
+
+/* Rotated dungeon grid styling */
+body.roguelike .dungeon-rotated {
+  transition: transform 0.3s ease;
+}
+
+/* Default (non-roguelike) dungeon marker styles */
+.dungeon-marker {
+  font-family: 'DungeonMode', 'Courier New', monospace;
+}
+
+/* Expanded dungeon view for default theme */
+[data-dungeon-grid="true"][data-expanded="true"] {
+  min-height: 450px;
+}
+
+[data-dungeon-grid="true"][data-expanded="true"] .dungeon-cell {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+[data-dungeon-grid="true"][data-expanded="true"] .dungeon-marker {
+  font-size: 14px;
+}
+
+/* Rotated grid transition */
+.dungeon-rotated {
+  transition: transform 0.3s ease;
+}

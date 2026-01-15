@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* DungeonMode Font for roguelike markers */
+@font-face {
+  font-family: 'DungeonMode';
+  src: url('/fonts/dungeonmode/font/dungeon-mode.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -16,4 +24,19 @@ body {
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
+}
+
+/* Dungeon marker using DungeonMode font */
+.dungeon-marker {
+  font-family: 'DungeonMode', monospace;
+}
+
+/* Expanded dungeon view when sidebar is collapsed */
+[data-dungeon-grid="true"][data-expanded="true"] {
+  min-height: 450px;
+}
+
+/* Rotated grid smooth transition */
+.dungeon-rotated {
+  transition: transform 0.3s ease;
 }

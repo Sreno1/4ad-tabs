@@ -11,7 +11,7 @@ import {
 import { spawnMonster, rollTreasure, performSearch, rollWanderingMonster, spawnMajorFoe } from '../utils/gameActions.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 
-export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, hideGenerationUI = false }) {
+export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, hideGenerationUI = false, sidebarCollapsed = false }) {
   const [lastShapeRoll, setLastShapeRoll] = useState(null);
   const [lastContentsRoll, setLastContentsRoll] = useState(null);
   const [roomDetails, setRoomDetails] = useState(null); // Additional info for special rooms
@@ -49,17 +49,18 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     const key = `${x},${y}`;
     return roomMarkers[key];
   };
-  
-  // Marker type icons and colors
+    // Marker type icons and colors - using DungeonMode font chars for roguelike theme
+  // Font mapping: ♠ spade, ♣ club, ♦ diamond, ♥ heart, ☠ skull, ★ star, † cross, ⛨ shield
+  // ⚉ circle, ⬚ empty box, ⊙ dot-circle, ⛑ helmet, ☥ ankh, 🕱 skeleton, ⧇ key
   const MARKER_STYLES = {
-    monster: { icon: '👹', color: 'bg-red-500', label: 'M' },
-    boss: { icon: '👑', color: 'bg-purple-500', label: 'B' },
-    treasure: { icon: '💰', color: 'bg-yellow-500', label: 'T' },
-    trap: { icon: '⚠️', color: 'bg-orange-500', label: '!' },
-    special: { icon: '✨', color: 'bg-blue-500', label: 'S' },
-    cleared: { icon: '✓', color: 'bg-green-500', label: '✓' },
-    entrance: { icon: '🚪', color: 'bg-cyan-500', label: 'E' },
-    exit: { icon: '🏁', color: 'bg-emerald-500', label: 'X' }
+    monster: { icon: '♠', color: 'bg-red-500', label: '♠', rogueChar: '♠' },
+    boss: { icon: '☠', color: 'bg-purple-500', label: '☠', rogueChar: '☠' },
+    treasure: { icon: '★', color: 'bg-yellow-500', label: '★', rogueChar: '★' },
+    trap: { icon: '†', color: 'bg-orange-500', label: '†', rogueChar: '†' },
+    special: { icon: '♦', color: 'bg-blue-500', label: '♦', rogueChar: '♦' },
+    cleared: { icon: '⊙', color: 'bg-green-500', label: '⊙', rogueChar: '⊙' },
+    entrance: { icon: '⌂', color: 'bg-cyan-500', label: '⌂', rogueChar: '⌂' },
+    exit: { icon: '⛨', color: 'bg-emerald-500', label: '⛨', rogueChar: '⛨' }
   };
 
   const handleCellClick = (x, y) => {
@@ -287,11 +288,13 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
         </div>
       </div>
       )}
-      
-      {/* Dungeon Grid */}
+        {/* Dungeon Grid */}
       <div className="bg-slate-800 rounded p-2" data-dungeon-section="true">
         <div className="flex justify-between items-center mb-2">
-          <div className="text-amber-400 font-bold text-sm">Draw Dungeon (20×28 Grid)</div>
+          <div className="text-amber-400 font-bold text-sm">
+            Draw Dungeon (20×28 Grid)
+            {sidebarCollapsed && <span className="text-cyan-400 ml-2 text-xs">[Expanded View]</span>}
+          </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => dispatch({ type: 'CLEAR_GRID' })}
@@ -321,8 +324,15 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
           </div>
         </div>
         
-        <div className="w-full bg-slate-900 p-2 overflow-auto" data-dungeon-grid="true">
-          <div className="inline-block">
+        <div 
+          className={`w-full bg-slate-900 p-2 overflow-auto ${sidebarCollapsed ? 'dungeon-expanded' : ''}`} 
+          data-dungeon-grid="true"
+          data-expanded={sidebarCollapsed ? 'true' : 'false'}
+        >
+          <div 
+            className={`inline-block ${sidebarCollapsed ? 'dungeon-rotated' : ''}`}
+            style={sidebarCollapsed ? { transform: 'rotate(90deg)', transformOrigin: 'top left', marginLeft: '560px' } : {}}
+          >
           {state.grid.map((row, y) => (
             <div key={y} className="flex leading-[0]">
               {row.map((cell, x) => {
@@ -330,24 +340,23 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                 const marker = getMarker(x, y);
                 const markerStyle = marker ? MARKER_STYLES[marker.type] : null;
                 const isHovered = hoveredCell && hoveredCell.x === x && hoveredCell.y === y;
-                
-                return (
+                  return (
                   <div key={x} className="relative inline-block">
                     <button
                       onClick={() => handleCellClick(x, y)}
                       onContextMenu={(e) => handleCellRightClick(x, y, e)}
                       onMouseEnter={() => setHoveredCell({ x, y })}
                       onMouseLeave={() => setHoveredCell(null)}
-                      className={`w-5 h-5 ${cellColor} border border-slate-700 hover:opacity-80 block relative dungeon-cell`}
+                      className={`${sidebarCollapsed ? 'w-7 h-7' : 'w-5 h-5'} ${cellColor} border border-slate-700 hover:opacity-80 block relative dungeon-cell`}
                       data-dungeon-cell="true"
                     >
                       {/* Marker indicator */}
                       {showMarkers && marker && (
                         <span 
-                          className={`absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white ${markerStyle.color} bg-opacity-80`}
+                          className={`absolute inset-0 flex items-center justify-center ${sidebarCollapsed ? 'text-sm' : 'text-[10px]'} font-bold text-white ${markerStyle.color} bg-opacity-80 dungeon-marker`}
                           title={marker.tooltip}
                         >
-                          {markerStyle.label}
+                          {markerStyle.rogueChar || markerStyle.label}
                         </span>
                       )}
                     </button>
@@ -396,14 +405,12 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
           ))}
           </div>
         </div>
-        
-        <div className="text-xs text-slate-400 mt-2">
+          <div className="text-xs text-slate-400 mt-2">
           Click squares to cycle: Empty → Room (amber) → Corridor (blue)<br/>
           Click on room/corridor edges to add doors (green dots)<br/>
-          <span className="text-amber-300">Right-click</span> to cycle markers: 👹M → 👑B → 💰T → ⚠️! → ✨S → ✓ → 🚪E → 🏁X
+          <span className="text-amber-300">Right-click</span> to cycle markers: <span className="dungeon-marker">♠</span>Monster → <span className="dungeon-marker">☠</span>Boss → <span className="dungeon-marker">★</span>Treasure → <span className="dungeon-marker">†</span>Trap → <span className="dungeon-marker">♦</span>Special → <span className="dungeon-marker">⊙</span>Cleared → <span className="dungeon-marker">⌂</span>Entrance → <span className="dungeon-marker">⛨</span>Exit
         </div>
-        
-        {/* Marker Legend */}
+          {/* Marker Legend */}
         {showMarkers && Object.keys(roomMarkers).length > 0 && (
           <div className="mt-2 p-2 bg-slate-700 rounded text-xs">
             <div className="text-slate-300 font-bold mb-1">Markers:</div>
@@ -413,8 +420,8 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                 if (count === 0) return null;
                 return (
                   <span key={type} className="flex items-center gap-1">
-                    <span className={`w-4 h-4 ${style.color} text-white text-[8px] flex items-center justify-center rounded`}>
-                      {style.label}
+                    <span className={`w-5 h-5 ${style.color} text-white text-xs flex items-center justify-center rounded dungeon-marker`}>
+                      {style.rogueChar || style.label}
                     </span>
                     <span className="text-slate-400">{type}: {count}</span>
                   </span>
