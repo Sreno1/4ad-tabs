@@ -41,7 +41,8 @@ Week 2: CSS Architecture Refactoring (8-10 hours)
 Week 3: Component Decomposition (8-10 hours)
   ├─ Split ActionPane into subcomponents
   ├─ Start Combat.jsx decomposition
-  └─ Deduplicate code
+  ├─ Deduplicate code
+  └─ Create onboarding/start screen for new users
 
 Week 4: State & Utilities Refactoring (8-10 hours)
   ├─ Split gameActions.js by domain
@@ -1161,7 +1162,289 @@ Use in Party, Combat, Analytics components.
 
 ---
 
-#### Task 3.5: Week 3 Review (1 hour)
+#### Task 3.5: Create Onboarding/Start Screen (1.5-2 hours)
+**Priority:** 🟡 MEDIUM
+
+**Problem:** When the app loads with no data, users are dropped into an empty state with no guidance on how to create a party or start a campaign.
+
+**Solution:** Create a welcoming start screen that guides users through initial party creation.
+
+Create `src/components/OnboardingScreen.jsx`:
+
+```jsx
+import React, { useState } from 'react';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { CLASSES } from '../data/classes';
+import { d6 } from '../utils/dice';
+
+/**
+ * OnboardingScreen - First-time user experience for party creation
+ * Shows when no party exists in state
+ */
+export default function OnboardingScreen({ onComplete }) {
+  const [step, setStep] = useState('welcome'); // welcome | create-party | buy-equipment
+  const [heroes, setHeroes] = useState([]);
+  const [gold, setGold] = useState(0);
+
+  // Step 1: Welcome screen
+  if (step === 'welcome') {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <Card variant="surface1" className="max-w-2xl">
+          <h1 className="text-4xl font-bold text-amber-400 mb-4">
+            Four Against Darkness
+          </h1>
+          <p className="text-slate-300 mb-6">
+            Welcome, adventurer! You're about to embark on a solo dungeon-crawling
+            adventure. Let's create your party of heroes.
+          </p>
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={() => setStep('create-party')}
+            dataAction="start-adventure"
+          >
+            Start New Adventure
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Step 2: Create party (4 heroes)
+  if (step === 'create-party') {
+    return (
+      <div className="min-h-screen bg-slate-900 p-4">
+        <Card variant="surface1" className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-amber-400 mb-4">
+            Create Your Party ({heroes.length}/4)
+          </h2>
+
+          {/* Hero creation form */}
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            {[0, 1, 2, 3].map(idx => (
+              <HeroCreationCard
+                key={idx}
+                hero={heroes[idx]}
+                onSave={(hero) => {
+                  const newHeroes = [...heroes];
+                  newHeroes[idx] = hero;
+                  setHeroes(newHeroes);
+                }}
+              />
+            ))}
+          </div>
+
+          {heroes.length === 4 && (
+            <Button
+              variant="success"
+              size="lg"
+              fullWidth
+              onClick={() => {
+                // Roll starting gold (2d6 × 5)
+                const goldRoll = (d6() + d6()) * 5;
+                setGold(goldRoll);
+                setStep('buy-equipment');
+              }}
+              dataAction="confirm-party"
+            >
+              Continue to Equipment
+            </Button>
+          )}
+        </Card>
+      </div>
+    );
+  }
+
+  // Step 3: Equipment purchase
+  if (step === 'buy-equipment') {
+    return (
+      <div className="min-h-screen bg-slate-900 p-4">
+        <Card variant="surface1" className="max-w-4xl mx-auto">
+          <h2 className="text-2xl font-bold text-amber-400 mb-4">
+            Buy Starting Equipment
+          </h2>
+          <p className="text-slate-300 mb-4">
+            You have {gold} gold pieces to spend on equipment.
+          </p>
+
+          {/* Equipment shop interface - simplified version */}
+          <EquipmentShop
+            gold={gold}
+            heroes={heroes}
+            onComplete={(updatedHeroes, remainingGold) => {
+              onComplete({
+                party: updatedHeroes,
+                gold: remainingGold
+              });
+            }}
+          />
+        </Card>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/**
+ * HeroCreationCard - Individual hero creation form
+ */
+function HeroCreationCard({ hero, onSave }) {
+  const [name, setName] = useState(hero?.name || '');
+  const [selectedClass, setSelectedClass] = useState(hero?.key || '');
+  const [selectedTrait, setSelectedTrait] = useState(hero?.trait || null);
+
+  const handleSave = () => {
+    if (!name || !selectedClass) return;
+
+    const classData = CLASSES[selectedClass];
+    onSave({
+      id: Date.now() + Math.random(),
+      name,
+      key: selectedClass,
+      lvl: 1,
+      xp: 0,
+      hp: classData.life + 1,
+      maxHp: classData.life + 1,
+      trait: selectedTrait,
+      equipment: [],
+      gold: 0
+    });
+  };
+
+  return (
+    <Card variant="hero" className="p-4">
+      <input
+        type="text"
+        placeholder="Hero Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="w-full bg-slate-700 rounded px-3 py-2 mb-3"
+        aria-label="Hero name"
+      />
+
+      <select
+        value={selectedClass}
+        onChange={(e) => setSelectedClass(e.target.value)}
+        className="w-full bg-slate-700 rounded px-3 py-2 mb-3"
+        aria-label="Character class"
+      >
+        <option value="">Select Class</option>
+        {Object.entries(CLASSES).map(([key, cls]) => (
+          <option key={key} value={key}>{cls.name}</option>
+        ))}
+      </select>
+
+      {selectedClass && CLASSES[selectedClass].traits && (
+        <select
+          value={selectedTrait || ''}
+          onChange={(e) => setSelectedTrait(e.target.value || null)}
+          className="w-full bg-slate-700 rounded px-3 py-2 mb-3"
+          aria-label="Character trait"
+        >
+          <option value="">Select Trait (Optional)</option>
+          {CLASSES[selectedClass].traits.map(trait => (
+            <option key={trait} value={trait}>{trait}</option>
+          ))}
+        </select>
+      )}
+
+      <Button
+        variant="success"
+        size="sm"
+        fullWidth
+        onClick={handleSave}
+        disabled={!name || !selectedClass}
+        dataAction="save-hero"
+      >
+        {hero ? 'Update' : 'Create'} Hero
+      </Button>
+    </Card>
+  );
+}
+
+/**
+ * EquipmentShop - Starting equipment purchase interface
+ */
+function EquipmentShop({ gold, heroes, onComplete }) {
+  // Simplified shop - can be expanded later
+  return (
+    <div>
+      <p className="text-slate-400 text-sm mb-4">
+        Equipment can be purchased later. Click below to begin your adventure!
+      </p>
+      <Button
+        variant="primary"
+        size="lg"
+        fullWidth
+        onClick={() => onComplete(heroes, gold)}
+        dataAction="start-adventure"
+      >
+        Begin Adventure
+      </Button>
+    </div>
+  );
+}
+```
+
+**Integration with App.jsx:**
+
+Update App.jsx to show OnboardingScreen when party is empty:
+
+```jsx
+import OnboardingScreen from './components/OnboardingScreen';
+
+function App() {
+  const [state, dispatch] = useGameState();
+
+  // Show onboarding if no party exists
+  if (!state.party || state.party.length === 0) {
+    return (
+      <OnboardingScreen
+        onComplete={({ party, gold }) => {
+          party.forEach(hero => dispatch({ type: 'ADD_HERO', h: hero }));
+          dispatch({ type: 'SET_GOLD', amount: gold });
+        }}
+      />
+    );
+  }
+
+  // Normal app flow
+  return (
+    <div className="app">
+      {/* ... existing app layout */}
+    </div>
+  );
+}
+```
+
+**Features:**
+- Welcome screen with clear call-to-action
+- Step-by-step party creation (4 heroes)
+- Name, class, and trait selection per hero
+- Starting gold roll (2d6 × 5)
+- Equipment purchase interface (can be simplified initially)
+- Clean transition to main app
+
+**Files to create:**
+- `src/components/OnboardingScreen.jsx`
+
+**Files to modify:**
+- `src/App.jsx` (add conditional rendering)
+
+**Success Criteria:**
+- [ ] OnboardingScreen renders on first load
+- [ ] Can create 4 heroes with names/classes/traits
+- [ ] Starting gold is rolled and displayed
+- [ ] Transition to main app works correctly
+- [ ] Component is accessible (ARIA labels)
+
+---
+
+#### Task 3.6: Week 3 Review (1 hour)
 
 Update CHANGELOG:
 
@@ -1178,12 +1461,19 @@ Update CHANGELOG:
 - AbilityButtons component
 - Combat phase components (Reaction, Initiative, Victory)
 - StatCard reusable component
+- OnboardingScreen for first-time user experience
+
+### Improved
+- New user onboarding flow with guided party creation
+- Step-by-step hero creation (name, class, trait)
+- Starting gold roll and equipment setup
 
 ### Metrics
 - ActionPane: 700 → 250 lines (-64%)
 - Combat: 1043 → 760 lines (-27%)
-- New components: 8
+- New components: 9 (including OnboardingScreen)
 - Code duplication reduced: ~300 lines
+- UX improvement: First load experience now has clear guidance
 ```
 
 **Week 3 Completion Checklist:**
