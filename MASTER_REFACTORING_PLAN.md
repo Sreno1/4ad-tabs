@@ -1162,12 +1162,217 @@ Use in Party, Combat, Analytics components.
 
 ---
 
-#### Task 3.5: Create Onboarding/Start Screen (1.5-2 hours)
-**Priority:** 🟡 MEDIUM
+#### Task 3.5: Campaign Manager System (3-4 hours)
+**Priority:** 🟠 HIGH
 
-**Problem:** When the app loads with no data, users are dropped into an empty state with no guidance on how to create a party or start a campaign.
+**Problem:**
+- No way to manage multiple campaigns
+- Users can only play one adventure at a time
+- No way to switch between different party adventures
+- Missing save/load/delete functionality
 
-**Solution:** Create a welcoming start screen that guides users through initial party creation.
+**Solution:** Implement a Campaign Manager with 3 save slots and campaign switching.
+
+**Architecture:**
+
+LocalStorage structure:
+```javascript
+'4ad-active-campaign': 'campaign-1737123456789'  // Currently loaded campaign
+
+'4ad-campaign-1737123456789': {
+  id: 'campaign-1737123456789',
+  name: 'Dragon Quest',
+  createdAt: '2026-01-15T10:30:00Z',
+  lastPlayedAt: '2026-01-15T12:45:00Z',
+  heroNames: ['Aragorn', 'Gandalf', 'Legolas', 'Gimli'],
+  party: [...],
+  gold: 185,
+  clues: 3,
+  grid: [...],
+  doors: [...],
+  monsters: [...],
+  log: [...]
+  // ... all game state
+}
+```
+
+Create `src/components/CampaignManager.jsx`:
+
+```jsx
+import React from 'react';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { Trash2, Copy, RotateCcw } from 'lucide-react';
+
+/**
+ * CampaignManager - Select, create, load, delete campaigns
+ * Shows up to 3 save slots
+ */
+export default function CampaignManager({ onLoadCampaign, onNewCampaign }) {
+  const campaigns = getAllCampaigns();
+  const MAX_SLOTS = 3;
+
+  return (
+    <div className="min-h-screen bg-slate-900 p-4">
+      <Card variant="surface1" className="max-w-4xl mx-auto">
+        <h1 className="text-4xl font-bold text-amber-400 mb-2">
+          Four Against Darkness
+        </h1>
+        <p className="text-slate-400 mb-6">Campaign Manager</p>
+
+        {campaigns.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-300 mb-6">
+              No campaigns yet. Create your first adventure!
+            </p>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={onNewCampaign}
+              dataAction="new-campaign"
+            >
+              + New Campaign
+            </Button>
+          </div>
+        ) : (
+          <>
+            {/* Campaign Slots (3 total) */}
+            <div className="grid md:grid-cols-3 gap-4 mb-6">
+              {Array.from({ length: MAX_SLOTS }).map((_, idx) => {
+                const campaign = campaigns[idx];
+
+                if (!campaign) {
+                  return (
+                    <Card key={idx} variant="surface2" className="p-4">
+                      <div className="text-slate-400 text-center py-8">
+                        <p className="mb-4">Empty Slot {idx + 1}</p>
+                        <Button
+                          variant="info"
+                          size="sm"
+                          fullWidth
+                          onClick={onNewCampaign}
+                          dataAction="new-campaign-in-slot"
+                        >
+                          Create Campaign
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                }
+
+                return (
+                  <CampaignCard
+                    key={campaign.id}
+                    campaign={campaign}
+                    onLoad={() => onLoadCampaign(campaign.id)}
+                    onDelete={() => deleteCampaign(campaign.id)}
+                    onExport={() => exportCampaign(campaign)}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Import/Export Section */}
+            {campaigns.length > 0 && (
+              <div className="border-t border-slate-700 pt-6">
+                <h3 className="text-amber-400 font-bold mb-3">Advanced Options</h3>
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => importCampaign()}
+                    dataAction="import-campaign"
+                  >
+                    Import Campaign
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/**
+ * CampaignCard - Shows campaign info and controls
+ */
+function CampaignCard({ campaign, onLoad, onDelete, onExport }) {
+  const lastPlayed = new Date(campaign.lastPlayedAt);
+  const daysAgo = Math.floor(
+    (Date.now() - lastPlayed.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  return (
+    <Card variant="surface2" className="p-4 flex flex-col">
+      <h3 className="text-lg font-bold text-amber-400 mb-2">{campaign.name}</h3>
+
+      {/* Hero Names */}
+      <div className="mb-3">
+        <p className="text-xs text-slate-400 mb-1">Party:</p>
+        <p className="text-sm text-slate-300">
+          {campaign.heroNames?.join(', ') || 'No party'}
+        </p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
+        <div className="bg-slate-700 rounded p-2">
+          <p className="text-slate-400">Rooms</p>
+          <p className="text-amber-400 font-bold">{campaign.roomsExplored || 0}</p>
+        </div>
+        <div className="bg-slate-700 rounded p-2">
+          <p className="text-slate-400">Gold</p>
+          <p className="text-amber-400 font-bold">{campaign.gold || 0}</p>
+        </div>
+      </div>
+
+      {/* Last Played */}
+      <p className="text-xs text-slate-500 mb-3">
+        Last played: {daysAgo === 0 ? 'Today' : `${daysAgo}d ago`}
+      </p>
+
+      {/* Buttons */}
+      <div className="flex flex-col gap-2">
+        <Button
+          variant="success"
+          size="sm"
+          fullWidth
+          onClick={onLoad}
+          dataAction="load-campaign"
+        >
+          Load Campaign
+        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="info"
+            size="sm"
+            className="flex-1"
+            onClick={onExport}
+            dataAction="export-campaign"
+          >
+            Export
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            className="flex-1"
+            onClick={() => {
+              if (confirm(`Delete "${campaign.name}"?`)) {
+                onDelete();
+              }
+            }}
+            dataAction="delete-campaign"
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+```
 
 Create `src/components/OnboardingScreen.jsx`:
 
@@ -1179,78 +1384,126 @@ import { CLASSES } from '../data/classes';
 import { d6 } from '../utils/dice';
 
 /**
- * OnboardingScreen - First-time user experience for party creation
- * Shows when no party exists in state
+ * OnboardingScreen - Campaign creation and party setup
+ * Steps: campaign name → welcome → create party → roll gold → equipment → start
  */
 export default function OnboardingScreen({ onComplete }) {
-  const [step, setStep] = useState('welcome'); // welcome | create-party | buy-equipment
-  const [heroes, setHeroes] = useState([]);
+  const [step, setStep] = useState('campaign-name'); // campaign-name | welcome | create-party | confirm-gold | buy-equipment
+  const [campaignName, setCampaignName] = useState('');
+  const [heroes, setHeroes] = useState([null, null, null, null]);
   const [gold, setGold] = useState(0);
 
-  // Step 1: Welcome screen
-  if (step === 'welcome') {
+  // Step 0: Campaign Name
+  if (step === 'campaign-name') {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <Card variant="surface1" className="max-w-2xl">
-          <h1 className="text-4xl font-bold text-amber-400 mb-4">
-            Four Against Darkness
-          </h1>
+          <h1 className="text-3xl font-bold text-amber-400 mb-4">New Campaign</h1>
           <p className="text-slate-300 mb-6">
-            Welcome, adventurer! You're about to embark on a solo dungeon-crawling
-            adventure. Let's create your party of heroes.
+            Give your adventure a name (e.g., "Dragon Quest", "Tomb Raiding", "The Lost Temple")
           </p>
+          <input
+            type="text"
+            placeholder="Campaign Name"
+            value={campaignName}
+            onChange={(e) => setCampaignName(e.target.value)}
+            className="w-full bg-slate-700 rounded px-3 py-2 mb-4 text-white"
+            aria-label="Campaign name"
+          />
           <Button
             variant="primary"
             size="lg"
             fullWidth
-            onClick={() => setStep('create-party')}
-            dataAction="start-adventure"
+            disabled={!campaignName.trim()}
+            onClick={() => setStep('welcome')}
+            dataAction="confirm-campaign-name"
           >
-            Start New Adventure
+            Continue
           </Button>
         </Card>
       </div>
     );
   }
 
-  // Step 2: Create party (4 heroes)
+  // Step 1: Welcome screen
+  if (step === 'welcome') {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <Card variant="surface1" className="max-w-2xl">
+          <h1 className="text-4xl font-bold text-amber-400 mb-2">
+            {campaignName}
+          </h1>
+          <p className="text-slate-400 mb-6">Campaign Setup</p>
+          <p className="text-slate-300 mb-6">
+            Welcome, adventurer! You're about to embark on a solo dungeon-crawling
+            adventure. Let's create your party of 4 heroes.
+          </p>
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={() => setStep('create-party')}
+            dataAction="start-party-creation"
+          >
+            Create Party
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Step 2: Create party (4 heroes with names, classes, traits)
   if (step === 'create-party') {
+    const createdCount = heroes.filter(h => h !== null).length;
     return (
       <div className="min-h-screen bg-slate-900 p-4">
         <Card variant="surface1" className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-amber-400 mb-4">
-            Create Your Party ({heroes.length}/4)
+            Create Your Party ({createdCount}/4)
           </h2>
+          <p className="text-slate-400 text-sm mb-6">
+            Choose name, class, and trait for each hero. Gold is rolled per class and pooled.
+          </p>
 
-          {/* Hero creation form */}
+          {/* Hero creation form - 4 slots */}
           <div className="grid md:grid-cols-2 gap-4 mb-6">
             {[0, 1, 2, 3].map(idx => (
               <HeroCreationCard
                 key={idx}
+                heroNumber={idx + 1}
                 hero={heroes[idx]}
                 onSave={(hero) => {
                   const newHeroes = [...heroes];
                   newHeroes[idx] = hero;
                   setHeroes(newHeroes);
                 }}
+                onRemove={() => {
+                  const newHeroes = [...heroes];
+                  newHeroes[idx] = null;
+                  setHeroes(newHeroes);
+                }}
               />
             ))}
           </div>
 
-          {heroes.length === 4 && (
+          {createdCount === 4 && (
             <Button
               variant="success"
               size="lg"
               fullWidth
               onClick={() => {
-                // Roll starting gold (2d6 × 5)
-                const goldRoll = (d6() + d6()) * 5;
-                setGold(goldRoll);
-                setStep('buy-equipment');
+                // Roll starting gold per class, then pool it
+                const totalGold = heroes.reduce((sum, hero) => {
+                  const classData = CLASSES[hero.key];
+                  const goldRoll = rollGold(classData.startingWealth);
+                  return sum + goldRoll;
+                }, 0);
+                setGold(totalGold);
+                setStep('confirm-gold');
               }}
               dataAction="confirm-party"
             >
-              Continue to Equipment
+              Roll Starting Gold
             </Button>
           )}
         </Card>
@@ -1258,29 +1511,81 @@ export default function OnboardingScreen({ onComplete }) {
     );
   }
 
-  // Step 3: Equipment purchase
+  // Step 3: Review starting gold
+  if (step === 'confirm-gold') {
+    return (
+      <div className="min-h-screen bg-slate-900 p-4">
+        <Card variant="surface1" className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold text-amber-400 mb-4">Starting Gold</h2>
+
+          <div className="bg-slate-800 rounded p-6 mb-6 text-center">
+            <p className="text-slate-400 text-sm mb-2">Party Gold Pool</p>
+            <p className="text-5xl font-bold text-amber-400">{gold}</p>
+            <p className="text-slate-400 text-sm">gold pieces</p>
+          </div>
+
+          <p className="text-slate-300 mb-6">
+            Each hero's class has a different starting wealth. These have been
+            rolled and pooled for your party.
+          </p>
+
+          <Button
+            variant="success"
+            size="lg"
+            fullWidth
+            onClick={() => setStep('buy-equipment')}
+            dataAction="confirm-gold"
+          >
+            Continue to Adventure
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Step 4: Start adventure (simplified equipment step)
   if (step === 'buy-equipment') {
     return (
       <div className="min-h-screen bg-slate-900 p-4">
         <Card variant="surface1" className="max-w-4xl mx-auto">
           <h2 className="text-2xl font-bold text-amber-400 mb-4">
-            Buy Starting Equipment
+            Ready to Explore
           </h2>
-          <p className="text-slate-300 mb-4">
-            You have {gold} gold pieces to spend on equipment.
+          <p className="text-slate-300 mb-6">
+            Your party of {heroes.length} heroes is ready, with {gold} gold pieces.
           </p>
 
-          {/* Equipment shop interface - simplified version */}
-          <EquipmentShop
-            gold={gold}
-            heroes={heroes}
-            onComplete={(updatedHeroes, remainingGold) => {
+          <div className="bg-slate-800 rounded p-4 mb-6">
+            <p className="text-slate-400 text-sm mb-2">Your Heroes:</p>
+            <ul className="text-slate-300">
+              {heroes.map((hero, idx) => (
+                <li key={idx}>
+                  {idx + 1}. {hero.name} the {CLASSES[hero.key].name}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <p className="text-slate-400 text-sm mb-6">
+            Equipment can be purchased when you find it in the dungeon.
+            Ready to begin your adventure?
+          </p>
+
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={() =>
               onComplete({
-                party: updatedHeroes,
-                gold: remainingGold
-              });
-            }}
-          />
+                campaignName,
+                party: heroes,
+                gold
+              })
+            }
+            dataAction="start-adventure"
+          >
+            Begin Adventure
+          </Button>
         </Card>
       </div>
     );
@@ -1292,7 +1597,7 @@ export default function OnboardingScreen({ onComplete }) {
 /**
  * HeroCreationCard - Individual hero creation form
  */
-function HeroCreationCard({ hero, onSave }) {
+function HeroCreationCard({ heroNumber, hero, onSave, onRemove }) {
   const [name, setName] = useState(hero?.name || '');
   const [selectedClass, setSelectedClass] = useState(hero?.key || '');
   const [selectedTrait, setSelectedTrait] = useState(hero?.trait || null);
@@ -1309,7 +1614,7 @@ function HeroCreationCard({ hero, onSave }) {
       xp: 0,
       hp: classData.life + 1,
       maxHp: classData.life + 1,
-      trait: selectedTrait,
+      trait: selectedTrait || null,
       equipment: [],
       gold: 0
     });
@@ -1317,20 +1622,22 @@ function HeroCreationCard({ hero, onSave }) {
 
   return (
     <Card variant="hero" className="p-4">
+      <h4 className="text-amber-400 font-bold mb-2">Hero {heroNumber}</h4>
+
       <input
         type="text"
         placeholder="Hero Name"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        className="w-full bg-slate-700 rounded px-3 py-2 mb-3"
-        aria-label="Hero name"
+        className="w-full bg-slate-700 rounded px-3 py-2 mb-3 text-white"
+        aria-label={`Hero ${heroNumber} name`}
       />
 
       <select
         value={selectedClass}
         onChange={(e) => setSelectedClass(e.target.value)}
-        className="w-full bg-slate-700 rounded px-3 py-2 mb-3"
-        aria-label="Character class"
+        className="w-full bg-slate-700 rounded px-3 py-2 mb-3 text-white"
+        aria-label={`Hero ${heroNumber} class`}
       >
         <option value="">Select Class</option>
         {Object.entries(CLASSES).map(([key, cls]) => (
@@ -1342,8 +1649,8 @@ function HeroCreationCard({ hero, onSave }) {
         <select
           value={selectedTrait || ''}
           onChange={(e) => setSelectedTrait(e.target.value || null)}
-          className="w-full bg-slate-700 rounded px-3 py-2 mb-3"
-          aria-label="Character trait"
+          className="w-full bg-slate-700 rounded px-3 py-2 mb-3 text-white"
+          aria-label={`Hero ${heroNumber} trait`}
         >
           <option value="">Select Trait (Optional)</option>
           {CLASSES[selectedClass].traits.map(trait => (
@@ -1352,95 +1659,273 @@ function HeroCreationCard({ hero, onSave }) {
         </select>
       )}
 
-      <Button
-        variant="success"
-        size="sm"
-        fullWidth
-        onClick={handleSave}
-        disabled={!name || !selectedClass}
-        dataAction="save-hero"
-      >
-        {hero ? 'Update' : 'Create'} Hero
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="success"
+          size="sm"
+          className="flex-1"
+          onClick={handleSave}
+          disabled={!name || !selectedClass}
+          dataAction="save-hero"
+        >
+          {hero ? 'Update' : 'Create'}
+        </Button>
+        {hero && (
+          <Button
+            variant="danger"
+            size="sm"
+            className="flex-1"
+            onClick={onRemove}
+            dataAction="remove-hero"
+          >
+            Remove
+          </Button>
+        )}
+      </div>
     </Card>
-  );
-}
-
-/**
- * EquipmentShop - Starting equipment purchase interface
- */
-function EquipmentShop({ gold, heroes, onComplete }) {
-  // Simplified shop - can be expanded later
-  return (
-    <div>
-      <p className="text-slate-400 text-sm mb-4">
-        Equipment can be purchased later. Click below to begin your adventure!
-      </p>
-      <Button
-        variant="primary"
-        size="lg"
-        fullWidth
-        onClick={() => onComplete(heroes, gold)}
-        dataAction="start-adventure"
-      >
-        Begin Adventure
-      </Button>
-    </div>
   );
 }
 ```
 
-**Integration with App.jsx:**
+**Campaign Utility Functions** (`src/utils/campaignStorage.js`):
 
-Update App.jsx to show OnboardingScreen when party is empty:
+```javascript
+// Campaign management utilities
+const ACTIVE_CAMPAIGN_KEY = '4ad-active-campaign';
+const CAMPAIGN_PREFIX = '4ad-campaign-';
+
+export function getAllCampaigns() {
+  const keys = Object.keys(localStorage);
+  return keys
+    .filter(k => k.startsWith(CAMPAIGN_PREFIX))
+    .map(key => {
+      try {
+        return JSON.parse(localStorage.getItem(key));
+      } catch (e) {
+        console.error(`Failed to load campaign ${key}:`, e);
+        return null;
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.lastPlayedAt) - new Date(a.lastPlayedAt));
+}
+
+export function loadCampaign(campaignId) {
+  const key = `${CAMPAIGN_PREFIX}${campaignId}`;
+  const data = localStorage.getItem(key);
+  if (!data) return null;
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    console.error(`Failed to load campaign ${campaignId}:`, e);
+    return null;
+  }
+}
+
+export function saveCampaign(campaign) {
+  const key = `${CAMPAIGN_PREFIX}${campaign.id}`;
+  localStorage.setItem(key, JSON.stringify(campaign));
+  localStorage.setItem(ACTIVE_CAMPAIGN_KEY, campaign.id);
+}
+
+export function createCampaign(name, initialData) {
+  const campaignId = Date.now().toString();
+  const newCampaign = {
+    id: campaignId,
+    name,
+    createdAt: new Date().toISOString(),
+    lastPlayedAt: new Date().toISOString(),
+    heroNames: initialData.party.map(h => h.name),
+    ...initialData
+  };
+  saveCampaign(newCampaign);
+  return campaignId;
+}
+
+export function deleteCampaign(campaignId) {
+  const key = `${CAMPAIGN_PREFIX}${campaignId}`;
+  localStorage.removeItem(key);
+
+  // Clear active if this was active
+  if (localStorage.getItem(ACTIVE_CAMPAIGN_KEY) === campaignId) {
+    localStorage.removeItem(ACTIVE_CAMPAIGN_KEY);
+  }
+}
+
+export function getActiveCampaignId() {
+  return localStorage.getItem(ACTIVE_CAMPAIGN_KEY);
+}
+
+export function exportCampaign(campaign) {
+  const dataStr = JSON.stringify(campaign, null, 2);
+  const dataBlob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(dataBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `4ad-${campaign.name}-${campaign.id}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export function importCampaign() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const campaign = JSON.parse(event.target.result);
+        // Regenerate ID to avoid conflicts
+        campaign.id = Date.now().toString();
+        saveCampaign(campaign);
+        window.location.reload(); // Refresh to show new campaign
+      } catch (err) {
+        alert('Failed to import campaign: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+export function rollGold(formula) {
+  // Parse formulas like "d6", "2d6", "3d6", "4d6", "5d6"
+  const match = formula.match(/(\d*)d6/);
+  if (!match) return 0;
+  const num = match[1] ? parseInt(match[1]) : 1;
+  let total = 0;
+  for (let i = 0; i < num; i++) {
+    total += Math.floor(Math.random() * 6) + 1;
+  }
+  return total;
+}
+```
+
+**Updated useGameState.js**:
+
+Modify `useGameState()` hook to accept and persist per-campaign state:
+
+```javascript
+export function useGameState() {
+  const activeCampaignId = getActiveCampaignId();
+  const [currentCampaignId, setCurrentCampaignId] = useState(activeCampaignId);
+
+  const initialCampaign = currentCampaignId
+    ? loadCampaign(currentCampaignId)
+    : null;
+
+  const [state, dispatch] = useReducer(reducer, initialCampaign || initialState);
+  const saveTimeoutRef = useRef(null);
+
+  // Auto-save campaign after tile generation
+  useEffect(() => {
+    if (!state || !currentCampaignId) return;
+
+    // Save campaign with updated state
+    const updatedCampaign = {
+      ...state,
+      id: currentCampaignId,
+      lastPlayedAt: new Date().toISOString()
+    };
+    saveCampaign(updatedCampaign);
+  }, [state, currentCampaignId]);
+
+  return [state, dispatch, { currentCampaignId, setCurrentCampaignId }];
+}
+```
+
+**Integration with App.jsx**:
 
 ```jsx
+import CampaignManager from './components/CampaignManager';
 import OnboardingScreen from './components/OnboardingScreen';
 
 function App() {
-  const [state, dispatch] = useGameState();
+  const [state, dispatch, { currentCampaignId, setCurrentCampaignId }] = useGameState();
+  const [showCampaignManager, setShowCampaignManager] = useState(!currentCampaignId);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Show onboarding if no party exists
-  if (!state.party || state.party.length === 0) {
+  // No active campaign → show campaign manager
+  if (showCampaignManager) {
     return (
-      <OnboardingScreen
-        onComplete={({ party, gold }) => {
-          party.forEach(hero => dispatch({ type: 'ADD_HERO', h: hero }));
-          dispatch({ type: 'SET_GOLD', amount: gold });
+      <CampaignManager
+        onLoadCampaign={(id) => {
+          setCurrentCampaignId(id);
+          setShowCampaignManager(false);
+        }}
+        onNewCampaign={() => {
+          setShowOnboarding(true);
+          setShowCampaignManager(false);
         }}
       />
     );
   }
 
-  // Normal app flow
+  // Creating new campaign → show onboarding
+  if (showOnboarding) {
+    return (
+      <OnboardingScreen
+        onComplete={({ campaignName, party, gold }) => {
+          const newCampaignId = createCampaign(campaignName, {
+            party,
+            gold,
+            ...initialState
+          });
+          setCurrentCampaignId(newCampaignId);
+          setShowOnboarding(false);
+        }}
+      />
+    );
+  }
+
+  // Campaign loaded → show main app
   return (
     <div className="app">
-      {/* ... existing app layout */}
+      <AppHeader
+        campaignName={state?.name}
+        onBackToCampaigns={() => setShowCampaignManager(true)}
+      />
+      {/* ... rest of main app */}
     </div>
   );
 }
 ```
 
 **Features:**
-- Welcome screen with clear call-to-action
-- Step-by-step party creation (4 heroes)
-- Name, class, and trait selection per hero
-- Starting gold roll (2d6 × 5)
-- Equipment purchase interface (can be simplified initially)
-- Clean transition to main app
+- Campaign manager with 3 save slots
+- Campaign names and hero names displayed
+- Campaign statistics (rooms explored, gold)
+- Load/Delete/Export/Import campaigns
+- Per-character starting gold (rolled per class, pooled for party)
+- Campaign metadata (created, last played)
+- Automatic save after each tile generation
+- "Back to Campaigns" button in main app
 
 **Files to create:**
+- `src/components/CampaignManager.jsx`
 - `src/components/OnboardingScreen.jsx`
+- `src/utils/campaignStorage.js`
 
 **Files to modify:**
-- `src/App.jsx` (add conditional rendering)
+- `src/data/classes.js` (add `startingWealth` to each class definition)
+- `src/hooks/useGameState.js` (update for multi-campaign support)
+- `src/App.jsx` (add campaign manager flow)
+- `src/components/layout/AppHeader.jsx` (add back to campaigns button)
 
 **Success Criteria:**
-- [ ] OnboardingScreen renders on first load
-- [ ] Can create 4 heroes with names/classes/traits
-- [ ] Starting gold is rolled and displayed
-- [ ] Transition to main app works correctly
-- [ ] Component is accessible (ARIA labels)
+- [ ] Campaign Manager shows 3 save slots
+- [ ] Can create new campaign with name
+- [ ] OnboardingScreen walks through party creation
+- [ ] Per-character gold is rolled based on class
+- [ ] Gold is pooled correctly
+- [ ] Campaign list shows hero names
+- [ ] Load/Delete/Export/Import all work
+- [ ] Auto-save happens after tile generation
+- [ ] Switch between campaigns seamlessly
+- [ ] All components are accessible (ARIA labels)
+- [ ] No functionality broken from Week 2
 
 ---
 

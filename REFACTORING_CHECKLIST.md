@@ -141,23 +141,55 @@ Use this checklist to track your progress week-by-week. Check off tasks as you c
   - [ ] Update Combat.jsx
   - [ ] Test phases
 
-### Day 3: Deduplication & UX (3-4 hours)
+### Day 3: Deduplication & Campaign System (3-5 hours)
 - [ ] Task 3.4: StatCard Component (1.5 hours)
   - [ ] Create StatCard.jsx
   - [ ] Use in Party, Combat, Analytics
   - [ ] Test rendering
 
-- [ ] Task 3.5: Onboarding/Start Screen (1.5-2 hours)
+- [ ] Task 3.5: Campaign Manager System (3-4 hours)
+  - [ ] Create src/utils/campaignStorage.js utility functions
+    - [ ] getAllCampaigns()
+    - [ ] loadCampaign()
+    - [ ] saveCampaign()
+    - [ ] createCampaign()
+    - [ ] deleteCampaign()
+    - [ ] getActiveCampaignId()
+    - [ ] exportCampaign()
+    - [ ] importCampaign()
+    - [ ] rollGold() for per-class gold rolling
+  - [ ] Add startingWealth to src/data/classes.js for all classes
+  - [ ] Create CampaignManager.jsx component
+    - [ ] Show 3 save slots
+    - [ ] Display campaign names and hero names
+    - [ ] Show rooms explored and gold stats
+    - [ ] Load/Delete/Export buttons
+    - [ ] Import functionality
   - [ ] Create OnboardingScreen.jsx component
-  - [ ] Add welcome screen step
-  - [ ] Add party creation step (4 heroes)
-  - [ ] Add name, class, trait selection per hero
-  - [ ] Add starting gold roll (2d6 × 5)
-  - [ ] Add equipment purchase step (simplified)
-  - [ ] Update App.jsx to show onboarding when party is empty
+    - [ ] Campaign naming step
+    - [ ] Welcome step
+    - [ ] Party creation step (4 heroes)
+    - [ ] Per-hero name, class, trait selection
+    - [ ] Per-class gold rolling
+    - [ ] Gold pooling confirmation step
+    - [ ] Ready to explore step
+  - [ ] Update src/hooks/useGameState.js for multi-campaign support
+    - [ ] Load active campaign on init
+    - [ ] Save after each state change
+    - [ ] Return campaign controls in third element
+  - [ ] Update src/App.jsx with campaign manager flow
+    - [ ] Show CampaignManager when no active campaign
+    - [ ] Show OnboardingScreen when creating new campaign
+    - [ ] Show main app when campaign loaded
+  - [ ] Update src/components/layout/AppHeader.jsx
+    - [ ] Add "Back to Campaigns" button
+    - [ ] Display current campaign name
+  - [ ] Test campaign creation end-to-end
+  - [ ] Test campaign switching
+  - [ ] Test export/import
+  - [ ] Test per-class gold rolling
+  - [ ] Test campaign list display
   - [ ] Add ARIA labels for accessibility
-  - [ ] Test onboarding flow end-to-end
-  - [ ] Test transition to main app
 
 - [ ] Task 3.6: Week 3 Review (1 hour)
   - [ ] Update CHANGELOG.md
