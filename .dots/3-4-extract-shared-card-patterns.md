@@ -1,13 +1,11 @@
 ---
 title: Extract Shared Card Patterns
-status: open
+status: active
 priority: 2
 issue-type: task
-assignee: 
-created-at: 2026-01-15T00:00:00Z
-blocks: [
+created-at: "2026-01-15T00:00:00Z"
+blocks:
   - 3-3-extract-combat-phases-combatx
-]
 ---
 
 Create `src/components/ui/StatCard.jsx` for reusable stat display cards.

@@ -1,11 +1,10 @@
 ---
 title: Extract Combat Phases from Combat.jsx
-status: open
+status: closed
 priority: 1
 issue-type: task
-assignee: 
-created-at: 2026-01-15T00:00:00Z
-blocks: []
+created-at: "2026-01-15T00:00:00Z"
+closed-at: "2026-01-15T14:47:23.818773-05:00"
 ---
 
 **Strategy:** Don't try to refactor all 1043 lines at once. Start with phases.

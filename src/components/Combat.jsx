@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { d6 } from '../utils/dice.js';
 import {
   rollWanderingMonster,
-  rollTreasure,
   calculateAttack,
   calculateDefense,
   calculateEnhancedAttack,
@@ -24,8 +23,6 @@ import {
   processMajorFoeAttack,
   checkMinorFoeMorale,
   checkMajorFoeLevelReduction,
-  determineInitiative,
-  rollSurprise,
   // Phase 7c: Advanced Class Abilities
   useAssassinHide,
   setRangerSwornEnemy,
@@ -42,6 +39,7 @@ import { getAvailableSpells, SPELLS, getSpellSlots } from '../data/spells.js';
 import { MONSTER_ABILITIES, getAllMonsters, createMonsterFromTable, MONSTER_CATEGORIES, rollMonsterReaction, REACTION_TYPES } from '../data/monsters.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import { getPrayerPoints, getTrickPoints, getMaxPanache, getFlurryAttacks } from '../data/classes.js';
+import { InitiativePhase, VictoryPhase, MonsterReaction } from './combat/index.js';
 
 export default function Combat({ state, dispatch, selectedHero, setSelectedHero }) {
   const [foeLevel, setFoeLevel] = useState(4);
@@ -274,10 +272,6 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
       : '';
     dispatch({ type: 'LOG', t: `${monster.name} L${monster.level} (${monster.hp}HP)${abilitiesText} appears!` });
     setSelectedMonster(''); // Reset selection
-  };
-  
-  const handleTreasure = () => {
-    rollTreasure(dispatch);
   };
   
   const handleRollReaction = (index) => {
@@ -533,25 +527,10 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                 )}
               </div>
               {/* Reaction section */}
-              <div className="flex justify-between items-center mt-1 text-xs">
-                {monster.reaction ? (
-                  <div className={`flex-1 px-1 py-0.5 rounded ${
-                    monster.reaction.hostile === true ? 'bg-red-900/50 text-red-300' :
-                    monster.reaction.hostile === false ? 'bg-green-900/50 text-green-300' :
-                    'bg-yellow-900/50 text-yellow-300'
-                  }`}>
-                    <span className="font-bold">{monster.reaction.name}</span>
-                    <span className="ml-1 text-slate-400">(rolled {monster.reaction.roll})</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleRollReaction(index); }}
-                    className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-white"
-                  >
-                    🎲 Roll Reaction
-                  </button>
-                )}
-              </div>
+              <MonsterReaction
+                monster={monster}
+                onRollReaction={() => handleRollReaction(index)}
+              />
               {isDefeated && (
                 <div className="text-green-400 text-xs mt-0.5">
                   💀 {monster.fled ? 'Fled!' : 'Defeated!'}
@@ -647,84 +626,13 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
       </div>
       
       {/* Initiative & Combat Order */}
-      {state.monsters.length > 0 && (
-        <div className="bg-slate-800 rounded p-2">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-cyan-400 font-bold text-sm">Initiative</span>
-            {!combatInitiative && (
-              <div className="flex gap-1">
-                <button
-                  onClick={() => {
-                    const init = determineInitiative({ partyAttacksFirst: true });
-                    setCombatInitiative(init);
-                    addToCombatLog(`${init.reason}`);
-                  }}
-                  className="bg-green-600 hover:bg-green-500 px-2 py-0.5 rounded text-xs"
-                >
-                  Party Attacks
-                </button>
-                <button
-                  onClick={() => {
-                    // Roll surprise for first monster
-                    const surpriseResult = rollSurprise(state.monsters[0]);
-                    if (surpriseResult.surprised) {
-                      addToCombatLog(surpriseResult.message);
-                      const init = determineInitiative({ isSurprise: true });
-                      setCombatInitiative(init);
-                    } else {
-                      addToCombatLog(surpriseResult.message || 'No surprise - roll reaction for initiative.');
-                    }
-                  }}
-                  className="bg-yellow-600 hover:bg-yellow-500 px-2 py-0.5 rounded text-xs"
-                >
-                  Check Surprise
-                </button>
-                <button
-                  onClick={() => {
-                    // Determine initiative based on monster reactions
-                    const hostileMonster = state.monsters.find(m => m.reaction?.hostile);
-                    const init = determineInitiative({ 
-                      reaction: hostileMonster?.reaction,
-                      hasRanged: state.party.some(h => h.equipment?.ranged)
-                    });
-                    setCombatInitiative(init);
-                    addToCombatLog(`${init.reason}`);
-                  }}
-                  className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
-                >
-                  By Reaction
-                </button>
-              </div>
-            )}
-          </div>
-          
-          {combatInitiative && (
-            <div className={`p-2 rounded text-xs ${
-              combatInitiative.monsterFirst ? 'bg-red-900/50 text-red-300' : 'bg-green-900/50 text-green-300'
-            }`}>
-              <div className="font-bold mb-1">{combatInitiative.reason}</div>
-              <div className="text-slate-300">
-                Order: {combatInitiative.order.map(phase => {
-                  const labels = {
-                    'party_ranged': '🏹Party Ranged',
-                    'party_spells': 'Party Spells', 
-                    'party_melee': 'Party Melee',
-                    'monster_ranged': '🎯Monster Ranged',
-                    'monster_melee': 'Monster Melee'
-                  };
-                  return labels[phase] || phase;
-                }).join(' → ')}
-              </div>
-              <button
-                onClick={() => setCombatInitiative(null)}
-                className="mt-1 bg-slate-600 hover:bg-slate-500 px-2 py-0.5 rounded"
-              >
-                Reset Initiative
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+      <InitiativePhase
+        monsters={state.monsters}
+        party={state.party}
+        combatInitiative={combatInitiative}
+        setCombatInitiative={setCombatInitiative}
+        addToCombatLog={addToCombatLog}
+      />
       
       {/* Foe Level */}
       <div className="bg-slate-800 rounded p-2">
@@ -1004,16 +912,15 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
         </div>
       </div>
       
-      {/* Treasure */}
-      <div className="bg-slate-800 rounded p-2">
-        <div className="text-amber-400 font-bold text-sm mb-2">💎 Treasure</div>
-        <button 
-          onClick={handleTreasure} 
-          className="w-full bg-yellow-700 hover:bg-yellow-600 px-3 py-1 rounded text-sm"
-        >
-          Roll Treasure (d6)
-        </button>
-      </div>
+      {/* Treasure & Victory */}
+      <VictoryPhase
+        monsters={state.monsters}
+        party={state.party}
+        dispatch={dispatch}
+        clearCombatLog={clearCombatLog}
+        setCombatInitiative={setCombatInitiative}
+        setTargetMonsterIdx={setTargetMonsterIdx}
+      />
         {/* Combat Log */}
       <div className="bg-slate-800 rounded p-2 max-h-36 overflow-y-auto">
         <div className="flex justify-between items-center mb-1">

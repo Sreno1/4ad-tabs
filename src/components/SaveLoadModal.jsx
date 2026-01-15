@@ -165,8 +165,14 @@ export default function SaveLoadModal({ isOpen, onClose, state, dispatch }) {
   };
   
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-800 rounded-lg max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-slate-700">
           <h2 className="text-lg font-bold text-amber-400 flex items-center gap-2">

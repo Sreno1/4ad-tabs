@@ -1,14 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Dice themes - these match the folder names in assets/themes/
-// You can add more themes by downloading from https://github.com/3d-dice/dice-themes
+// Note: genesys and diceOfRolling-fate are excluded as they use non-standard dice
 export const DICE_THEMES = {
   default: { id: 'default', name: 'Default', description: 'Classic dice' },
   smooth: { id: 'smooth', name: 'Smooth', description: 'Polished smooth dice' },
+  'smooth-pip': { id: 'smooth-pip', name: 'Smooth Pip', description: 'Smooth dice with pips' },
   rock: { id: 'rock', name: 'Rock', description: 'Stone textured dice' },
   rust: { id: 'rust', name: 'Rust', description: 'Weathered metal dice' },
   wooden: { id: 'wooden', name: 'Wooden', description: 'Carved wood dice' },
   gemstone: { id: 'gemstone', name: 'Gemstone', description: 'Crystal gem dice' },
+  gemstoneMarble: { id: 'gemstoneMarble', name: 'Gemstone Marble', description: 'Marbled gem dice' },
+  blueGreenMetal: { id: 'blueGreenMetal', name: 'Blue Green Metal', description: 'Metallic blue-green dice' },
+  diceOfRolling: { id: 'diceOfRolling', name: 'Dice of Rolling', description: 'Fantasy style dice' },
 };
 
 // Dice color presets

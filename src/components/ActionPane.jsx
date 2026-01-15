@@ -8,6 +8,7 @@ import EventCard from './actionPane/EventCard.jsx';
 import ActiveMonsters from './actionPane/ActiveMonsters.jsx';
 import CombatInitiative from './actionPane/CombatInitiative.jsx';
 import { PartyTurnPhase, MonsterTurnPhase } from './actionPane/combat';
+import AbilityButtons from './actionPane/combat/AbilityButtons.jsx';
 
 export default function ActionPane({
   state,

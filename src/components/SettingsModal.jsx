@@ -3,6 +3,104 @@ import { X, Archive, Palette, Dices } from 'lucide-react';
 import { useTheme, THEMES } from '../contexts/ThemeContext.jsx';
 import { useDiceTheme, DICE_COLORS, DICE_THEMES } from '../contexts/DiceContext.jsx';
 
+// Map theme IDs to their texture files
+const getThemeTexture = (themeId) => {
+  const basePath = '/assets/dice-box/assets/themes';
+  const textureMap = {
+    'default': 'diffuse-dark.png',
+    'smooth': 'diffuse-dark.png',
+    'smooth-pip': 'pips-dark.png',
+    'rock': 'diffuse-dark.png',
+    'rust': 'diffuse-dark.png',
+    'wooden': 'diffuse.jpg',
+    'gemstone': 'gemstone-dark.png',
+    'gemstoneMarble': 'diffuse.jpg',
+    'blueGreenMetal': 'diffuse.jpg',
+    'diceOfRolling': 'diffuse.jpg',
+  };
+  return `${basePath}/${themeId}/${textureMap[themeId] || 'diffuse-dark.png'}`;
+};
+
+// Themes that support color tinting (others have baked-in colors)
+const TINTABLE_THEMES = ['default', 'smooth', 'smooth-pip', 'gemstone'];
+
+// Dice Preview Component with color tinting
+function DicePreview({ themeId, colorHex }) {
+  const texture = getThemeTexture(themeId);
+  const isGemstone = themeId === 'gemstone' || themeId === 'gemstoneMarble';
+  const supportsTint = TINTABLE_THEMES.includes(themeId);
+
+  // Gemstone dice have a crystal/gem shape, others are cubes
+  const shapeClass = isGemstone ? 'gem-shape' : 'cube-shape';
+
+  return (
+    <div className="dice-preview-wrapper">
+      <div className={`dice-preview-face ${shapeClass}`}>
+        <div
+          className="texture-layer"
+          style={{ backgroundImage: `url(${texture})` }}
+        />
+        {supportsTint && (
+          <div
+            className="color-layer"
+            style={{ backgroundColor: colorHex }}
+          />
+        )}
+      </div>
+      <style>{`
+        .dice-preview-wrapper {
+          width: 40px;
+          height: 40px;
+          margin: 0 auto 4px;
+          perspective: 100px;
+        }
+        .dice-preview-face {
+          width: 100%;
+          height: 100%;
+          position: relative;
+          transform: rotateX(-10deg) rotateY(-15deg);
+          transform-style: preserve-3d;
+          transition: transform 0.3s ease;
+          overflow: hidden;
+        }
+        .dice-preview-face:hover {
+          transform: rotateX(-15deg) rotateY(-25deg);
+        }
+        .cube-shape {
+          border-radius: 6px;
+          box-shadow:
+            3px 3px 0 rgba(0,0,0,0.3),
+            inset -2px -2px 4px rgba(0,0,0,0.2),
+            inset 2px 2px 4px rgba(255,255,255,0.1);
+        }
+        .gem-shape {
+          border-radius: 2px;
+          clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+          box-shadow:
+            inset -3px -3px 6px rgba(0,0,0,0.3),
+            inset 3px 3px 6px rgba(255,255,255,0.4);
+        }
+        .texture-layer {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-position: center;
+        }
+        .color-layer {
+          position: absolute;
+          inset: 0;
+          mix-blend-mode: multiply;
+          opacity: 0.7;
+        }
+        .gem-shape .color-layer {
+          mix-blend-mode: overlay;
+          opacity: 0.8;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
   const [showArchive, setShowArchive] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -18,8 +116,14 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
   const totalArchivedEntries = state.logArchive?.reduce((sum, a) => sum + a.entries.length, 0) || 0;
   
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-slate-800 rounded-lg max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-800 rounded-lg max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-slate-700">
           <h2 className="text-lg font-bold text-amber-400">⚙️ Settings</h2>
@@ -75,22 +179,20 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                 <button
                   key={dt.id}
                   onClick={() => setDiceTheme(dt.id)}
-                  className={`p-2 rounded border-2 transition-colors text-center ${
+                  className={`p-3 rounded border-2 transition-colors text-center ${
                     diceTheme === dt.id
                       ? 'border-amber-400 bg-amber-900/30'
                       : 'border-slate-600 bg-slate-900 hover:border-slate-500'
                   }`}
                   title={dt.description}
                 >
+                  <DicePreview themeId={dt.id} colorHex={DICE_COLORS[diceColor]?.color || '#f59e0b'} />
                   <span className={`text-xs font-medium ${diceTheme === dt.id ? 'text-amber-400' : 'text-slate-400'}`}>
                     {dt.name}
                   </span>
                 </button>
               ))}
             </div>
-            <p className="text-xs text-slate-500">
-              Add more themes from <a href="https://github.com/3d-dice/dice-themes" target="_blank" rel="noopener" className="text-blue-400 hover:underline">3d-dice/dice-themes</a>
-            </p>
           </div>
 
           {/* Dice Color Selection */}
