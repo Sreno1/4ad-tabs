@@ -2,3 +2,25 @@ node_modules
 dist
 .DS_Store
 *.log
+
+# Claude Code temp files
+tmpclaude-*
+
+# Editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.sublime-project
+.sublime-workspace
+.project
+.classpath
+.c9/
+
+# OS files
+Thumbs.db
+
+# IDE
+.vim
+.vim-settings
