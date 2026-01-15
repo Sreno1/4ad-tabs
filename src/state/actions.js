@@ -25,6 +25,9 @@ export const CLEAR_MONSTERS = 'CLEAR_MONSTERS';
 // Abilities
 export const SET_ABILITY = 'SET_ABILITY';
 
+// Marching order
+export const SET_MARCHING_ORDER = 'SET_MARCHING_ORDER';
+
 // Dungeon grid
 export const TOGGLE_CELL = 'TOGGLE_CELL';
 export const TOGGLE_DOOR = 'TOGGLE_DOOR';
@@ -56,3 +59,41 @@ export const EQUIP_ITEM = 'EQUIP_ITEM';
 export const UNEQUIP_ITEM = 'UNEQUIP_ITEM';
 export const ADD_TO_INVENTORY = 'ADD_TO_INVENTORY';
 export const REMOVE_FROM_INVENTORY = 'REMOVE_FROM_INVENTORY';
+
+// Phase 3: Door mechanics
+export const SET_DOOR_TYPE = 'SET_DOOR_TYPE';
+export const OPEN_DOOR = 'OPEN_DOOR';
+
+// Phase 3: Trap mechanics
+export const TRIGGER_TRAP = 'TRIGGER_TRAP';
+export const DISARM_TRAP = 'DISARM_TRAP';
+export const ADD_TRAP = 'ADD_TRAP';
+export const CLEAR_TRAPS = 'CLEAR_TRAPS';
+
+// Phase 3: Special rooms
+export const SET_SPECIAL_ROOM = 'SET_SPECIAL_ROOM';
+export const RESOLVE_SPECIAL = 'RESOLVE_SPECIAL';
+
+// Phase 3: Passage/corridor
+export const GENERATE_PASSAGE = 'GENERATE_PASSAGE';
+
+// Phase 3: Boss room
+export const SET_BOSS_ROOM = 'SET_BOSS_ROOM';
+export const ENTER_BOSS_ROOM = 'ENTER_BOSS_ROOM';
+
+// Phase 4: Save System
+export const TRIGGER_SAVE_ROLL = 'TRIGGER_SAVE_ROLL';
+export const RESOLVE_SAVE_ROLL = 'RESOLVE_SAVE_ROLL';
+export const SET_HERO_STATUS = 'SET_HERO_STATUS';
+
+// Phase 4: Advanced Combat
+export const ADD_XP = 'ADD_XP';
+export const LEVEL_UP = 'LEVEL_UP';
+export const USE_SPELL = 'USE_SPELL';
+export const USE_RAGE = 'USE_RAGE';
+export const USE_LUCK = 'USE_LUCK';
+export const USE_HEAL = 'USE_HEAL';
+export const USE_BLESS = 'USE_BLESS';
+export const ATTEMPT_FLEE = 'ATTEMPT_FLEE';
+export const SET_MONSTER_REACTION = 'SET_MONSTER_REACTION';
+export const APPLY_MONSTER_ABILITY = 'APPLY_MONSTER_ABILITY';

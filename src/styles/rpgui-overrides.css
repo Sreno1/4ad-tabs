@@ -1,0 +1,209 @@
+/* RPGUI Theme Overrides for 4AD App */
+
+body.rpgui-content {
+  position: relative !important;
+  overflow: auto !important;
+  height: auto !important;
+  min-height: 100vh;
+  background-color: #45442e !important;
+}
+
+body.rpgui-content .bg-slate-900 {
+  background-color: #3d3d29 !important;
+}
+
+body.rpgui-content .bg-slate-800 {
+  background-color: #45442e !important;
+  border: 4px solid #7b7962 !important;
+  margin: 4px;
+}
+
+body.rpgui-content .bg-slate-700 {
+  background-color: #52523d !important;
+  border: 2px solid #6b6b50 !important;
+}
+
+body.rpgui-content header {
+  background-color: #45442e !important;
+  border-bottom: 3px solid #6b6b50 !important;
+}
+
+body.rpgui-content nav {
+  background-color: #45442e !important;
+  border-top: 3px solid #6b6b50 !important;
+}
+
+body.rpgui-content button.bg-amber-600,
+body.rpgui-content button.bg-red-600,
+body.rpgui-content button.bg-green-600,
+body.rpgui-content button.bg-blue-600 {
+  background-color: #6b5c3d !important;
+  background-image: none !important;
+  border: 3px solid #8b7355 !important;
+  color: white !important;
+  text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+}
+
+body.rpgui-content button.bg-amber-600:hover,
+body.rpgui-content button.bg-red-600:hover,
+body.rpgui-content button.bg-green-600:hover,
+body.rpgui-content button.bg-blue-600:hover {
+  background-color: #7d6b4a !important;
+}
+
+body.rpgui-content button.bg-slate-600,
+body.rpgui-content button.bg-slate-700 {
+  background-color: #52523d !important;
+  border: 2px solid #6b6b50 !important;
+}
+
+body.rpgui-content nav button {
+  background-image: none;
+}
+
+body.rpgui-content [data-dungeon-section="true"] {
+  background-color: #3d3d29 !important;
+  border: 3px solid #6b6b50 !important;
+}
+
+body.rpgui-content [data-dungeon-grid="true"] {
+  background-color: #0f172a !important;
+  background-image: none !important;
+  border: 2px solid #6b6b50 !important;
+}
+
+body.rpgui-content [data-dungeon-grid="true"] button {
+  background: none !important;
+  background-image: none !important;
+  border: 1px solid #334155 !important;
+  min-height: unset !important;
+  padding: 0 !important;
+  text-shadow: none !important;
+}
+
+body.rpgui-content [data-dungeon-grid="true"] button.bg-slate-900 {
+  background-color: #0f172a !important;
+}
+
+body.rpgui-content [data-dungeon-grid="true"] button.bg-amber-700 {
+  background-color: #b45309 !important;
+}
+
+body.rpgui-content [data-dungeon-grid="true"] button.bg-blue-700 {
+  background-color: #1d4ed8 !important;
+}
+
+body.rpgui-content input[type="text"],
+body.rpgui-content input[type="number"],
+body.rpgui-content textarea {
+  background: #4e4a4e !important;
+  border: 2px solid #6b6b50 !important;
+  color: white !important;
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+body.rpgui-content .fixed.inset-0 > div {
+  background-color: #45442e !important;
+  border: 4px solid #7b7962 !important;
+}
+
+body.rpgui-content .text-slate-400 {
+  color: #a0a080 !important;
+}
+
+body.rpgui-content .text-slate-300 {
+  color: #c0c0a0 !important;
+}
+
+body.rpgui-content .border-slate-700 {
+  border-color: #6b6b50 !important;
+}
+
+/* ========================================
+   11. RPGUI FRAMED CONTAINERS
+   ======================================== */
+/* Apply framed style to major sections */
+body.rpgui-content main > div > div {
+  border-style: solid !important;
+  border-image-source: url('/4ad-tabs/rpgui/img/border-image.png') !important;
+  border-image-repeat: repeat !important;
+  border-image-slice: 6 6 6 6 !important;
+  border-image-width: 18px !important;
+  border-width: 15px !important;
+  padding: 12px !important;
+  box-sizing: border-box !important;
+  background: url('/4ad-tabs/rpgui/img/background-image.png') repeat repeat !important;
+  background-clip: padding-box !important;
+  background-origin: padding-box !important;
+}
+
+/* Override for dungeon section to keep it clean */
+body.rpgui-content [data-dungeon-section="true"] {
+  border-image: none !important;
+  background: #3d3d29 !important;
+}
+
+/* ========================================
+   12. RPGUI BUTTONS - Use actual button images
+   ======================================== */
+/* Standard buttons get RPGUI treatment */
+body.rpgui-content button:not([data-dungeon-cell]):not(nav button) {
+  background: url('/4ad-tabs/rpgui/img/button.png') no-repeat center !important;
+  background-size: 100% 100% !important;
+  border: none !important;
+  color: white !important;
+  text-shadow: -2px 0 black, 0 2px black, 2px 0 black, 0 -2px black !important;
+  min-height: 48px !important;
+  padding: 8px 24px !important;
+  font-size: 0.85em !important;
+}
+
+body.rpgui-content button:not([data-dungeon-cell]):not(nav button):hover {
+  background-image: url('/4ad-tabs/rpgui/img/button-hover.png') !important;
+}
+
+body.rpgui-content button:not([data-dungeon-cell]):not(nav button):active {
+  background-image: url('/4ad-tabs/rpgui/img/button-down.png') !important;
+}
+
+/* Golden buttons for important actions */
+body.rpgui-content button.rpgui-button.golden,
+body.rpgui-content button[data-golden="true"] {
+  background: url('/4ad-tabs/rpgui/img/button-golden.png') no-repeat center !important;
+  background-size: 100% 80% !important;
+  min-height: 60px !important;
+}
+
+body.rpgui-content button.rpgui-button.golden:hover,
+body.rpgui-content button[data-golden="true"]:hover {
+  background-image: url('/4ad-tabs/rpgui/img/button-golden-hover.png') !important;
+}
+
+/* ========================================
+   13. HR DIVIDERS
+   ======================================== */
+body.rpgui-content hr {
+  height: 10px;
+  background: url('/4ad-tabs/rpgui/img/hr.png') no-repeat center;
+  background-size: 100% 100%;
+  border: none;
+  margin: 16px 0;
+}
+
+/* ========================================
+   14. CUSTOM CURSOR
+   ======================================== */
+body.rpgui-content {
+  cursor: url('/4ad-tabs/rpgui/img/cursor/default.png'), auto !important;
+}
+
+body.rpgui-content button:not([data-dungeon-cell]),
+body.rpgui-content a {
+  cursor: url('/4ad-tabs/rpgui/img/cursor/point.png') 10 0, auto !important;
+}
+
+body.rpgui-content input,
+body.rpgui-content textarea {
+  cursor: url('/4ad-tabs/rpgui/img/cursor/select.png') 10 0, auto !important;
+}

@@ -1,30 +1,15 @@
 import React, { useState } from 'react';
-import { X, AlertTriangle, Archive, MapPin, Trash2 } from 'lucide-react';
+import { X, Archive, Palette } from 'lucide-react';
+import { useTheme, THEMES } from '../contexts/ThemeContext.jsx';
 
 export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
-  const [confirmReset, setConfirmReset] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
+  const { theme, setTheme } = useTheme();
   
   if (!isOpen) return null;
   
-  const handleNewAdventure = () => {
-    const name = prompt('Name this dungeon (optional):', 'New Dungeon');
-    dispatch({ type: 'NEW_ADVENTURE', name: name || 'New Dungeon' });
-    onClose();
-  };
-  
   const handleArchiveLog = () => {
     dispatch({ type: 'ARCHIVE_LOG' });
-  };
-  
-  const handleResetCampaign = () => {
-    if (confirmReset) {
-      dispatch({ type: 'RESET_CAMPAIGN' });
-      setConfirmReset(false);
-      onClose();
-    } else {
-      setConfirmReset(true);
-    }
   };
   
   const archiveCount = state.logArchive?.length || 0;
@@ -46,22 +31,34 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
         
         {/* Content */}
         <div className="p-4 space-y-4 overflow-y-auto flex-1">
-          {/* Adventure Management */}
+          {/* Theme Selection */}
           <div className="space-y-2">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">
-              Adventure Management
+            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide flex items-center gap-2">
+              <Palette size={14} />
+              Theme
             </h3>
-            
-            <button
-              onClick={handleNewAdventure}
-              className="w-full bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded flex items-center gap-2 justify-center"
-            >
-              <MapPin size={16} />
-              Start New Dungeon
-            </button>
+              <div className="grid grid-cols-1 gap-2">
+              {Object.values(THEMES).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setTheme(t.id)}
+                  className={`p-3 rounded border-2 text-left transition-colors ${
+                    theme === t.id
+                      ? 'border-amber-400 bg-amber-900/30'
+                      : 'border-slate-600 bg-slate-900 hover:border-slate-500'
+                  }`}
+                >
+                  <div className={`font-bold text-sm ${theme === t.id ? 'text-amber-400' : 'text-slate-300'}`}>
+                    {t.name}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1">
+                    {t.description}
+                  </div>
+                </button>
+              ))}            </div>
             <p className="text-xs text-slate-500">
-              Archives current log, clears the dungeon map and monsters. 
-              Party, gold, clues, and levels carry over.
+              {theme === 'rpgui' && '🎮 RPGUI theme applies retro 8-bit styling.'}
+              {theme === 'doodle' && '✏️ Doodle theme uses hand-drawn borders and playful style.'}
             </p>
           </div>
           
@@ -145,40 +142,11 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                 <span className="text-red-400">{state.majorFoes}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Boss Defeated:</span>
-                <span className={state.finalBoss ? 'text-green-400' : 'text-slate-500'}>
+                <span className="text-slate-400">Boss Defeated:</span>                <span className={state.finalBoss ? 'text-green-400' : 'text-slate-500'}>
                   {state.finalBoss ? 'Yes' : 'No'}
                 </span>
               </div>
             </div>
-          </div>
-          
-          {/* Danger Zone */}
-          <div className="space-y-2 pt-4 border-t border-slate-700">
-            <h3 className="text-sm font-bold text-red-400 uppercase tracking-wide flex items-center gap-1">
-              <AlertTriangle size={14} />
-              Danger Zone
-            </h3>
-            
-            <button
-              onClick={handleResetCampaign}
-              className={`w-full ${confirmReset ? 'bg-red-600 hover:bg-red-500' : 'bg-red-900 hover:bg-red-800'} text-white px-4 py-2 rounded flex items-center gap-2 justify-center`}
-            >
-              <Trash2 size={16} />
-              {confirmReset ? 'Click Again to Confirm Reset' : 'Reset Entire Campaign'}
-            </button>
-            <p className="text-xs text-red-400/70">
-              ⚠️ This will delete ALL data: party, gold, clues, dungeon, logs, and archive.
-              This cannot be undone!
-            </p>
-            {confirmReset && (
-              <button
-                onClick={() => setConfirmReset(false)}
-                className="w-full bg-slate-700 hover:bg-slate-600 text-white px-4 py-1 rounded text-sm"
-              >
-                Cancel
-              </button>
-            )}
           </div>
         </div>
       </div>

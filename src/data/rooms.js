@@ -1,86 +1,393 @@
 /**
  * Room and exploration tables for Four Against Darkness
+ * Based on official 4AD tables
+ * 
+ * IMPORTANT:
+ * - d66 determines TILE SHAPE (room layout and doors)
+ * - 2d6 determines TILE CONTENTS (what's in the room)
+ * - Boss is determined by d6 roll when facing Major Foe (+1 per major foe this dungeon)
  */
 
-// Room Generation Table (d66)
-export const ROOM_TABLE = {
-  11: 'Empty Room', 
-  12: 'Empty Room', 
-  13: 'Empty Room', 
-  14: 'Empty Room', 
-  15: 'Vermin (L1)', 
-  16: 'Vermin (L1)',
-  21: 'Vermin (L1)', 
-  22: 'Minion (L2)', 
-  23: 'Minion (L2)', 
-  24: 'Minion (L2)', 
-  25: 'Minor Peril', 
-  26: 'Minor Peril',
-  31: 'Minor Peril', 
-  32: 'Boss! (L=HCL+1)', 
-  33: 'Treasure!', 
-  34: 'Treasure!', 
-  35: 'Special Feature', 
-  36: 'Special Feature',
-  41: 'Wandering Monster', 
-  42: 'Clue', 
-  43: 'Clue', 
-  44: 'Clue', 
-  45: 'Secret Door', 
-  46: 'Statue/Fountain',
-  51: 'Statue/Fountain', 
-  52: 'Trapped Room', 
-  53: 'Puzzle Room', 
-  54: 'Empty + Door', 
-  55: 'Empty + Door', 
-  56: 'Empty + Door',
-  61: 'Major Foe (L=HCL)', 
-  62: 'Major Foe (L=HCL)', 
-  63: 'Major Foe (L=HCL)', 
-  64: 'Major Foe (L=HCL)', 
-  65: 'Dead End', 
-  66: 'Dead End'
+// ========== TILE SHAPE TABLE (d66) ==========
+// This determines the room/corridor layout and door placement
+// Reference: tiles.pdf / tile-gen images
+export const TILE_SHAPE_TABLE = {
+  11: { shape: 'small_room', doors: 1, description: 'Small Room (1 door)' },
+  12: { shape: 'small_room', doors: 2, description: 'Small Room (2 doors)' },
+  13: { shape: 'small_room', doors: 2, description: 'Small Room (2 doors opposite)' },
+  14: { shape: 'small_room', doors: 3, description: 'Small Room (3 doors)' },
+  15: { shape: 'medium_room', doors: 1, description: 'Medium Room (1 door)' },
+  16: { shape: 'medium_room', doors: 2, description: 'Medium Room (2 doors)' },
+  21: { shape: 'medium_room', doors: 2, description: 'Medium Room (2 doors opposite)' },
+  22: { shape: 'medium_room', doors: 3, description: 'Medium Room (3 doors)' },
+  23: { shape: 'medium_room', doors: 4, description: 'Medium Room (4 doors)' },
+  24: { shape: 'large_room', doors: 1, description: 'Large Room (1 door)' },
+  25: { shape: 'large_room', doors: 2, description: 'Large Room (2 doors)' },
+  26: { shape: 'large_room', doors: 2, description: 'Large Room (2 doors opposite)' },
+  31: { shape: 'large_room', doors: 3, description: 'Large Room (3 doors)' },
+  32: { shape: 'large_room', doors: 4, description: 'Large Room (4 doors)' },
+  33: { shape: 'corridor_straight', doors: 2, description: 'Corridor (straight)' },
+  34: { shape: 'corridor_turn_l', doors: 2, description: 'Corridor (turn left)' },
+  35: { shape: 'corridor_turn_r', doors: 2, description: 'Corridor (turn right)' },
+  36: { shape: 'corridor_t', doors: 3, description: 'Corridor (T-junction)' },
+  41: { shape: 'corridor_cross', doors: 4, description: 'Corridor (crossroads)' },
+  42: { shape: 'corridor_dead_end', doors: 1, description: 'Dead End' },
+  43: { shape: 'small_room', doors: 1, description: 'Small Room (1 door)' },
+  44: { shape: 'small_room', doors: 2, description: 'Small Room (2 doors)' },
+  45: { shape: 'medium_room', doors: 2, description: 'Medium Room (2 doors)' },
+  46: { shape: 'medium_room', doors: 3, description: 'Medium Room (3 doors)' },
+  51: { shape: 'large_room', doors: 2, description: 'Large Room (2 doors)' },
+  52: { shape: 'large_room', doors: 3, description: 'Large Room (3 doors)' },
+  53: { shape: 'corridor_straight', doors: 2, description: 'Corridor (straight)' },
+  54: { shape: 'corridor_turn_l', doors: 2, description: 'Corridor (turn left)' },
+  55: { shape: 'corridor_turn_r', doors: 2, description: 'Corridor (turn right)' },
+  56: { shape: 'corridor_t', doors: 3, description: 'Corridor (T-junction)' },
+  61: { shape: 'medium_room', doors: 2, description: 'Medium Room (2 doors)' },
+  62: { shape: 'large_room', doors: 2, description: 'Large Room (2 doors)' },
+  63: { shape: 'corridor_straight', doors: 2, description: 'Corridor (straight)' },
+  64: { shape: 'corridor_dead_end', doors: 1, description: 'Dead End' },
+  65: { shape: 'small_room', doors: 2, description: 'Small Room (2 doors)' },
+  66: { shape: 'special', doors: 0, description: 'Special! (Roll again, add feature)' }
 };
 
-// Door types for Phase 3
-export const DOOR_TYPES = {
-  normal: { name: 'Normal', openDC: 0 },
-  stuck: { name: 'Stuck', openDC: 4 },
-  locked: { name: 'Locked', openDC: 5, requiresKey: true },
-  trapped: { name: 'Trapped', openDC: 4, hasTrap: true }
+// ========== TILE CONTENTS TABLE (2d6) ==========
+// This determines what is in the room AFTER you determine its shape
+// Reference: tables.pdf - Tile Content Table
+export const TILE_CONTENTS_TABLE = {
+  2: { type: 'empty', description: 'Empty' },
+  3: { type: 'vermin', description: 'Vermin (Level 1)' },
+  4: { type: 'vermin', description: 'Vermin (Level 1)' },
+  5: { type: 'minions', description: 'Minions (Level 2)' },
+  6: { type: 'minions', description: 'Minions (Level 2)' },
+  7: { type: 'treasure', description: 'Treasure!' },
+  8: { type: 'special', description: 'Special Feature' },
+  9: { type: 'weird_monster', description: 'Weird Monster (roll on table)' },
+  10: { type: 'minor_boss', description: 'Minor Boss (Level 3)' },
+  11: { type: 'major_foe', description: 'Major Foe (Level = Party Level)' },
+  12: { type: 'quest_room', description: 'Quest Room / Final Room' }
 };
 
-// Trap types for Phase 3
-export const TRAP_TYPES = {
-  pit: { name: 'Pit Trap', damage: 1, detectDC: 4 },
-  dart: { name: 'Dart Trap', damage: 1, detectDC: 5 },
-  blade: { name: 'Blade Trap', damage: 2, detectDC: 5 },
-  poison: { name: 'Poison Trap', damage: 1, effect: 'poison', detectDC: 6 }
-};
-
-// Special room effects for Phase 3
-export const SPECIAL_ROOMS = {
-  shrine: { name: 'Shrine', effect: 'heal_or_curse' },
-  fountain: { name: 'Fountain', effect: 'random_effect' },
-  statue: { name: 'Statue', effect: 'treasure_or_trap' },
-  altar: { name: 'Altar', effect: 'offering' }
+// ========== BOSS MECHANICS ==========
+// When you encounter a Major Foe, roll d6 + number of major foes faced this dungeon
+// If result is 6+, this Major Foe is the BOSS
+// Boss gets: +1 Life, +1 Attack, treasure is tripled
+export const BOSS_RULES = {
+  rollRequired: 6, // d6 + majorFoesFaced >= 6 means boss
+  bonusLife: 1,
+  bonusAttack: 1,
+  treasureMultiplier: 3,
+  description: 'Roll d6 + number of major foes faced. On 6+, this is the Boss! (+1 Life, +1 Attack, 3x Treasure)'
 };
 
 /**
- * Parse room result to determine what happens
- * @param {string} result - Room table result string
- * @returns {object} Parsed room info with type and action
+ * Check if a Major Foe encounter is actually the Boss
+ * @param {number} majorFoesFaced - Number of major foes faced this dungeon
+ * @param {number} roll - d6 roll result
+ * @returns {object} { isBoss, roll, total }
+ */
+export const checkForBoss = (majorFoesFaced, roll) => {
+  const total = roll + majorFoesFaced;
+  const isBoss = total >= BOSS_RULES.rollRequired;
+  return { 
+    isBoss, 
+    roll, 
+    total,
+    modifier: majorFoesFaced,
+    message: isBoss 
+      ? `${roll} + ${majorFoesFaced} = ${total} → IT'S THE BOSS!` 
+      : `${roll} + ${majorFoesFaced} = ${total} → Major Foe (not the boss)`
+  };
+};
+
+// ========== DOOR MECHANICS ==========
+
+export const DOOR_TYPES = {
+  normal: { 
+    name: 'Normal Door', 
+    openDC: 0, 
+    description: 'Opens freely' 
+  },
+  stuck: { 
+    name: 'Stuck Door', 
+    openDC: 4, 
+    description: 'Needs d6 ≥ 4 or Warrior/Barbarian auto-open' 
+  },
+  locked: { 
+    name: 'Locked Door', 
+    openDC: 5, 
+    requiresKey: true,
+    description: 'Rogue can pick (d6+L ≥ 5) or use a key' 
+  },
+  trapped: { 
+    name: 'Trapped Door', 
+    openDC: 4, 
+    hasTrap: true, 
+    description: 'Contains a trap - detect or trigger!' 
+  },
+  secret: {
+    name: 'Secret Door',
+    openDC: 5,
+    hidden: true,
+    description: 'Only found by searching (d6 ≥ 5)'
+  }
+};
+
+// Door type table (d6)
+export const DOOR_TYPE_TABLE = {
+  1: 'normal',
+  2: 'normal',
+  3: 'stuck',
+  4: 'stuck',
+  5: 'locked',
+  6: 'trapped'
+};
+
+// ========== TRAP MECHANICS ==========
+
+export const TRAP_TYPES = {
+  pit: { 
+    name: 'Pit Trap', 
+    damage: 1, 
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'Fall into a pit! -1 Life'
+  },
+  dart: { 
+    name: 'Dart Trap', 
+    damage: 1, 
+    detectDC: 5,
+    disarmDC: 4,
+    description: 'Poisoned darts! -1 Life'
+  },
+  blade: { 
+    name: 'Blade Trap', 
+    damage: 2, 
+    detectDC: 5,
+    disarmDC: 5,
+    description: 'Swinging blades! -2 Life'
+  },
+  poison: { 
+    name: 'Poison Gas Trap', 
+    damage: 1, 
+    effect: 'poison', 
+    detectDC: 6,
+    disarmDC: 5,
+    description: 'Poison gas fills the room! -1 Life + poison'
+  },
+  alarm: {
+    name: 'Alarm Trap',
+    damage: 0,
+    effect: 'wandering',
+    detectDC: 4,
+    disarmDC: 3,
+    description: 'Alert! Triggers a wandering monster'
+  }
+};
+
+export const TRAP_TABLE = {
+  1: 'pit',
+  2: 'dart',
+  3: 'dart',
+  4: 'blade',
+  5: 'poison',
+  6: 'alarm'
+};
+
+// ========== SPECIAL FEATURES ==========
+
+export const SPECIAL_FEATURES = {
+  shrine: { 
+    name: 'Shrine', 
+    description: 'Make offering (1 gold) → d6: 1-2 curse, 3-4 nothing, 5-6 blessing',
+    requiresGold: 1
+  },
+  fountain: { 
+    name: 'Fountain', 
+    description: 'Drink? d6: 1 poison, 2-3 nothing, 4-5 heal 1, 6 full heal'
+  },
+  statue: { 
+    name: 'Statue', 
+    description: 'Search it: d6: 1-2 trap, 3-4 nothing, 5-6 treasure'
+  },
+  altar: { 
+    name: 'Altar', 
+    description: 'Sacrifice 2 gold → d6: 1-3 nothing, 4-5 clue, 6 magic item',
+    requiresGold: 2
+  },
+  library: {
+    name: 'Library',
+    description: 'Search: d6: 1-2 trapped book, 3-4 nothing, 5-6 clue'
+  },
+  armory: {
+    name: 'Armory',
+    description: 'Search: d6: 1-2 rusty, 3-4 weapon bonus, 5-6 shield bonus'
+  }
+};
+
+// Alias for backward compatibility
+export const SPECIAL_ROOMS = SPECIAL_FEATURES;
+
+export const SPECIAL_FEATURE_TABLE = {
+  1: 'shrine',
+  2: 'fountain',
+  3: 'statue',
+  4: 'altar',
+  5: 'library',
+  6: 'armory'
+};
+
+// ========== CORRIDOR/PASSAGE ==========
+
+export const CORRIDOR_DIRECTION_TABLE = {
+  1: 'straight',
+  2: 'straight',
+  3: 'left',
+  4: 'right',
+  5: 'T-junction',
+  6: 'dead-end'
+};
+
+export const CORRIDOR_LENGTH_TABLE = {
+  1: 1,
+  2: 2,
+  3: 2,
+  4: 3,
+  5: 3,
+  6: 4
+};
+
+// Passage Contents Table (d6)
+export const PASSAGE_CONTENTS_TABLE = {
+  1: 'empty',
+  2: 'empty',
+  3: 'door',
+  4: 'door',
+  5: 'trap',
+  6: 'wandering'
+};
+
+// ========== PUZZLE ROOMS ==========
+
+export const PUZZLE_TYPES = {
+  riddle: {
+    name: 'Riddle',
+    description: 'd6+INT (Wizard/Elf +L): ≥5 gain clue',
+    successDC: 5
+  },
+  lever: {
+    name: 'Lever Puzzle',
+    description: 'd6: 1-2 trap, 3-4 nothing, 5-6 secret door',
+    successDC: 5
+  },
+  pressure: {
+    name: 'Pressure Plates',
+    description: 'd6+DEX (Rogue/Halfling +L): ≥4 safe',
+    successDC: 4
+  },
+  symbol: {
+    name: 'Symbol Matching',
+    description: 'd6: 1 curse, 2-3 nothing, 4-5 treasure, 6 treasure+clue',
+    successDC: 4
+  }
+};
+
+export const PUZZLE_TABLE = {
+  1: 'riddle',
+  2: 'riddle',
+  3: 'lever',
+  4: 'lever',
+  5: 'pressure',
+  6: 'symbol'
+};
+
+// ========== HELPER FUNCTIONS ==========
+
+/**
+ * Parse tile contents result
+ * @param {number} roll - 2d6 result
+ * @returns {object} Parsed content info
+ */
+export const parseTileContents = (roll) => {
+  const content = TILE_CONTENTS_TABLE[roll];
+  if (!content) return { type: 'empty', description: 'Empty' };
+  return content;
+};
+
+/**
+ * Get trap detection bonus for hero
+ * @param {object} hero - Hero object
+ * @param {string} trapType - Trap type key
+ * @returns {object} { bonus, dc }
+ */
+export const getTrapDetectionBonus = (hero, trapType) => {
+  const trap = TRAP_TYPES[trapType];
+  if (!trap) return { bonus: 0, dc: 4 };
+  
+  let bonus = 0;
+  // Rogues get +L to trap detection
+  if (hero.key === 'rogue') bonus = hero.lvl;
+  // Dwarves get +1 to detect stone traps
+  if (hero.key === 'dwarf' && ['pit', 'blade'].includes(trapType)) bonus = 1;
+  
+  return { bonus, dc: trap.detectDC };
+};
+
+/**
+ * Get trap disarm bonus for hero
+ * @param {object} hero - Hero object
+ * @param {string} trapType - Trap type key
+ * @returns {object} { bonus, dc }
+ */
+export const getTrapDisarmBonus = (hero, trapType) => {
+  const trap = TRAP_TYPES[trapType];
+  if (!trap) return { bonus: 0, dc: 4 };
+  
+  let bonus = 0;
+  // Rogues get +L to trap disarm
+  if (hero.key === 'rogue') bonus = hero.lvl;
+  
+  return { bonus, dc: trap.disarmDC };
+};
+
+/**
+ * Check door access for hero
+ * @param {object} hero - Hero object
+ * @param {string} doorType - Door type key
+ * @returns {object} { canOpen, autoOpen, bonus }
+ */
+export const checkDoorAccess = (hero, doorType) => {
+  const door = DOOR_TYPES[doorType];
+  if (!door) return { canOpen: true, autoOpen: true, bonus: 0 };
+  
+  if (doorType === 'normal') return { canOpen: true, autoOpen: true, bonus: 0 };
+  
+  // Warriors and Barbarians auto-open stuck doors
+  if (doorType === 'stuck' && ['warrior', 'barbarian'].includes(hero.key)) {
+    return { canOpen: true, autoOpen: true, bonus: 0 };
+  }
+  
+  // Rogues get bonus to pick locks
+  if (doorType === 'locked' && hero.key === 'rogue') {
+    return { canOpen: true, autoOpen: false, bonus: hero.lvl };
+  }
+  
+  return { canOpen: true, autoOpen: false, bonus: 0 };
+};
+
+// ========== LEGACY COMPATIBILITY ==========
+// Keep old ROOM_TABLE for backward compatibility but mark as deprecated
+// This should NOT be used for room contents - use TILE_CONTENTS_TABLE instead
+
+/**
+ * @deprecated Use TILE_SHAPE_TABLE for tile shape and TILE_CONTENTS_TABLE for contents
+ */
+export const ROOM_TABLE = TILE_SHAPE_TABLE;
+
+/**
+ * @deprecated Use parseTileContents instead
  */
 export const parseRoomResult = (result) => {
-  if (result.includes('Vermin')) return { type: 'monster', subtype: 'vermin', level: 1 };
-  if (result.includes('Minion')) return { type: 'monster', subtype: 'minion', level: 2 };
-  if (result.includes('Boss')) return { type: 'monster', subtype: 'boss', level: null }; // HCL+1
-  if (result.includes('Major Foe')) return { type: 'monster', subtype: 'major', level: null }; // HCL
-  if (result.includes('Clue')) return { type: 'clue' };
-  if (result.includes('Treasure')) return { type: 'treasure' };
-  if (result.includes('Empty')) return { type: 'empty', hasDoor: result.includes('Door') };
-  if (result.includes('Trapped')) return { type: 'trap' };
-  if (result.includes('Wandering')) return { type: 'wandering' };
-  if (result.includes('Dead End')) return { type: 'deadend' };
-  return { type: 'special', subtype: result.toLowerCase() };
+  // This function is deprecated - the new system separates shape from contents
+  console.warn('parseRoomResult is deprecated. Use parseTileContents for 2d6 content rolls.');
+  return { type: 'empty' };
 };

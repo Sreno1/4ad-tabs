@@ -1,0 +1,215 @@
+Magic
+
+
+agic is the art of altering reality through procedures called spells. Spells require complex hand movements, words spoken with the right intention and timing, and the caster's ability to focus on arcane symbols to access a universal energy (mana) originating in the Ley Lines. There are several "schools" of magic. Spellcast- ers, such as the wizard, illusionist, druid or elf, have a list of
+spells they can use, and an amount of Spell Slots determining how many spells they can memorize at the beginning of an adventure. Spells enter the game in three ways: as formulas studied by magic-using classes, as scrolls (found as loot or, more rarely, purchased),or cast through magic items. Di- vine spells, called prayers, represent the gods' own powers and are cast only by clerics.
+Some spells have an automatic effect. Others require the caster to perform a spell-casting roll vs. their target's L. The caster roll d6, adding +L, trying to roll equal to or higher than the target's L. If the roll is successful, the spell affects the target. If unsuccessful, the spell has no effect and is wasted.
+Casting a spell is an action equivalent to attacking in combat. Spells may be cast during a melee. A spellcaster may attack in melee OR cast a spell, not both, as casting takes a whole turn.
+
+Using Spells to Prevent Bad Stuff
+In some cases, a caster may spend a spell to prevent something from happening.
+Example: A storm hits the party as the heroes walk on a plain. PCs in metal armor could be struck by light-
+ning. The wizard may use 1 Lightning spell to absorb the storm's electricity, preventing lightning from striking.
+
+Magic Resistance
+Some Foes, items or places have a MR (Magic Resistance). This energy tries to prevent ANY spell or prayer from being cast. To cast a spell, the caster must FIRST perform a spellcasting roll vs. the MR and THEN, if successful, perform a spellcasting roll vs. the target's L. If a spell does not go through the MR, it is wasted.
+Example: Marius (L3 wizard) tries to cast Sleep on a L4 Foe with MR5. First Mar- ius must succeed a spellcasting roll vs. 5. If this fails, the spell is wasted. Marius rolls a 4 and the roll is successful (4+3=7). Marius can now try to cast Sleep on the Foe, with a spellcasting roll vs. 4 (the Foe's L). Marius rolls a 3, so the target falls asleep (3+3=6, higher than the Foe's L4).
+MR affects even spells that normally do not require a spellcasting roll.
+For example, a cleric casting Blessing in a room with a Foe with MR must defeat the Foe's MR to perform the Blessing.
+
+67
+
+ Magic 
+Basic Wizard Spells
+These six basic spells are the ABC taught in wizard academies.
+
+Blessing (also a Prayer used by clerics)
+This spell removes a curse or an effect such as being turned to stone. It works automatically. Elves cannot use this spell (this is a divine law, not a societal rule).
+
+Escape
+With this defensive teleportation spell, the caster disappears from his/ her current position and reappears in the first tile/area of the adventure/
+dungeon. Escape can be cast in lieu of performing a Defense roll, during the Foes' turn, or during the caster's turn. It works automatically.
+
+Lightning
+This spell causes a lightning bolt to strike a target. The caster must be able to point at the target. The caster hits with a spellcasting roll vs. the target's
+L. Cast on a group of Minor Foes, Lightning will slay only one of them. Cast on a Major Foe, it will inflict 2 damage. Foes immune to electricity (e.g., lightning elementals) take no damage.
+
+Fireball
+This spell works like a ranged Attack roll. The caster adds +L to the roll. Fire- ball has no effect on fire-breathing dragons (but it affects undead dragons). Against Major Foes, it inflicts 1 damage. Against Minor Foes, it slays a num- ber of Minor Foes equal to the Attack roll, MINUS the L of the Minor Foes, with a minimum of 1 Foe slain EVEN if the spellcasting roll fails.
+Example: A L4 wizard casts a Fireball on a group of L3 goblins. The wizard rolls a 4, +4 for the wizard's L= 8. 8-3 (L of goblins)= 5 goblins are slain.
+
+Example 2: A L1 wizard casts a Fireball on a group of L4 orcs. The wizard rolls a 1, +1 for the wizard's L= 2. A single orc is slain because Fireball always slays a minimum of 1 Minor Foe.
+Foes susceptible to fire may be automatically slain by a Fireball, take extra damage, or give a bonus to the spellcasting roll (e.g., mummies are attacked at +2 by Fireballs).
+
+Protection
+This spell creates an invisible barrier around the caster or an ally, giving
++1 to Defense rolls until the end of the current encounter. This is an almost invisible, automatic spell effect that does not require a spellcasting roll and can be applied also to allies with a distrust or hatred of magic.
+
+
+68
+
+Magic
+
+
+Sleep
+This spell requires a successful spellcasting roll. An affected target falls asleep and may be subdued or slain, as desired. Sleep does not work on most dragons and Unliving targets (elementals, undead, clockwork, artifi- cial, or spirit creatures). A number of Foes are immune to Sleep for various reasons, and this will be noted in their description. Sleep does not work on Foes of L11+. It will knock out a single Major Foe or a number of Minor Foes equal to d6+caster's L.
+Example: A L5 wizard will affect d6+5 Minor Foes.
+
+Random Spell Table (d6)Roll on this Table to determine a random basic spell, e.g. when a scroll is found as loot.1Blessing2Escape3Lightning4Fireball5Protection6Sleep
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Magic  Druid Spells
+These 12 spells may be used only by druids. Additional druid spells are in the Wayfarers and Adventurers supplement. When you find a scroll, you may rule that it is a piece of bark instead, with a random druid spell. To deter- mine which spell is found, roll d12 on the following list.
+
+1) Disperse Vermin
+This spell works like a melee attack vs. Vermin, but the druid adds 2xL to the spellcasting roll. It does not work against undead or mechanical (artifi- cial, clockwork , elemental) Vermin, or against animated objects. The Foes defeated by the attack are dispersed, not killed, so their bodies may not be harvested for alchemical purposes and their Treasure may not be collected.
+
+2) Summon Beast
+The druid summons a large animal (boar, large cat, bear) to fight for the party. The beast (a natural, non-flying animal appropriate to the area) appears immediately and will start fighting from the druid's next turn. It fights like a L3 warrior with 5 Life, 1 attack per turn inflicting 1 Damage, and disappears at the end of the encounter or when slain, or when the druid is knocked out, turned to stone or killed, whatever happens first. The beast takes the space alongside the druid in the Marching Order. In a corridor, it takes the space of 2 PCs. If the party is ambushed by Wandering Monsters in a corridor, the beast may defend the rearguard.
+
+3) Water Jet
+The druid stretches out a staff or hand and shoots a stream of water. The spell hits with a successful spellcasting roll against the target's L. Pick one of the following effects if it hits:
+1) Inflict 2 damage to a fire-based creature or a natural fire (treated as a creature in game terms).
+2) Disperse 2 Vermin Foes.
+3) Knock out 1 Minion Foe.
+4) Distract a Major Foe. The party can flee from this combat without being attacked.
+This spell may also generate enough water for the party, their mounts and hirelings for a full day. Water Jet is cast at +1 near a body of water (pond, stream, river, lake, seashore) and at -2 in a desert area. It is cast with no modifier in dungeons.
+
+4) Bear Form
+The druid spends 1 action to turn into a bear. The transformation lasts until the end of the combat. In bear form, the druid may not cast spells. The bear fights like a warrior of the druid's L, with a minimum of L3. It has 8 Life or the druid's current Life, whichever is better. At the end of the combat, the druid reverts to his/her original shape. At that point, half damage suffered in bear form, rounded down, is applied to the druid.
+
+70
+
+Magic
+
+
+5) Warp Wood
+This spell may destroy a wooden door, open a treasure chest, or destroy any object made of wood like a bridge or a stockade. It can also automatically inflict 2 damage on a wood golem, living tree, treeman, dryad or wood ele- mental, any Foe described as a tree or plant, or any artificial creature made of wood.
+
+6) Barkskin
+The druid can cast this spell on himself/herself or on another single crea- ture. The target's skin turns to bark. A PC with Barkskin has -2 on all agili- ty-based Saves like Climbing or avoiding Traps, but gets +2 to Defense rolls until the end of the current encounter. Against fire-based attacks and drag- on fire, a PC with Barkskin defends at -2. The druid may also cast Barkskin on a Foe. The Foe's L increases by 1 but fire-based attacks on that Foe are at
++3 and inflict a minimum of 2 damage.
+
+7) Lightning Strike
+This spell works like the wizard spell Lightning, but cannot be used indoors. Lightning comes down from the sky and strikes the target. A spellcasting roll is required to hit.
+
+8) Spiderweb
+The druid shoots spider webs at the target. One Major Foe or d6 Minor Foes are entangled automatically. Fire-based creatures, spiders and elementals of any type are unaffected. The targets are hindered and at -1L for purpos- es of attacking and defending for the remainder of the encounter. If any fire-based spell is cast at the targets, it will burn the web and the -1 modifier will be lost. Foes failing a Morale roll while webbed surrender and may be captured alive at the end of the encounter.
+
+9) Entangle
+This spell works like Spiderweb, above, but can be cast only in a forest, swamp or jungle. It may not be cast underground, in dungeons or indoors. Twigs, branches and brambles rise from the ground and entangle the tar- gets, hindering their movement. Unlike Spiderweb, above, fire creatures CAN be affected by Entangle, but break free after 2 turns. Spiders can be affected. Targeting entangled creatures with fire spells does not free them from the Entangle.
+
+10) Subdual
+The druid casts this spell on all allies. It works automatically. Until the end of the current encounter, allies ignore the -1 modifier on Subdual attacks.
+
+
+71
+
+Magic
+
+
+11) Forest Pathway
+When this spell is cast, vegetation moves away, letting the PCs walk through a forest or jungle. For a du- ration of 10 minutes x L of the druid, the party can walk through woodland ignoring all vegetation and trees. The druid must be in position 1 or 2 of the Marching Order for the party to benefit from this spell.
+Trees are NOT cut, they just make way for the party and return to their origi- nal position after the party passes.
+
+12) Alter Weather
+This spell works only outside. The druid may summon bad weather, such as a summer storm, fog or wind, for 10 minutes. This will reduce the L of all non-magical ranged attacks by 1
+(including the PC's ranged attacks) and give +1 on any Lightning Strike spell cast by druids. This spell may also be used
+to inflict 2 damage to any fire or air elemental (automatic damage, no need to hit), to douse any natural fire, to stop a storm or any other harsh weather.
+
+
+
+
+
+
+
+
+
+72
+
+ Magic 
+Illusionist Spells
+These are the basic spells known by illusionists. Wizards may learn them from prisms as Expert skills at L5+ by using 1 prism (see below) and 1 suc- cessful XP roll.
+Illusionist spells are found on prisms, delicate crystals where the magical formulas are etched and can be read only when light strikes the surface from a specific angle. They are found as loot: when you find a scroll, you may decide you found a prism instead. Roll d12 on the following list to de- termine which spell is etched on the prism.
+
+1) Illusionary Armor
+The illusionist weaves a shining suit of armor around their body. This adds
++Tier to the PC's Defense rolls until the end of the encounter. The bonus does not apply against Foes unaffected by illusions (vermin, undead, artifi- cial and elemental Foes).
+
+2) Illusionary Mirror Image
+This spell creates a number of copies of the illusionist equal to Tier+1. All the copies perform the same actions but, as true phantasms, have no effect on the material plane and therefore cannot attack, pick up objects or inter- act with the physical world. Each mirror image has 1 Life and can be sacri- ficed to absorb 1 attack (of any amount of damage) aimed at the illusionist. The image immediately disappears upon being hit. It is hit automatically, with no Defense roll allowed. If an illusionist casts Disbelief or moves away from the current location, e.g.. if the party flees the encounter, all illusion- ary images disappear. All illusionary images are automatically destroyed if an area attack, such as a dragon's fire-breathing, hits the whole party.
+
+
+73
+
+Magic
+
+
+3) Illusionary Servant
+The illusionist summons a servant that can carry up to 200gp of Treasure, up to 4 weapons, one suit of armor, 2 shields and 10 Food rations. The servant has Life equal to the illusionist's Tier. It will not perform Attack rolls, has +2 to Defense rolls, and will immediately disappear if it triggers a Trap or is reduced to 0 Life. The illusionist may not summon an Illusion- ary Servant if there is already one in the party. The Illusionary servant is human-sized and takes a place in the Marching Order like a PC. When it disappears, all carried items fall to the ground. The servant is not intelli- gent. It will not read scrolls or perform Search rolls, but may open doors (no bonus to bashing)or Treasure chests.
+
+4) Disbelief
+When this spell is cast, all illusion spells affecting the party and their Foes are dispelled. Invisible gremlins become visible (treat them as d6+1 L3 Minions who can steal objects only if the PCs fail a Defense roll; they have
+-1 to Morale, 1 attack, 1 Treasure). Similarly, other invisible Foes become visible and lose any mechanical advantage caused by invisibility. If no advantage is described, reduce their L by 2, to a minimum of 1.
+
+5) Phantasmal Binding
+This spell creates spectral chains that wrap around a target, binding them in place if a spellcasting roll against the target's L is successful. The target is held for Tier turns. The chains are mere phantasms and do not work on Foes immune to illusions. Held Foes are attacked at +2 and all damage inflicted on them may be Subdual. A held Foe failing a Morale roll will surrender and is subdued.
+
+6) Illusionary Fog
+The illusionist creates a mist around the party. The mist disappears when the illusionist leaves the area/tile or dies. All ranged attacks and gaze at- tacks (such as a medusa's gaze) are suspended until the Fog persists, and Search rolls may not be attempted. PCs fleeing a melee add +2 to Defense rolls. Illusionary Fog may be cast as a free action BEFORE ranged or gaze attacks hit.
+
+7) Glamour Mask
+The Illusionist changes their appearance, or that of an ally, to resemble another creature of similar size and shape. The illusion lasts up to Tier hours or until dispelled. While convincing to the eye, the glamour does not hold up to physical examination or affect the character's voice. The PC with the Glamour Mask may become more attractive and reroll a Reaction roll or a failed Wooing/Seduction Save or may impersonate a leader or authority figure, letting the party go through guards.
+
+
+74
+
+Magic
+
+8) Shadow Strike
+The illusionist summons shadowy blades that strike a Major Foe or group of Minor Foes from different directions. The target takes Tie Subdual dam- age if the spellcasting roll hits. Shadow Strike cannot harm Foes immune to illusions.
+
+9) Specter Swarm
+This spell conjures illusory specters that swarm around the illusionist, protecting the PC. Foes must roll Morale or be unable to attack the illusionist until the end of the en- counter. Specters vanish instantly if struck by Foes immune to illu- sions. Foes that never test Morale are immune to this spell.
+
+10) Mirage of Fortune
+This spell conjures a tempting pile of gold, jewels, or a valuable item in sight of enemies. If the spellcasting roll vs. the Foes' L is successful, this counts as an immediate, successful Bribe Reaction for that Foe. Foes with- out a Bribe Reaction or immune to illusions are unaffected. This spell may also be cast during combat.
+
+11) Illusionary Banquet
+The illusionist summons what looks, smells, feels and tastes like a sump- tuous meal equivalent to Tier+3 Food rations. These illusionary rations can sustain living beings as real food, but only for a maximum of 7 days. After that, if the PCs who ate them do not eat real food, they will take 1 damage per every Illusionary ration eaten.
+
+12) Illusionary Sword
+A flaming sword appears in the illusionist's hands. The illusionist can wield it for Tier+3 turns, after which it disappears. The Illusionary Sword allows the illusionist to add +L to Attack rolls, and can hit Foes affected only by magic weapons). All damage inflicted by the Illusionary Sword is Subdual.
+
+75
+
+ Magic 
+Scrolls
+A scroll is a piece of parchment containing a ready-to-cast spell. Scrolls are fragile and can be destroyed by accidents, flames, or water. Protective tubes are available in the Equipment section. Parchment is not the only material used. Illusionist spells are inscribed on prisms, druid spells on bark. In ad- ventures, you'll find spells inscribed on clay tablets, bronze tablets, pump- kins, etc., each with its own advantages and disadvantages. Any PC, except barbarians, may spend 1 turn reading the scroll and cast the spell. PCs who are NOT spellcasters add +1 to the spellcasting roll. Actual spell-casters add
++L, even if the spell is not in their repertoire. Clerics add +L only when they cast Blessing (this normally has no relevance; Blessing works automatically UNLESS the cleric is facing Magic Resistance). Casting the spell destroys the scroll.
+When you find a scroll, roll on an appropriate random spell Table to deter- mine the spell it contains (wizard, illusionist, or druid).
+In some adventures, you will find new spells. Wizards may use a scroll to cast the new spell OR to copy it in their spellbook. Doing so, from that moment the new spell is in the wizard's repertoire and may memorize it. Copying a spell destroys the scroll.
+Example: Marcus, L2 wizard, finds a scroll with a new spell, Magic Mist. He can now cast Magic Mist once, from the scroll, or copy it in his spellbook. He copies the spell and, as soon as he has a slot available, he can memorize Magic Mist.
+A wizard's repertoire is personal. Wizards are jealous of their spell books, and annotate them in secret codes impossible for others to read.
+If Marcus dies, any new spells he found and copied may NOT be passed onto other wizards in the party.
+
+
+
+
+76

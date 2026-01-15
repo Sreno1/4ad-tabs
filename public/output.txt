@@ -1,0 +1,1639 @@
+1) REACTIONS. Roll Reactions to
+determine Foes’ action. If they fight,
+Foes perform ranged attacks and use
+spell-like abilities, if any.
+
+a) 61) Choose ATTACK or REACTIONS: A)
+wie? Party attacks immediately or B) Roll
+Reactions to determine what Foes
+will do. If PCs attack immediately,
+PCs with ready ranged weapons/
+spells perform ranged attacks/cast
+spells.
+
+2) RANGED. PCs perform ranged
+attacks and use spells, if any.
+
+3) MELEE. Foes attack first. Foes that
+used ranged weapons spend the turn
+to draw melee weapons. Foes that
+use natural attacks (bite, claws, etc.)
+do not need to spend 1 turn drawing
+a weapon.
+
+2) RANGED. Foes perform ranged
+attacks/use spell-like abilities, if
+any.
+
+3) MELEE. PCs attack first. PCs who
+used ranged weapons spend the
+turn to draw melee weapons or at-
+tack at -2 (unarmed). PCs that cast
+spells and are wielding a weapon
+in the other hand do not need to
+spend 1 turn drawing a weapon.
+
+4)PCs attack. PCs that performed
+ranged attacks spend the turn to
+draw a melee weapon or fight un-
+armed (-2 to Attack roll) until they
+do so.
+
+4)MELEE. Surviving Foes attack.
+Foes that performed ranged
+attacks spend the turn to draw
+melee weapons. Foes with natu-
+—— — ral attacks (bite, claws, etc.) do
+= not need to do so.
+
+4
+| ' A weapon is ready if it is in the C ak |
+character’s hand/s. ES 2)
+A spell is ready if the caster has Pa Y) p pS
+{ one hand free to castit. Hands & tw v
+| holding lanterns, torches and 5
+magic items are NOT empty for
+| purposes of spellcasting.
+Something described as a Free
+)- Action can be done at any mo-
+‘s ment (e.g., drinking a potion).
+
+—_ __— > 4 me —
+— Effects triggered by seeing the Foe (e.g.,
+= medusa’s gaze) or by entering its space, or
+= described as happening “at the beginning of
+‘the encounter” happen before anything else.
+
+A
+A ian —
+
+146
+
+Class-based modifiers
+
+warf, Warrior, Assassin, Barbarian, Paladin, Ranger: +L
+Elf with all weapons except two-handed melee weapons: +L
+Elf vs. orc Foes: +1
+
+Cleric, Acrobat, Bulwark, Druid, Swashbuckler: +1/2 L
+Ranger using 2 weapons: +1/2L
+
+Cleric vs. undead: +L
+
+Rogue vs. outnumbered Minor Foe: +L
+
+Dwarf vs. goblins: +1
+
+Bulwark using ranged weapons: +Tier
+
+Light gladiator using light weapons: +1/2 L
+
+Mushroom monk using nunchaku, bo, sai, throwing stars: +L
+Mushroom monk unarmed attack: -1, O at L5+
+
+Subdual attack: -1
+
+Halfling using sling: +L
+
+Kukla performing unarmed attack: -1 instead of -2
+
+Kukla using dagger: O (cancels the -1 for a light weapon)
+Gnome using one-shot mechanical weapon: +L
+
+Gnome using a gadget-enhanced weapon: +L until end of encounter
+
+Situational Modifiers
+Mounted character vs. Foe on foot: +1
+Fighting in darkness: -2
+Swashbuckler spending 1 Panache point: +1
+
+Weapon-basea Modifiers
+Unarmed: -2
+Light weapon: -1
+Two-handed weapon: +1
+Crossbow: +1
+Handgun: +2
+Black powder rifle: +3
+Crushing weapon vs. skeleton: +1
+Gilded weapon vs. elemental: +2
+Silver weapon vs. were-creature: +1
+Torch vs. flammable Foe: +2
+Magic Weapons: As per the item's description
+
+Trait-based Modifiers
+Barbarian with Beast Slayer Trait vs. Weird Monsters: +1
+Dwarf with Axe Mastery Trait using an axe: +1
+Halfling using sling with Sling skill Trait: +Tier
+Illusionist using Illusionary Knife Throw: +Tier
+Kukla using the Hidden Blade Trait: +Tier (once per encounter)
+Paladin with Mounted Fighter Trait: +Tier, +1 for being Mounted
+Ranger with Deadeye using bow or crossbow: +1
+Rogue with Knife Fighter using knives: +Tier
+Rogue with Backstabbing: Apply outnumbering modifier vs. Major Foes
+Warrior with Good Shot using ranged weapons: +1
+Warrior with Sword or Mace Training using sword or mace: +Tier
+Wizard with Scrapper Trait using light weapon: ignore -1 for light weapon
+
+14¢
+
+a
+Defense Modifiers Summary
+
+Class-basea Defense Motifiers
+Rogue, Acrobat: +L
+
+Bulwark, Gnome, Kukla, Light Gladiator, Mushroom Monk, Swashbuckler:
++1/2
+
+Dwarf vs. giants, trolls, ogres: +1
+
+Halfling vs. giants, trolls, ogres, half-giants: +L
+
+=
+
+pl)
+
+4» ituational Defense Modifiers
+Fighting in darkness: -
+Sleeping: Automatically fail Defense rolls
+Withdrawing from a melee: +1
+Fleeing a melee: +0, may not use shield
+Defendi ng vs. Foes equipped with flails: May not use shield bonus
+Light gladiator using Watch the Enemy: +1 vs. melee attacks only
+Mushroom Monk using Leap Away: +L
+Acrobat failing a Vaulting Strike: -2 for a full turn
+Ranger vs. Sworn Enemy: Use higher Tier die
+Ranger with Survival in appropriate terrain: Use higher Tier die
+Swashbuckler spending 1 Panache to increase Defense: +1
+PC under a Protection spell: +1
+PC under a Barkskin spell: +2, -2 vs. fire-based attacks
+PC under an Illusionary Armor spell: +Tier
+Illusionary Servant defending:
+Under an Illusionary Fog an fleeing /withdrawing from a melee: +2
+First Defense roll vs. charging minotaurs or cave orcs: -1
+Under effect of Evil Eye from a Chaos Lord: -1
+PC with a light source defending from a morlock: +2
+
+Armor—based Defense Modifiers
+Light armor: +1
+Heavy Armor: +2
+Shield: +1
+Leafsteel armor: +2 (can be found as loot)
+Gnome with activated Clockwork armor: +3
+Magic shield, armor, ring, etc.: As per the item’s description
+
+Trait-based Defense Modifiers
+Bulwark/Paladin with Shieldwall standing next to ally with shield: +1
+Cleric with Sacred Defense vs. demons/undead: +1
+Cleric with Divine Protection: +1
+Druid with Wildform: +1
+Druid with Leafsteel Familiarity, wearing Leafsteel Armor: +1
+Gnome with Clockwork Armor Specialist wearing clockwork armor, vs. first
+attack received: +1
+Halfling with Nimble Dodge: +1
+Illusionist with Hazy Veil: +Tier
+Mushroom Monk with Though Cap:+1
+Swashbuckler with Blade Dance spending X Panache on Defense: +X
+Warrior with Tight Guard vs. the first attack of any encounter: +1
+Wizard with Scrapper: +1
+
+148
+Tile Generation
+
+Roll d6 to select a starting tile. Roll d66 to select new tiles.
+Tiles marked with C are Corridors. Unmarked tiles are Rooms.
+
+\ \
+Wes | |
+=
+
+NE
+
+iinet oS
+fi ae
+
+CAL {i}i |
+[igeo lige’
+
+leah Content Table (286) :
+
+Treasure. Roll on the Treasure Table. 1
+
+Se ——————
+
+‘Treasure protected by by. a Trap. Roll on the Traps Table |
+and then on the Treasure Table.
+
+—E ———
+
+— +
+
+“Tf this tile is a corridor, itis s Empty and may be Searched. If it is a
+room, roll on the Special Events Table.
+
+a)
+
+This tile is Empty and may be Searched. In dungeons, roll on the
+Special Feature Table. In caverns, roll on the Caverns Special Feature
+Table on p.112. In n Fungal grottoes, you find a Secret Passage.
+
+Vermin er encounter. Roll on the Vermin Table appropriate to your envi-_
+‘ ronment.
+
+Minion encounter. Roll on the Minion Table appropriate to your —
+‘ environment.
+
+—
+
+Tf t this i isa a corridor, it is ‘Empty. and may be Searched. ifit itisaroom,
+‘roll on the Minions Table appropriate to your environment. ;
+
+—
+
+. This tile is Empty and tr may be Searched; alternatively,
+spend 2 Clues to find a Secret Passage.
+
+Co ha as cn |p & Lv.
+
+—
+
+‘ room, roll on the Weird Monsters Table appropriate to your environ-
+y ment.
+
+1 0 © If this tile is a corridor, itis Empty and may be searched If itis a |
+
+—
+
+Boss Encounter. Roll on the Boss Monster Table appropriate to your —
+— environment.
+
+—
+
+(Young dragon, Cave Dragon or Fungal Dragon as appropriate to your
+~ environment).
+
+1 > Lis filet is empty if itis a corridor. Ifit is a room, it is a dragon's lair ji
+
+—
+
+Wen you find a Secret
+
+| Passage, you may move '
+to a different environ-
+ment of your choice,
+e.g., Fungal Grottoes or
+
+) Caverns if you are ina
+| Dungeon.
+
+02 An =
+
+Every time you roll a Major Foe,
+
+“roll d6 and add +1 for each Major
+Foe encountered so far. Ona 6+,
+jyou have found the Final Boss.
+
+Z : Dungeon Special Feature Table (863
+
+Ei
+e—
+
+Fountain/Pool: This is a source of fresh, clean water, and all liv-
+
+=>
+ing PCs can drink and clean their wounds. All PCs recover 1 Life
+the first time they encounter a fountain in an adventure. Further
+fountains have no effect. No effect on PCs who did not lose any Life -
+so far in the adventure.
+=
+
+Blessed Temple/Shrine: A PC of your choice gains a +1 on Attack
+rolls against undead Foes or demons. As soon as the PC kills an
+undead or demon, no matter if a Minor or Major Foe, the bonus
+disappears.
+
+Armory: All PCs can change their weap-
+ons if they want, within the limits of their
+class. All PCs who lost their weapons may
+pick up a new one.
+
+Cursed Altar: An eerie glow emanates from a sinister al-
+tar. A random PC is cursed and has -1 on Defense rolls. To
+break the curse, the PC must slay a Major Foe alone, enter
+a Blessed Temple (see 2, above), or receive a Blessing.
+
+Statue: You may leave it alone or touch it.
+If you touch it, roll d6. On a 1-3, it awak- i
+ens and fights to the death (HCL+3 Artifi- ws
+
+cial Boss Monster, Tier+5 Life, Tier damage, ie
+immune to poison, disease and all spells; if
+you defeat it, you find 3d6x10gp inside). On
+a 4-6, the statue breaks, you find 3d6x10gp
+inside but gain no XP from the encounter. A
+living statue is a Major Foe and may be the
+Final Boss (roll as usual to determine if it is
+a Final Boss) and it gives 1 XP roll. If itis a
+Final Boss, increase its Treasure to 100gp.
+
+The tile contains a puzzle box. Roll d6 to determine its L. You may =
+leave it alone or try to solve it with a Save vs. its L. For every failed
+attempt, the PC is hit by a blast of energy from the box (1 damage).
+Wizards and rogues add +L to this Save. If the puzzle is solved, the -
+box opens: roll on the Treasure Table to determine its contents.
+
+55
+= —— —— =
+
+aay! Dungeon Special Events Table CAG Dz
+
+.
+~
+
+A ghost passes through the party. All PCs must Save
+vs. L4 fear or lose 1 Life or gain 1 Madness (player’s
+choice). Paladins are immune. Clerics add +L. PCs
+whose Madness total surpasses their L lose their
+mind and run away, never to be seen again.
+
+Wandering Monsters attack! Roll dé: 1-3 roll on the Vermin
+Table, 4 roll on the Minions Table, 5 roll on the Weird Monsters
+Table, 6 roll on the Boss Monster Table. Reroll any dragons or
+other Foes that are never encountered as Wandering Monsters.
+Major Foes met as Wandering Monster cannot be the Final Boss.
+
+A Lady in White appears and asks you to com-
+plete a Quest. If you accept, roll on the Quest
+Table. If you refuse, she Hisappeats! Ignore any
+further appearances of the Lady. If you complete
+the Quest and return where you met her, gain 1
+XP and 1 roll on the Epic Rewards Table.
+
+You meet a wandering healer, who will heal PCs at the cost
+
+of 10gp per Life healed. You may heal as many Life points
+as you can afford. You can meet the healer only once per
+adventure. If you meet the healer again, reroll this result.
+
+You meet a wandering alchemist. Each PC
+may buy 1 potion of healing (50gp) and/or
+1 dose of blade poison (30gp).
+
+Potion: Heal all lost Life to a single PC.
+
+Can be swallowed at any moment as a free
+action.
+
+Poison: Envenom a single arrow or slash-
+ing weapon (not a crushing weapon) giving
++1 on Attack rolls vs. the first Foe you fight.
+Doesn't apply vs. Foes immune to poison
+(undead, demons, blobs, automatons,
+molds, fungi, elementals, living statues).
+You can meet the wandering alchemist
+only once per adventure. If you roll this re-
+sult again, roll on the Traps Table instead.
+
+=)
+
+OLVF 5%
+Py St
+
+54
+- ——
+
+_
+— “ar
+
+— —
+aa) Caverns Special Gvents Table C46) =
+
+You encounter a cave goblin scout. If you pay 10gp, he warns you of
+danger. Your PCs cannot be surprised by any Foe, including Wandering
+Monsters, and have a +1 to all Saves until you exit the caverns. If you do
+not pay, the goblin shrugs and walks away.
+
+You encounter d6 cavemen explorers looking for food. Give them 2 Food _
+rations (for the whole group) or fight them. They are HCL+3 Minions
+armed with clubs, standard Morale, 1 Life, 1 attack per turn, no Treasure.
+
+a
+
+ill
+
+r % me You encounter a morlock Spy. If you pay 5gp, the Morlock betrays his
+ct
+
+companions. After speaking with him, you cannot be surprised by any
+morlocks, even those encountered as Wandering Monsters, until you
+leave the caverns. If you don't pay, he runs away grumbling insults.
+
+Trap. Roll on the Cavern Trap Table. .
+
+If you have a dwarf in the party, you find a gem
+worth d6x10gp. To collect it, however, you must
+risk a 1-in-6 chance of Wandering Monsters. If
+there's no dwarf, ignore this event.
+
+You meet a dwarf miner. You may sell any gems found or buy =
+up to d6 gems worth 25gp each. If you makes any trade with the
+dwarf, the dwarf will reveal the contents of the next tile (roll it
+ahead of time and decide whether or not to enter: the dwarf
+describes what is there, in detail, including any Treasure).
+
+-_
+-_
+
+- + —- ~~ rr
+acy Fungal Grottoes Special Events Table CA6)=
+
+™q You encounter a halfling scout. If you pay 10gp, he warns you of
+danger. The PCs cannot be surprised by any Foe, including Wandering
+| Monsters, and will have a +1 to all Saves until they exit the fungal grot-
+toes. If you do not pay, the halfling bids you farewell and walks away.
+
+You encounter d6+2 cavemen looking for mushrooms. Give them 4 Food =
+rations or 1rare mushroom or fight them. They are HCL+3 Minions
+2? armed with clubs, standard Morale, 1 Life, 1 attack per turn, no Trea-
+
+sure. If you feed them, they will show you a secret passage (in next tile) -
+leading from the fungal grottoes to the caves.
+
+he) Spore cloud. All living PCs, except mushroom monks, must Save vs. HCL
+poison or lose 2 Life. Halflings and barbarians add +L to this Save.
+
+| Trap. Roll on the Fungal Grottoes Trap Table and a r
+I then on the Fungal Grottoes Rare Item Table. )
+
+If you have a mushroom monk in the party, you sense danger approach- —
+ing through the mycelial network. You may automatically ignore the next
+Trap or Wandering Monsters encounter in the fungal grottoes. If you do
+a) not have a mushroom monk, ignore this event. The warning has no effect
+} in other environments.
+
+“% You meet a merchant. You can buy any item from the Equipment list,
+6 but all prices are 20% higher (round up). You can also sell gems or rare
+mushroom for their full resale value in gp. This event is unique. If you .
+roll it again during the same adventure, count as 4, above.
+
+ELT
+
+All environments: d6gp
+
+= ——
+Dungeon/Caverns: 2d6gp.
+
+Fungal grottoes: 2d6 Food rations or 1
+roll on the Rare Mushroom Table.
+
+Dungeon: A scroll with a random wizard spell.
+
+Fungal Grottoes: Choose: a piece of bark with a random druid
+spell or 1 roll on the Rare Mushroom Table.
+
+Cavern: A prism with a random illusionist spell.
+
+Dungeon: A jewel worth 2d6x5gp.
+Fungal Grottoes: Choose, a gem worth 2d6x5gp or 2
+rolls on the Rare Mushroom Table.
+
+Cavern: A gem worth 3d6x5gp.
+
+Dungeon: A treasure chest with 3d6x1l0gp.
+Fungal Grottoes: Choose, a gem worth 2d6x10gp or
+3 rolls on the Rare Mushroom Table.
+
+Cavern: Choose, a gem worth 3d6x10gp or a prism
+with a random illusionist spell.
+
+Dungeon: Roll on the Dungeon Magic Treasure Table.
+Caverns: Roll on the Caverns Special Item Table.
+
+Fungal Grottoes: Choose, roll on the Dungeon Magic Treasure
+Table or roll on the Fungal Grottoes Rare Item Table.
+
+= eet
+
+—
+—-_- ~~ a ae —
+
+SS —
+ia) Dungeon Magic Treasure Table CAG) =
+
+Wand of Sleep, 3 charges. The user may
+spend 1 charge to cast Sleep. Only wizards,
+illusionists and elves may use it. Add +L to
+the spellcasting roll. Resale value: 30gp per
+remaining charge.
+
+Ring of Teleportation. Allows the user to automatically pass =
+a Defense roll, teleporting the PC out of the room. The PC
+may no longer take part in the current combat, but rejoins
+the party as soon as it ends. After 1 use, the ring loses its
+powers. Resale value: If unused, 50gp. If used, d6+1gp.
+
+Fools’ Gold. This pouch of magical (but fake) gold coins will
+let you automatically bribe the next Foe that asks for a bribe.
+No matter how much the Foe asks, the gold will be enough to
+satisfy its request. This is a one-use magic item. If unused, it
+can be resold for 20gp.
+
+Magic Weapon. Gives +1 to Attack rolls. This is a permanent
+magic item. Roll d6 to determine its type: 1) crushing light
+
+weapon, 2) slashing light weapon, 3) crushing hand weapon, 4)
+slashing hand weapon, 5) slashing two-handed weapon, 6) bow
+with 12 arrows. Resale value: 100gp+ 2x weapon's cost.
+
+Potion of Healing. Can be imbibed at any mo-
+ment, even during combat, as a free action, heal-
+ing all lost Life to a single PC. This is a one-use
+magic item. No PC may drink more than 1 Potion
+of Healing per adventure. Resale value: 100gp.
+
+Dungeon/caverns: Fireball Staff, 2 charges. Spending 1
+charge allows the user to cast Fireball. Only wizards may
+use it. Add the PC's L to the spellcasting roll, as for a spell
+cast by that PC. Resale value: 6Ogp per charge remaining. -
+Fungal Grottoes: Roll on the Rare Mushroom Table.
+
+68
+=
+
+= - —
+\ Rare Mushroom Table CAG) =
+
+eg
+
+Slumber Amanita. Resale value: 10gp. One use.
+A PC may use this mushroom to add +Tier bonus
+when casting the Sleep spell. The bonus applies
+also if the spell is cast from a scroll or an item,
+such as a Wand of Sleep. Using the mushroom
+requires only the action needed to cast the spell.
+
+Puffball Smokebomb. Resale value: 5gp. One use.
+You may drop this mushroom as a free action.
+You do not need a free hand to do so. This allows
+the party to flee a combat encounter without
+receiving any attacks. Mushroom and artificial
+Foes are unaffected and attack normally.
+
+Brown Cap Delight. Delicious and nutritious, this
+mushroom counts as 1 Food Ration when eaten
+and as 3 Rations if used for a bribe (if allowed by
+the Foe’s Bribe Reaction). Resale value: 15gp.
+
+Phoenix Mushroom. A living PC who eats this
+mushroom gains +1 to all Defense rolls and Saves
+for 30 minutes (3 tiles). At the end of this period,
+the user loses 1 Life. Commerce of phoenix is ille-
+gal in most towns. It can be resold for 15gp.
+
+Purple Truffle. This is so rare that, when you find it,
+you must roll a 3-in-6 chance that what you found is
+not the real deal, but a similar mushroom of small-
+er value (1d6gp). Halflings may reroll this 3-in-6
+chance. The real purple truffle can be sold for 6d6gp.
+
+Healer’s Chanterelle. This mushroom can be
+eaten to heal all damage on a PC; if not used, it
+loses its power at the end of the adventure.
+
+Rare mushrooms are equivalent to herbal rem-
+edies and are not considered magic, even when
+they cause spell-like effects. They can be used by
+any PC. Mushrooms that need to be ingested may
+be used only by living PCs. It’s not possible to eat
+mushrooms during combat.
+
+—_——_ = =
+
+== _
+aay Caverns Special Item Table CAG) -
+
+| Asmall gemstone worth 3d6+3gp.
+;
+
+Glittering Crystal. This gem glows like a lantern and
+can be worn around a PC’s neck with a leather string,
+
+freeing the use of one hand. Resale value: 25gp. It is not
+considered a magic item and can be used by any PC.
+
+Map Fragment. At any time, you may use it to roll the contents
+of the next tile before entering it. You may use it only once.
+The map fragment has no value outside of the Caverns section
+of the current adventure. It is worth 30gp for purposes of the
+Bribe Reaction while in the Caverns.
+
+Adventurer’s Dead Body. In addition to a pouch with d6 gems
+worth 10gp each, you find 1 item of your choice from the fol-
+lowing list: Heavy Armor, Lantern, 2-handed Weapon, Bow,
+Crossbow, Scroll with Blessing, Scroll with a random spell, Jar of
+chicken blood (can be used for a Blood Offering Reaction).
+
+Miners’ Ointment. This ointment masks the
+smell of adventurers. You can use it once to
+ignore the arrival of Wandering Monsters or to
+avoid invisible gremlins. It is not a magic item
+
+and can be resold for 20gp if not used. One use.
+
+Miners’ Amulet. When worn by a PC in position 1 of the
+Marching Order, this magic item allows you to ignore 1 Trap
+within the caverns. It may be used once per adventure, and
+sold for 30gp. Multiple amulets worn by the same PC or by
+different PCs have no cumulative effect.
+
+~ a ome
+
+are Item Table (a6) =
+
+-_
+-
+
+- + —
+eco Fungal Grottoes R
+
+Choose: 1 small gemstone (2d6+2gp) or
+1 suit of leafsteel armor (+2 to Defense
+rolls, counts as Light armor, non-mag-
+ical; the leaves dry out and must be
+
+discarded after 3 adventures).
+
+Xicthul’s Cap. This rare mushroom is infused
+with the powers of chaos and bears Xichtul's
+Eye on its cap. It can be thrown to inflict d3
+
+damage on a Foe. The damage is automatic.
+Throwing it requires 1 turn. The user takes 1
+damage when it is thrown. Resale value: 60gp.
+
+Red Death. This rare mushroom can be thrown
+at a living Foe, automatically inflicting 1 damage
+or reducing the Foe’s L by 1 (choose the effect
+
+when the mushroom is found). It has no effect on
+unliving foes. Throwing it requires 1 turn.
+
+Adventurer’s Dead Body. In addition to a backpack with 1 rope, =
+2d6 Food rations and 2d6gp, you find 1 item of your choice from
+the following list: Heavy Armor, Lantern, 2-handed Weapon,
+Bow, Crossbow, Scroll with Blessing, Scroll with a random spell.
+
+Mushroom Gatherer’s Basket. You find a basket
+with d6 white angel mushrooms. Each can be
+eaten as a Food ration, causing the PC to heal 2
+Life. The white angels lose their healing power
+at the end of the adventure, but they are still
+delicious and can be sold for 10gp each.
+
+Morel Crusher. When broken, this dried morel mush- A @
+room projects vivid hallucinations to frighten Foes.
+Single use. The user may cause a Morale roll at -1
+(plus the Foe’s Morale modifier, if any) in a Foe. Foes
+who never Test Morale, Foes who rolled a “fight to the
+death” Reaction, unliving Foes and those immune to
+poison are unaffected. Resale value: 40gp.
++
+
+i} | Quest Table CAB)
+
+Bring me its head! The Quest-giver asks you to kill a Boss —
+Monster. Roll on any Boss Monster Table to select a target.
+
+The next time you meets a Boss, instead of rolling it, you may
+choose to encounter the Boss Monster from the Quest. Bring-
+ing its head to the Quest-giver’s tile completes the Quest.
+
+Bring me Gold! To complete this Quest, bring d6 x 50gp worth
+of Treasure to the Quest-giver’s tile. If you already have that
+amount, double the amount required. In caverns, the amount
+
+must be in gems. In fungal grottoes, it must be in rare mush-
+rooms.
+
+I want it alive! As 1, above, but you must subdue
+the Foe (using subdual attacks at -1 and/or Sleep
+spells) and bring it to the Quest-giver. You will
+
+need a rope to bind the subdued Foe. If you roll a
+Foe immune to subdual damage, reroll.
+
+Bring me that! Retrieve a rare item. Roll on any Items Table to _
+determine what. If you already have that item, roll again. Every
+time you slay a Major Foe, roll a 1-in-6 chance of finding the
+
+item in its loot. To complete the Quest, bring the item to the ‘§
+Quest-giver’s tile without using it.
+
+Let peace be your way! To complete the Quest, complete at
+least 3 encounters in a non violent way: Bribing, getting help
+from Foes, accepting and performing another Quest (not this
+one), or defeating Foes with the Sleep spell are all non violent.
+You ae not need to return to the Quest-giver to collect your
+reward.
+
+Slay all the Foes! To complete the Quest, the layout of the
+dungeon must be completed (fill the 20x28 grid) and all
+the occupants slain, except the Quest-giver. When these
+conditions are met, you may claim your reward without -
+returning to the Quest-giver.
+
+The Quest-giver is the Foe with a
+Quest Reaction. Roll on this Table
+if you accept the mission. If you
+complete a Quest, roll on the Epic
+Rewards Table.
+
+162
+las ric Rewards Table CAG)
+
+The Book of Skalitos. This book belonged to the legendary wiz-
+ard Skalitos. It counts as 1 scroll of each of the 6 basic wizard
+spells. You may tear up the paves and distribute the scrolls
+among the party, or leave the book as it is and assign it toa
+single PC. The book is destroyed if the carrier is killed by dragon
+breath. If unused, it may be sold for 650gp.
+
+The Gold of Kerrak Dar. You learn the location of a treasure
+that belonged to a dwarf whose greed was legendary. As soon
+as you Search a tile, you may spend 1 Clue to find a chest with
+500gp.
+
+Enchanted weapon. One of the party's weapons is enchanted.
+Roll 2 dice for its Attack rolls, choosing the best result. If both
+dice roll an Explosion, roll both Explosions and choose the best.
+The weapon can hit Foes hit only by magic. The enchantment
+lasts until the end of the adventure.
+
+Shield of Warning. This magic shield’s pro-
+tection counts even if the user is surprised by
+Wandering Monsters, fleeing from a combat,
+or fighting Foes that ignore shields. This is a
+permanent magic item. Resale value: 200gp.
+
+Arrow of slaying. This arrow will automatically inflict 3 damage
+upon a specific Foe. Roll on any Major Foe Table to determine
+which Foe is affected by it. The arrow may be used only by a PC
+with a bow. It strikes automatically against its designed tar-
+get. Once used, the arrow breaks. If unused, it may be sold for
+3d6x15gp.
+
+Holy symbol of healing. A cleric using this
+syne adds +2 to the Life points healed by
+the ere prayer. If the PC dies and the
+
+symbol and the cleric’s body are delivered to
+the cleric’s temple, the church will pay for
+an attempt to resurrect the cleric. After the
+resurrection attempt, the holy symbol will
+remain with the church. Resale value: 700gp.
+
+165
+a <-—— > — —
+aa) Dungeon Traps Table CAG) =
+
+. | . Dart! A random PC must make a Defense roll vs. HCL+1 or lose 1
+Life. Halflings may reroll a failed Defense roll.
+
+sete ieee —=——
+
+Poison gas! All PCs must Save vs. HCL+2 poison or lose 1 Life.
+2? Barbarians and halflings add +L to the Save.
+
+A trapdoor (HCL+3 trap) opens under the feet of the PC leading
+the Marching Order, who must Save. Roll at -1if wearing light
+armor, -2 if wearing heavy armor,+1 if halfling or elf. Rogues
+add +L. A PC failing the Save falls into the trapdoor, losing 1 Life.
+It will take at least another PC to help the fallen PC out of the
+trapdoor. If you fall in a trapdoor and you are alone, you die.
+
+The PC leading the Marching Order steps on a bear trap and a=
+must Save vs. HCL+3. Halflings and elves add +1. Rogues add +L.
+
+If the Save fails, the PC has a foot caught in the bear trap and
+
+loses 1 Life. The PC will Save at -2 vs. other bear traps or trap- E
+doors and be at -1 to Attack and Defense rolls until that lost
+
+Life is recovered.
+
+Spears come out of a wall and attack 2 random PCs.
+PCs failing a Defense roll vs. a HCL+4 attack lose 1 Life.
+
+cannnuneniilliiiadstcecamemeumeene a iatiee Sa
+! A giant stone falls on the PC in position 4 the Marching Or-
+6 der. The PC must make a Defense roll vs. an HCL+4 attack or
+lose 2 Life. The bonus from armor applies, but the bonus from 7
+a shield does not.
+
+we \= XO = a ia
+
+: W hen you find a Trap, roll on this Table to determiné~
+its type. Some can be avoided with a Defense roll; others
+require a Save.
+
+fil
+
+= A rogue in position 1 or 2 of the Marching Order gets ==
+a chance to disarm the Trap before it is triggered. The
+rogue Saves vs. the Trap’s L, adding +L. If the Save suc-
+ceeds, the rogue spots the Trap and warns the party Just
+= in time. If it fails, the Trap goes off; apply its effect. If
+= the rogue is targeted by the Trap, the rogue still gets a
+= Save or Defense roll vs. the Trap.
+
+ht pn
+
+= i _— we
+
+as) Caverns Traps Table CAG) =
+
+A stalactite falls! A random PC must Save vs. HCL+2
+Trap or lose 1 Life. All PCs Save at +1/2 L. Rogues add
++L. Halflings add +1/2 and may reroll a failed Save.
+
+Rockslide. Loose stones are dislodged, sending a cascade of
+rocks down the tunnel. All PCs must Save vs. HCL+2 Trap or lose
+1 Life. All PCs Save at +1/2 L. Rogues, gnomes and dwarves add
+
++L. Halflings add +1/2 and may reroll a failed Save.
+
+Hidden Pit. The first PC in Marching Order must Save vs. HCL+1
+Trap or fall into a pit, losing 1 Life. All PCs Save at +1/2 L. Rogues
+add +L. Halflings add +1/2 and may reroll a failed Save. The PC
+needs the help of another to climb out of the pit. If you spend
+
+1 Clue, at the bottom of the pit you find a Secret Passage to the
+dungeon or fungal grottoes (choose).
+
+Swinging Log Trap. A large wooden log, bound with vines,
+swings from the ceiling. All PCs must Save, in Marching Order
+(first, the PC at position 1, then the PC at position 2, and so on)
+vs. an HCL Trap. All PCs Save at +1/2 L. Rogues add +L. Halflings
+add +1/2L and may reroll a failed Save. The process stops when
+a PC fails to Save and loses 2 Life, or if all Save successfully.
+
+A random PC steps on a patch of mushrooms, releasing toxic
+spores. The PC must Save vs. HCL+1 poison or be at -10n all
+Saves for 6 rooms (1 hour). All PCs Save at +1/2 L. Rogues and
+foresters add +L. Mushroom monks are immune. Halflings add
++1/2 and may reroll a failed Save. If a mushroom PC leads the
+Marching Order (position 1), ignore this Trap.
+
+Rolling Boulder. Choose if it comes from the back or from
+: m the front of the party. 1d3 PCs in Marching Order must Save
+vs. HCL+1 Trap or lose 2 Life each. All PCs Save at +1/2 L.
+Rogues add +L. Halflings add +1/2 and may reroll a failed
+Save. At the end of the process, the boulder rolls towards
+another opening (choose one on the tile) and gets stuck in
+it. That opening is now blocked and cannot be accessed.
+
+a — =
+ay ungal Grottoes Traps Table CAG) =
+
+—
+
+Sleep spores. A random PC must Save vs. HCL Trap or
+release a cloud of spores that will put to sleep all PCs who
+fail a Save vs. HCL poison. Mushroom, artificial, undead,
+elemental PCs are immune. Halflings add +L. All other
+PCs add +1/2L. If all PCs fall asleep, the whole party dies.
+
+Spore Cloud. A random PC must Save vs. HCL+1 Trap or
+step on a purple puffball, releasing its toxic spores. On
+a failure, the PC must Save vs. HCL+3 poison or lose 1
+Life and start coughing, triggering a 1-in-6 chance of
+Wandering Monsters. Mushroom, artificial, undead,
+and elemental PCs are immune. Halflings and barbar-
+ians add +L. All other PCs add +1/2L.
+
+Slime Patch. The PC leading the Marching Order must
+Save vs. HCL Trap or fall down. Roll a 1-in-6 chance of
+Wandering Monsters. If they come, the fallen PC will
+
+skip 1 turn as s/he struggles back to his/her feet.
+
+Mycelium Snare. A random PC must Save vs. HCL+3 Trap. On a
+failure, an object in their hands (shield, weapon, lantern, etc.,
+player’s choice) is snatched by a bunch of fungal fibers drop-
+ping from the ceiling, never to be seen again.
+
+ER
+
+Shrieking Mushroom. The PC leading the Marching Order has a
+4-in-6 chance of disturbing a small mushroom that will shriek,
+causing Wandering Monsters to arrive. Reduce this chance by
+
+2 if the PC is a halfling or forester (druid, ranger or any other
+outdoor class) and by 1 if it’s a rogue.
+
+Cordyceps Trap. A random PC must Save vs. HCL+3 poison
+or be infected with a mind-controlling fungus parasite and
+attack the ally with the fewest current Life points (the at-
+tacked PC must defend vs. the L of the controlled PC). All PCs
+Save at +1/2L vs. the infection. Halflings and barbarians Save
+at +L. The mind control effect will wear off after 6 turns or if
+a Blessing or Healing are used. An ally killed by the infected
+PC will rise as an undead Boss Monster (Tier+1 Life, L equal to
+the dead PC’s L) and attack a random PC.
+
+y
+
+x
+
+:
+.
+2 >
+,
+
+3d6 Rats, HCL Animal Vermin (max. L4). No Treasure.
+At the end of the encounter, every PC wounded by a rat
+must roll a 1-in-6 chance of losing 1 Life to infection.
+
+Goblins, trolls, orcs, lizardmen and ogres eat rats. Count a
+each rat as 1 Food ration for them. '
+Reactions (d6): 1-3 Flee, 4-6 Fight
+
+3d6 Vampire Bats, HCL Animal Vermin (max. L3).
+No Treasure. Spellcasting rolls are at -1 due to their
+distracting shrieking. Despite the vampire moniker,
+these creatures are animals, not undead.
+
+Reactions (d6): 1-3 Flee, 4-6 Fight.
+
+2d6 Goblin Swarmlings, HCL+1 Vermin (max.
+L4). Treasure -1, Morale -1. Dwarves attack
+goblin swarmlings at +1 to Attack rolls.
+Reactions (d6): 1 Flee, 2-3 Flee if outnumbered, <5 .
+4 Bribe (5gp each), 5-6 Fight. <
+
+dé Giant Centipedes, HCL+1 Animal Vermin (max. L3).
+No Treasure. All living PCs hit by a centipede must
+Save vs. L2 poison or lose 1 additional Life.
+
+Reactions (d6): 1 Flee, 2-3 Flee if outnumbered, 4-6 Fight.
+
+dé Vampire Frogs, HCL+3 Animal Vermin (max. L5).
+Treasure -1. Despite the vampire moniker, these am-
+phibian blood-suckers are animals, not undead.
+
+Reactions (d6): 1 Flee, 2-3 Blood offering, 4 Fight, 5-6
+Fight to the death.
+
+2d6 Skeletal Rats, HCL+2 Undead Vermin (max.
+L5). No Treasure. Immune to Sleep, disease and
+poison. Unaffected by ranged weapons (except
+firearms). Crushing weapons attack them at +1.
+A vial of holy water automatically destroys 2
+skeletal rats.
+
+Reactions (d6): 1-2 Flee, 3-6 Fight.
+
+167
+— —_
+
+——=
+
+ata) Dungeon Minions Table CAG) =
+
+Roll dé: 1-3= d6+2 Skeletons, 4-6= d6 Zombies. Both are:
+HCL+2 Undead Minions, No treasure. Never test Morale.
+Immune to Sleep, poison, disease. A vial of holy water will
+automatically destroy 1 skeleton or zombie. Crushing weap-
+ons attack skeletons at +1. Arrows/crossbow bolts are at -1vs.
+skeletons and zombies. Zombies are max. L6.
+
+Reactions: Always Fight to the death.
+
+d6+3 Goblins, HCL+2 Minions (Max. L6), Treasure -1.
+Dwarves attack goblins at +1. Goblins have a 1-in-6
+chance of surprising the party. Roll on their Reactions
+if they do, even if met as Wandering Monsters.
+Reactions (d6): 1 Flee if outnumbered, 2-3 Bribe (Sgp
+each), 4-6 Fight.
+
+d6 Hobgoblins, HCL+3 Minions. Treasure +1.
+Reactions (d6): 1 Flee if outnumbered, 2-3 Bribe (10gp
+each), 4-5 Fight, 6 Fight to the death.
+
+“I
+
+d6+1 Orcs, HCL+3 Minions (max. L10). Elves attack orcs at +1. >
+
+Orcs fear magic and must roll Morale every turn in which 1+ 2
+
+orcs are defeated by a spell. If the spell reduces their number \\segeragins
+to 1/2 or less, their Morale roll is at -1. They never have magic 3 y
+items in their loot. If you roll one, you find déxd6gp instead.
+Reactions (d6): 1-2 Bribe (10gp each), 3-5 Fight, 6 Fight to the
+
+death
+
+d3 Trolls, HCL+4 Minions (max. L7). Halflings add +L to De-
+fense rolls vs. trolls. Trolls regenerate unless slain by magic,
+fire or acid, or unless a PC spends 1 turn to hack their bodies
+to pieces with a slashing weapon. Otherwise, every slain
+troll has a 2-in-6 chance of returning to life on its next turn,
+continuing to fight.
+
+Reactions (d6): 1-2 Fight, 3-6 Fight to the death. If there are
+dwarves in the party, trolls always fight to the death.
+
+2d6 Mushroom Men, HCL+2 Minions (max. L10).
+Living PCs hit by a mushroom man must Save vs. L3
+poison or lose 1 additional Life. Halflings Save at +L.
+Mushroom PCs are immune.
+
+Reactions (d6): 1-2 Bribe (6gp each), 3-6 Fight.
+
+168
+———
+
+_
+we “Ar ~~
+
+= wee 46)
+A : Dungeon Weird Monsters Table CAG) =
+
+Minotaur, HCL+4 Weird Monster, Tier+3 Life, 2 attacks. Due
+to its charge, the first Defense roll vs. a minotaur's attack is at
+-1. Halflings can't use Luck in minotaur encounters.
+
+Reactions: 1-2 Bribe (60gp), 3-5 Fight, 6 Fight to the death.
+
+Iron Eater, HCL+2 Weird Monster, Tier+3 Life, 3 attacks, no
+treasure. Its attacks inflict no damage but destroy metal
+items, including magic ones: first armor, then shields,
+then main weapon, then 3d6gp, in this order. Light armor
+and shield give their normal Defense bonuses against its
+attacks. Heavy armor does not, unless it is non-metallic. am
+Reactions (d6): 1 Flee, 2-3 Bribe (d6gp to distract the creature
+but you can’t use Fools’ Gold), 4-6 Fight.
+
+Chimera, HCL+4 Chaos Weird Monster, Tier+5 Life,
+3 attacks. Roll a 2-in-6 chance each turn that it will
+breathe fire instead of performing its 3 attacks. If it
+does so, all PCs must Save vs. L4 fire or lose 1 Life.
+Reactions (d6): 1 Bribe (SOgp), 2-6 Fight.
+
+Catoblepas, HCL+3 Weird Monster, Tier+3 Life, Trea-
+sure +1. At the beginning of the encounter, all PCs
+must Save vs. L4 gaze or lose 1 Life.
+
+Reactions (d6): 1 Flee, 2-6 Fight.
+
+Giant Spider, HCL+4 Weird Monster, Tier+2 Life. i
+2 attacks, Treasure: 2 rolls. A living PC hit by the giant
+spider must Save vs. L3 poison or lose 1 Life. Because of
+the spider's web, PCs may not flee until a Fireball is cast
+(in addition to damaging the spider, it will burn its web)
+or a torch is spent to destroy it.
+
+Reactions: Always Fight.
+
+Invisible Gremlins. Gremlins have no stats. They are an
+event, not a Foe, and cannot be the Final Boss. They
+steal d6+3 items from the PCs. Items protected with
+gremlin repellant will not be stolen. Items are taken
+in this order: magic items, scrolls, potions, weapons,
+gems, gold (10gp at a time). If the gremlins steal ALL
+the equipment, they will leave a thank you message
+which counts as 1 Clue. Many game effects offer differ-
+
+ent levels of protection against gremlins. Discovering
+them is part of the game!
+
+169
+— -—
+
+a aia ——7" =>
+jeep) Dungeon Boss Monsters Table CAG )=
+
+—
+
+Mummy HCL+4 Undead Boss, Tier+3 Life, 2 attacks, Treasure
++2, never rolls Morale. Immune to Sleep and poison. A PC slain
+by a mummy becomes a mummy one turn later and attacks
+the party. A mummy is flammable. Fire-based attacks and
+torches attack them at +2 and a flask of oil adds another +2.
+
+Reaction: Always Fight to the death.
+
+oe 2 >:
+en Orc Brute, HCL+4 Boss, Tier+4 Life, 2 attacks, Treasure +1.
+WES Elves attack him at +1. It never has any magic items in its
+
+we loot: count them as d6xd6gp instead.
+at
+
+Reactions (d6): 1 Bribe (SOgp), 2-5 Fight, 6 Fight to the death.
+NL
+
+Ogre, HCL+4 Boss, Tier+4 Life. Its attacks inflict
+Tier+1 damage. i ,
+Reactions (d6): 1 Bribe (30gp), 2-3 Fight, 4-6 Fight to Bs
+the death. -
+
+2
+
+Medusa, HCL+3 Boss, Tier+3 Life, Treasure +1. At the be-
+ginning of the encounter, before ranged attacks, all PCs
+must Save vs. L4 gaze or be turned to stone. Rogues add
++1/2L to the Save. A Blessing restores 1 PC.
+
+Reactions (d6): 1 Bribe (6d6gp), 2 Quest, 3-5 Fight, 6 Fight
+to the death.
+
+Chaos Lord, HCL+5 Chaos Boss, Tier+3 Life, 3 attacks, 2 Trea-
+sure rolls at +1 and a 2-in-6 chance of 1 Clue. Roll d6 to de-
+termine its powers: 1-3 no power, 4 evil eye (all PCs must Save
+vs.L4 magic or be at -1 on their Defense rolls until he is slain),
+5 energy drain (PCs hit must Save vs. L4 magic or lose 1L; a
+9 Blessing restores all lost levels), hellfire blast (at the beginning
+# of the encounter, all PCs must Save vs. L6 magic or lose 2 Life,
+clerics Save at +1/2 L).
+
+Reactions (d6): 1 Flee if outnumbered, 2 Fight, 3-6 Fight to the
+death.
+
+Young Dragon, HCL+5 Boss, Tier+4 Life, 2 attacks, 3
+Treasure rolls at +1. Immune to Sleep. On each of its
+turns, roll d6. On a 1-2, it breathes fire (all PCs must
+Save vs. L6 breath or lose 2 Life; all add +1/2L to this
+Save). On a 3-6, it attacks 2 random targets (1 dam-
+age). Never encountered as a Wandering Monster.
+Reactions (d6): 1 Sleep (all PCs have +2 to their first At-
+tack roll), 2-3 Bribe (all the party’s gp with a minimum
+of 100gp or 1 magic item), 4 Quest, 5-6 Fight.
+
+170
+—_
+
+t+ ~ - .
+a>) Caverns Vermin Table C46) =
+
+2d6 Echo Bats, HCL+1 Animal Vermin (max. L4),
+Morale +1, no Treasure. In tiles with the Echo rule,
+increase their L by 1.
+
+Reactions (d6): 1 Flee, 2 Ignore, 3-5 Blood Offering, 6
+
+2d6+1 Mud Centipede, HCL Animal Vermin (max. L4),
+Standard Morale, no Treasure. They always ignore the
+PCs unless encountered in a tile with a water pool and
+the PCs inspect the pool — in that case, they always Fight
+to protect their eggs.
+
+Reactions: Ignore or Fight, see above.
+
+3d6 Vengeance Cockroaches, HCL+1 Animal Vermin
+(max. L3), no Treasure. Immune to Sleep. If some flee
+note how many escape. The next time you encounter
+them during the same adventure, add the number o
+escaped cockroaches to those encountered.
+
+Reactions (d6): 1-2 Flee, 3 Bribe (4 Food rations), 4-6
+Fight.
+
+d6+1 Stalactomimics, HCL+2 Elemental Vermin, no
+Treasure. Immune to Sleep and Poison. These small
+rock elementals look like stalactites and hide on cave
+ceilings, plummeting on their victims to impale them
+with their sharp tips. Each attacks only once, always
+surprising the PCs.
+Reactions (d6): 1-3 Ignore, 4-6 Fight.
+
+d6+2 Screaming Toads, HCL+3 Animal Vermin, Mo-
+rale +1, no Treasure. Their deafening croaking gives
+-1 to all spellcasting rolls. If they are not slain within
+a single turn, roll a 2-in-6 chance that Wandering
+Monsters arrive at the end of the encounter.
+Reactions (d6): 1-2 Flee, 3 Bribe (4 Food), 4-6 Fight.
+
+d6 Red Cave Spiders, HCL+2 Animal Vermin, Morale
+-1. Immune to Poison. Any living PC taking 2+ dam-
+age will have a paralyzed limb (roll dé, 1-3 arm, 4-6
+leg). A paralyzed arm cannot sling a shield or use
+
+a ranged or two-handed weapon, but can hold a
+lantern or a torch. A PC with a paralyzed leg cannot
+flee. A Healing or Blessing removes the paralysis.
+Ogres, trolls and goblins consider these spiders a
+delicacy (a spider is 1 Food for them).
+
+Reactions (d6): 1-2 Flee, 3-4 Fight, 5-6 Fight to the
+death.
+
+1
+=f
+
+as) Caverns Minions Table CAG)
+
+d6+1 Morlocks, HCL+3 Minions, Morale -1. These pale,
+
+cowardly underground humanoids dislike light. A PC with a
+lantern, torch or other light source has +2 to Defense rolls
+against them.
+
+Reactions (d6): 1-2 Bribe (15gp or 5 Food rations for the whole |
+group), 3 Offer information (counts as the Morlock Spy result on
+the Caverns Events Table), 4-6 Fight.
+
+d6+1 Cave Goblins, HCL+2 Minions (Max. L5), Morale -1,
+Treasure -1. 2-in-6 chance of surprise. They are armed
+with poor quality clubs: PCs in Heavy Armor have an addi-
+tional +1 to Defense rolls.
+
+Reactions (d6): 1 Flee, 2-3 Bribe (Sgp per goblin), 4-6 Fight.
+
+2d6 Cave Skeletons, Undead, HCL+2 Minions, Morale:
+Never. Animated bones of miners, covered in mud. Their
+camouflage gives them a 1-in-6 chance of surprise. Armed
+with pickaxes. Crushing weapons attack them at +1. A vial
+of holy water automatically destroys 2 skeletons.
+Reaction: Always Fights to the death.
+
+d6+1 Rat Men of the Deep, HCL+2 Minions. Before me-
+lee, each rat man performs an HCL+3 ranged attack
+with its crossbow. In melee they use flails: PC ignore
+shield Defense bonuses.
+
+Reactions (d6): 1-3 Bribe (1 Ration or Sgp or 1 Mushroom
+per rat man), 4-6 fight.
+
+d6+1 Cave Orcs, HCL+3 Minions. Due to their charge,
+in the first turn of melee PCs have -1 to Defense rolls.
+Starting with the second turn, all PCs with Heavy Ar-
+mor have an additional +1 to Defense rolls due to the
+poor quality of the orcs’ clubs.
+
+Reactions (d6): 1-3 Buy Weapons (they pay full price
+for any weapon above Cheap quality, but will not buy if
+there are dwarves or elves in the party), 4-6 fight.
+
+d6+3 Cavemen, HCL+2 (Max. 5) Minions, no Treasure.
+Armed with two-handed clubs. They must roll Morale if
+one is killed by a fire-based attack. Roll Morale once per
+encounter, not once per fire-based attack.
+
+Reactions (d6): 1 Flee, 2-3 Bribe (1 Food Ration per caveman
+or 1 single gem of any value), 4-6 Fight.
+
+172
+-
+
+os == —=
+= =
+ee “
+Manataur, HCL+4 Chaos Boss, HCL+3 Life, 3 attacks, Treasure < <>
++1, armed with a two-handed axe. This mutant minotaur
+feeds on magic. Every spell/ prayer cast in its presence, in-
+
+cluding those from scrolls or items, adds +1 to its Life. , pte | =
+Reactions (d6): 1-4 Bribe (2 scrolls or potions), 5-6 Fight.
+
+~~ —~ —
+verns Boss Monsters Table CAG)
+
+— a ||
+
+.
+~
+
+Hoary Ogre of the Caverns, HCL+4 Boss, HCL+3 Life, 4
+attacks, Treasure +1. At the beginning of the encounter,
+it utters a battle cry. All PCs must Save vs. L4 Fear or lose §}
+the ability to explode Attack rolls until the end of the ty
+
+encounter. Paladins are immune to this effect. Halflings ‘Vg?
+add +L to Defense rolls vs. ogres.
+Reactions: Always fight.
+
+Cavern Werebear, HCL+3 Were Boss, HCL+4 Life, Mo-
+rale +1. This were-creature regenerates 1 Life every 3
+turns (on the 3rd, 6th, 9th, etc.). Silver weapons hit
+it with a +Tier bonus. Its bite is not contagious.
+Reactions (d6): 1-2 Flee, 3-5 Fight, 6 Fight to the death.
+
+Land Siren, HCL+5 Boss, HCL Life (minimum 3), 1 attack
+(see below), Treasure: 2 rolls. At the start of combat, all
+living PCs must Save vs. HCL+2 magic or fall asleep. All
+PCs add +1/2 L to this Save. Halflings reroll a failed Save.
+The Siren gains 1 Attack for every PC who falls asleep.
+She fights with her claws. Her glands can be sold to al-
+chemists for d6x5gp. PCs remaining awake can use 1turn
+to wake a sleeping companion. Revived PCs will fight at
+-1 to Attack rolls until the end of the encounter. Sleep-
+ing PCs are automatically hit if attacked (they have no
+Defense roll).
+
+Reactions (d6): 1-4 Quest, 5-6 Fight.
+
+Fire Bear, HCL+2 Boss, HCL+4 Life, 2 attacks, Never
+rolls Morale, Treasure: 2 rolls. This six-legged bear be-
+gins combat by breathing fire on its first turn. All PCs
+must make a Defense roll vs. HCL+3 or lose 2 Life. It will
+breathe fire again after any turn in which a PC uses a
+fire-based attack. In other turns, it performs 2 Attacks
+with its claws (1 damage each).
+
+Reactions: Always fight to the death
+
+15
+-_
+
+a Se
+etepy Caverns Weird Monsters Table CAG) =
+
+Drillworm. HCL+4 WM, HCL+3 Life, 1 attack, Treasure: 2 rolls. 9
+
+Immune to Sleep. Roll d6: 1-3, it enters from an openings in the
+
+tile; 4-6, it appears from underground, with a 3-in-6 chance of
+
+surprise. Its drill inflicts Tier damage. A PC rolling a1 on Defense
+
+loses 1 of the following (choose): shield, weapon, lantern, scroll,
+
+potion, all Food. Non-magical items are destroyed. Magic items
+
+are retrieved at the end of the combat. yy
+Reaction: Always fight to the death.
+
+Cavern Wraith, HCL+3 Undead WM, HCL+2 Life (min. 4), Never
+rolls Morale, Treasure: 2 rolls. Immune to Sleep and poison. Takes
+2 damage from holy water. If at the end of the PCs’ turn it was
+not hit, all PCs automatically lose 1 Life.
+
+Reactions (d6): 1 Ignore, 2-3 Blood Offering, 4-6 Fight to the death.
+
+Cavern Sludge, HCL+2 Slime WM, Tier +3 Life, 1 Attack per
+PC, Never rolls Morale, Treasure: 1 roll. Immune to Sleep and
+poison. 4-in-6 chance of surprise. All characters, including
+animals and hirelings, receive 1 attack per turn. If struck by
+Lightning, it loses 2L in addition to damage. If it is brought
+to LO, it is destroyed.
+
+Reaction: Always fight to the death.
+
+Minosaur, HCL+4 WM, HCL+4 Life, 3 attacks. A cross between a
+lizardman and a minotaur, armed with a two-handed weapon.
+Its L increases by 1 on its first turn. This does NOT apply if it
+was hit by ranged attacks prior to melee. Any PC rolling alona
+Defense rollis knocked down and must use 1 turn to get back up.
+Reaction: Always fight.
+
+Cornucopia of Chaos, HCL+6 Chaos Artificial WM, Tier+2 Life,
+no attacks, Never tests Morale, Treasure: 2 rolls. Immune to
+Sleep and poison. This construct animated by Chaos does not
+attack but generates d6 Azure Gremlins (L2 Vermin, never
+
+test Morale, no Treasure) per turn. When encountered, it is
+guarded by d6+1 gremlins. You may not attack the Cornucopia
+if there are any gremlins in play, but you can hit it with spells.
+If the Cornucopia is destroyed, all surviving gremlins turn into
+lumps of coal worth 1gp each. ‘
+Reaction: Always fight to the death.
+
+Cave Dragon, HCL+5 Dragon WM, HCL+4 Life, 2 attacks, Morale
+-1, Treasure: 3 rolls. It begins combat by spitting tar. All PCs must
+
+their eyes and have -1 to all Attack, Defense and Saves until they
+spend 1 turn to wipe their face. On other turns, the cave dragon
+performs 2 claw attacks (1 damage each) and breathes fire. All
+must Save vs. HCL+3 Fire or lose 1 Life. All Save at +L. PCs covered
+in tar add no bonus. Halflings re-roll a failed Save. A Water Jet
+spell removes tar from a PC.
+
+Reactions (d6): 1 Flees, 2-3 Quest, 4 Bribe (5Ogp gem), 5-6 Fight.
+
+a 174
+
+ee a “por —— Ps
+_ Fungal Grottoes Vermin Table CAG)-
+
+2d6 Spore Mites, HCL Animal Vermin (max. L3). No
+Treasure. PCs hit must Save vs. L2 poison or suffer
+coughing fits: -1 to Attack rolls, non-cumulative,
+until the end of the encounter.
+Reactions (d6): 1-2 Flee, 3-6 Fight.
+
+dé Glowmaggots, HCL Vermin (max. L2), no Treasure. Their
+glow illuminates the grotto and no lantern/torch is needed
+in the tile they occupy. Each maggot eaten by a PC counts as
+1 Food ration but requires a Save vs. L1 poison (lose 1 Life on
+a failure). Slain maggots may be used as a light source for
+30 minutes/3 rooms, after which their glow fades.
+
+Reactions (d6): 1-3 Ignore, 4-6 Fight.
+
+d6+1 Fungus Leeches, HCL+1 Animal Vermin (max.
+L4), no Treasure. Immune to poison. PCs hit must
+Save vs. L4 poison or lose 1 additional Life. Halflings
+and barbarians Save at +L. A bag of salt thrown at
+them (2gp in town) will automatically kill 2 leeches.
+Reactions (d6): 1-3 Flee, 4-6 Fight.
+
+3d6 Myco-Gnats, HCL Vermin (max. L4), no Trea-
+sure. They distract PCs, giving -1 to all spellcasting
+rolls and ranged attacks. A Fireball spell will kill all
+W/, the myco-gnats.
+Reactions (d6): 1-4 Flee, 5-6 Fight.
+
+d6 Spore Toads, HCL+2 Vermin (max. L4), Treasure -1.
+Each turn, roll a 1-in-6 chance that one belches a puff of
+
+hallucinogenic spores, causing all PCs to Save vs. L2 magic
+or be at -1 Defense until the end of the encounter.
+Reactions (d6): 1-3 Flee, 4-6 Fight.
+
+2d6 Boneworms, HCL+2 Vermin (max. L5),
+Treasure: 1 roll. These pale worms crunch bone
+when feeding. Any PC slain by them cannot be
+resurrected. Boneworms are not undead but,
+because of their diet, they are connected with
+necromantic energies. If a vial of holy water
+
+is thrown at them, they take no damage but
+must roll Morale.
+
+Reactions (d6): Always Fight.
+
+16
+- = — Oe
+fates Fungal Grottoes Minions Table CAG )=
+
+d6+2 Spore Men, HCL+2 Minions (max. L8, immune to poi-
+son, Treasure -1. Living PCs hit must Save vs. L3 poison or
+lose 1 Life. Mushroom PCs are immune. Hallflings reroll failed
+Saves.
+
+Reactions (d6): 1-2 Bribe (5gp each), 3-6 Fight.
+
+d6+1 Halfling Mushroom Pickers, HCL+1 Minions (max. L5).
+Armed with knives and slings. On a Trade reaction, they
+offer dé random rare mushrooms and 2d6 Food rations
+
+for sale at standard prices, -10% if the party includes any
+halflings. Treasure: Their goods. -
+Reactions (d6): 1 Flee, 2-3 Offer Food and Rest, 4-5 Trade, 6
+Fight.
+
+d6 Moldspawn, HCL+3 Minions, no Treasure. Drip-
+ping, half-decayed humanoids coated in green mold.
+Immune to poison. PCs hit must Save vs. L2 disease or
+lose 1 additional Life at the end of the encounter (1 Life
+per encounter, not 1 Life per hit).
+
+Reactions (d6): 1-3 Bribe (1 Food ration each), 4-6 Fight.
+
+d6+1 Myceliarchs, HCL+3 Minions, Morale+1, Treasure +1.
+Fungus priests of He Who Lies Below collect blood for their
+fungal altars. Immune to poison. At the start of combat,
+one will casts a sleep-spore cloud: all PCs must Save vs. L3
+magic or miss their next turn.
+
+Reactions (d6): 1 Flee, 2-4 Blood offering, 5-6 Fight.
+
+2d6+2 Cave Locusts, HCL Minions (max. L5). Swarming, biting insects.
+PCs wearing any Armor double its Defense bonus (light armor +2, heavy
+armor +4). Locusts consume food: If the party carries any Food rations,
+the party loses d6 Food rations at the end of combat. Distribute the loss
+of rations as you want among PCs.
+Reactions (d6): 1-2 Ignore, 3-6 Fight.
+
+d6 Toadstool Knights, HCL+4 Minions, immune to
+poison, +1 Morale, Standard Treasure. These fungus
+warriors wield shield-like caps made of dried fungi.
+The first hit against each toadstool knight breaks its
+shield but the toadstool knight survives. Casting a
+Warp Wood spell will destroy all wooden caps.
+Reactions (d6): 1 Ignore, 2 Bribe (20gp each), 3-6 Fight.
+
+176
+_—
+=r — — — <r -— ae _ 2
+—
+
+qa) Fungal Grottoes oss Monsters Table Gey
+
+DS) "|
+
+Myco-Tyrant, HCL+4 Mushroom Boss, Tier+3 Life, 3 attacks, Se ; pi
+Morale +1, 1 Treasure roll. This hulking mushroom brute is
+
+immune to Sleep and poison. At the beginning of combat,
+all PCs must Save vs. L4 poison or lose 1 Life. Mushroom PCs a
+and halflings are immune.
+
+Reaction: Always Fight.
+
+Fungus Hag, HCL+3 Mushroom Boss, Tier+2 Life, 2 at-
+tacks, Treasure +1. Immune to Sleep/poison. PCs hit by
+her claws take Tier damage and must Save vs. L3 magic
+or suffer a non-cumulative -1 to Attack rolls until the
+
+end of combat. ‘4
+; Reactions (d6): 1 Blood offering, 2-3 Quest, 4-6 Fight.
+
+Spore Lord, HCL+5 Mushroom Boss, Tier+3 Life, 3 attacks,
+2 Treasure rolls. On its first turn, instead of attacking it
+releases a spore storm: all PCs must Save vs. L5 poison (all
+PCs add +1/2L to the Save, halflings reroll a failed Save) or
+be blinded (-1 Attack/Defense) until end of encounter.
+
+Reactions (d6): 1 Flee, 2-3 Bribe (100gp), 4-6 Fight.
+
+Rot Ogre, HCL+4 Boss, Tier+4 Life, 2 attacks, 2 Trea-
+sure rolls. Its fists spread decay: each hit requires a
+Save vs. L3 disease. Halflings and barbarians add
+
++L. PCs failing the Save lose 1 Life at the end of com-
+bat. Halflings gain +L Defense against the rot ogre.
+Reaction: Always Fight to the death.
+
+Caplord Knight, HCL+4 Mushroom Boss, Tier+4 Life,
+4 attacks, Treasure: armor and weapon. Immune to
+Sleep and poison. It wears armor composed of hard-
+ened fungi and wields a sporeblade, a non-metallic
+slashing weapon made from a hardened mushroom
+cap. Any PC hit must Save vs. L3 poison or lose 1 Life.
+Halflings reroll failed Saves. Any non-magical attack
+hitting the caplord knight has a 2-in-6 chance of
+bouncing off its armor. The Warp Wood spell destroys
+the armor AND the sporeblade (reduce Foe’s L by 2).
+Reactions (d6): 1-3 Trial of champions, 4-6 Fight.
+
+Fungal Dragon, HCL+5 Mushroom Boss, Tier+3
+Life, 4 attacks, Treasure +2. Each turn roll dé:
+on 1-2, instead of attacking it exhales a spore
+breath. All PCs must Save vs. L5 poison or lose 1
+Life. All PCs add +1/2L to the Save, halflings re-
+roll failed Saves. Immune to Sleep and poison.
+Reactions (d6): 1-3 Quest, 4-6 Fight.
+
+f 177
+
+ai nani i
+ay Fungal Grottoes Weird Monsters Table CAG) =
+
+Shroom Colossus, HCL+5 Mushroom WM, Tier+5 Life, 3
+attacks, each inflicting Tier damage. No Treasure. May
+not be encountered in corridors (reroll if it happens). PCs
+reduced to O Life are digested into spores and may not be a
+resurrected. Immune to Sleep and poison.
+
+Reaction: Always Fight.
+
+of Sree, Spore Swarm, HCL+3 Mushroom WIM, Tier+3 Life, no
+
+C . } Treasure. Immune to Sleep and poison. Fire-based
+
+iy :-9 0 |: “attacks add a +Tier bonus against it.
+
+en Reaction: Always Fight to the death.
+Myco-Mimic, HCL+4 Mushroom WM, Tier+2 Life, d3+1
+attacks (roll the first time it attacks), 2 Treasure rolls.
+It appears as an innocuous mushroom or a mush-
+room-covered treasure chest. It gains automatic sur-
+prise. PCs hit must Save vs. L3 poison or be paralyzed
+for 1 turn. Halflings reroll failed Saves. Immune to
+
+Sleep and poison.
+Reaction: Always Fight to the death.
+
+Hallucinogenic Horror, HCL+3 Mushroom WM,
+Tier+4 Life, Treasure +1, never tests Morale, Im-
+mune to Sleep and poison. Each turn, 1 random PC
+must Save vs. L3 magic or attack an ally instead of
+the Foe.
+
+Reaction: Always Fight to the death.
+
+Fungus-infected Hydra, HCL+4 dragon
+WM, Tier+4 Life, Tier+4 attacks, 2 Treasure
+rolls. The hydra loses 1 attack (representing
+the loss of 1 head) for each Life point lost.
+Each head slain regrows in 2 turns. If a fire-
+based attack is used, heads will not regrow.
+The hydra always performs a minimum of 1
+Attack per turn.
+
+Reactions (d6): 1 Flee, 2-3 Blood offering, 4-6
+Fight.
+
+Spore Phantom, HCL+3 Undead WM, Tier+3 Life,
+2 attacks, Treasure +1, never tests Morale. This
+undead mushroom spirit is immune to Sleep and
+poison. It takes 2 damage from a vial of holy water.
+PCs hit by the phantom must Save vs. L3 magic or
+lose 1 Life at end of turn as spores rot their lungs.
+Druids attack spore phantoms at +L.
+Reaction: Always Fight to the death.
+
+178

@@ -1,0 +1,593 @@
+/* Roguelike CRT Theme - DungeonMode Font with CRT Effect */
+
+/* CRT Color Variables */
+:root {
+  --crt-red: rgb(218, 49, 49);
+  --crt-green: rgb(112, 159, 115);
+  --crt-blue: rgb(40, 129, 206);
+  --crt-bg: rgb(25, 25, 30);
+  --crt-text: rgba(255, 255, 255, 0.85);
+  --crt-text-dim: rgba(255, 255, 255, 0.6);
+  --crt-amber: rgb(255, 176, 0);
+  --crt-cyan: rgb(0, 255, 255);
+  --crt-magenta: rgb(255, 0, 255);
+}
+
+/* DungeonMode Font */
+@font-face {
+  font-family: 'DungeonMode';
+  src: url('/fonts/dungeonmode/font/dungeon-mode.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'DungeonModeInverted';
+  src: url('/fonts/dungeonmode/font/dungeon-mode-inverted.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Base CRT styles when .roguelike class is on body */
+body.roguelike {
+  font-family: 'DungeonMode', 'Courier New', monospace;
+  background-color: var(--crt-bg);
+  color: var(--crt-text);
+  font-size: 16px;
+  line-height: 1.2;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Root container - NO global CRT effect */
+body.roguelike #root {
+  position: relative;
+  background-color: var(--crt-bg);
+}
+
+/* ============================================
+   CRT Effect - Applied ONLY to specific areas
+   ============================================ */
+
+/* CRT effect mixin - applied via .crt-screen class */
+body.roguelike .crt-screen {
+  position: relative;
+}
+
+body.roguelike .crt-screen::before,
+body.roguelike .crt-screen::after {
+  content: "";
+  transform: translateZ(0);
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
+  z-index: 10;
+  border-radius: inherit;
+}
+
+/* Horizontal scanlines */
+body.roguelike .crt-screen::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    rgba(0, 0, 0, 0.3) 1px,
+    transparent 2px
+  );
+  opacity: 0.4;
+}
+
+/* RGB pixel effect */
+body.roguelike .crt-screen::after {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--crt-red) 0px,
+    var(--crt-green) 1px,
+    var(--crt-blue) 2px,
+    transparent 3px
+  );
+  opacity: 0.08;
+}
+
+/* Apply CRT effect to Header */
+body.roguelike header {
+  position: relative;
+}
+
+body.roguelike header::before,
+body.roguelike header::after {
+  content: "";
+  transform: translateZ(0);
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
+  z-index: 10;
+}
+
+body.roguelike header::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    rgba(0, 0, 0, 0.3) 1px,
+    transparent 2px
+  );
+  opacity: 0.4;
+}
+
+body.roguelike header::after {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--crt-red) 0px,
+    var(--crt-green) 1px,
+    var(--crt-blue) 2px,
+    transparent 3px
+  );
+  opacity: 0.08;
+}
+
+/* Apply CRT effect to Sidebar (left panel) */
+body.roguelike [data-panel="sidebar"] {
+  position: relative;
+}
+
+body.roguelike [data-panel="sidebar"]::before,
+body.roguelike [data-panel="sidebar"]::after {
+  content: "";
+  transform: translateZ(0);
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
+  z-index: 10;
+}
+
+body.roguelike [data-panel="sidebar"]::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    rgba(0, 0, 0, 0.3) 1px,
+    transparent 2px
+  );
+  opacity: 0.4;
+}
+
+body.roguelike [data-panel="sidebar"]::after {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--crt-red) 0px,
+    var(--crt-green) 1px,
+    var(--crt-blue) 2px,
+    transparent 3px
+  );
+  opacity: 0.08;
+}
+
+/* Apply CRT effect to Dungeon grid */
+body.roguelike [data-dungeon-grid="true"] {
+  position: relative;
+}
+
+body.roguelike [data-dungeon-grid="true"]::before,
+body.roguelike [data-dungeon-grid="true"]::after {
+  content: "";
+  transform: translateZ(0);
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
+  z-index: 10;
+}
+
+body.roguelike [data-dungeon-grid="true"]::before {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    rgba(0, 0, 0, 0.3) 1px,
+    transparent 2px
+  );
+  opacity: 0.4;
+}
+
+body.roguelike [data-dungeon-grid="true"]::after {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--crt-red) 0px,
+    var(--crt-green) 1px,
+    var(--crt-blue) 2px,
+    transparent 3px
+  );
+  opacity: 0.08;
+}
+
+/* Panel Styling */
+body.roguelike .bg-slate-900,
+body.roguelike .bg-slate-800,
+body.roguelike .bg-slate-700 {
+  background-color: rgba(20, 20, 25, 0.95) !important;
+  border: 1px solid var(--crt-green);
+  box-shadow: 0 0 10px rgba(112, 159, 115, 0.3),
+              inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+body.roguelike .bg-slate-800\/95 {
+  background-color: rgba(20, 20, 25, 0.95) !important;
+}
+
+/* Buttons */
+body.roguelike button {
+  font-family: 'DungeonMode', 'Courier New', monospace;
+  background-color: rgba(30, 30, 35, 0.9) !important;
+  border: 1px solid var(--crt-green) !important;
+  color: var(--crt-green) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.1s ease;
+}
+
+body.roguelike button:hover {
+  background-color: var(--crt-green) !important;
+  color: var(--crt-bg) !important;
+  box-shadow: 0 0 15px var(--crt-green);
+}
+
+body.roguelike button:disabled {
+  opacity: 0.3;
+  border-color: var(--crt-text-dim) !important;
+  color: var(--crt-text-dim) !important;
+}
+
+/* Primary/Golden buttons */
+body.roguelike button.bg-amber-600,
+body.roguelike button.bg-amber-500,
+body.roguelike .bg-amber-600 {
+  border-color: var(--crt-amber) !important;
+  color: var(--crt-amber) !important;
+}
+
+body.roguelike button.bg-amber-600:hover,
+body.roguelike button.bg-amber-500:hover {
+  background-color: var(--crt-amber) !important;
+  color: var(--crt-bg) !important;
+  box-shadow: 0 0 15px var(--crt-amber);
+}
+
+/* Danger buttons */
+body.roguelike button.bg-red-600,
+body.roguelike button.bg-red-500 {
+  border-color: var(--crt-red) !important;
+  color: var(--crt-red) !important;
+}
+
+body.roguelike button.bg-red-600:hover,
+body.roguelike button.bg-red-500:hover {
+  background-color: var(--crt-red) !important;
+  color: var(--crt-bg) !important;
+  box-shadow: 0 0 15px var(--crt-red);
+}
+
+/* Success buttons */
+body.roguelike button.bg-green-600,
+body.roguelike button.bg-green-500 {
+  border-color: var(--crt-green) !important;
+  color: var(--crt-green) !important;
+}
+
+/* Inputs */
+body.roguelike input,
+body.roguelike select,
+body.roguelike textarea {
+  font-family: 'DungeonMode', 'Courier New', monospace;
+  background-color: rgba(10, 10, 15, 0.9) !important;
+  border: 1px solid var(--crt-green) !important;
+  color: var(--crt-text) !important;
+}
+
+body.roguelike input:focus,
+body.roguelike select:focus,
+body.roguelike textarea:focus {
+  outline: none;
+  box-shadow: 0 0 10px var(--crt-green);
+}
+
+/* Headers and Text */
+body.roguelike h1,
+body.roguelike h2,
+body.roguelike h3,
+body.roguelike h4 {
+  font-family: 'DungeonMode', 'Courier New', monospace;
+  color: var(--crt-amber);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+body.roguelike .text-amber-400,
+body.roguelike .text-amber-500,
+body.roguelike .text-yellow-400,
+body.roguelike .text-yellow-500 {
+  color: var(--crt-amber) !important;
+}
+
+body.roguelike .text-green-400,
+body.roguelike .text-green-500,
+body.roguelike .text-emerald-400 {
+  color: var(--crt-green) !important;
+}
+
+body.roguelike .text-red-400,
+body.roguelike .text-red-500 {
+  color: var(--crt-red) !important;
+}
+
+body.roguelike .text-blue-400,
+body.roguelike .text-blue-500,
+body.roguelike .text-cyan-400 {
+  color: var(--crt-cyan) !important;
+}
+
+body.roguelike .text-purple-400,
+body.roguelike .text-purple-500 {
+  color: var(--crt-magenta) !important;
+}
+
+/* Dungeon Grid */
+body.roguelike .dungeon-grid {
+  border: 2px solid var(--crt-green);
+  box-shadow: 0 0 20px rgba(112, 159, 115, 0.4),
+              inset 0 0 30px rgba(0, 0, 0, 0.6);
+}
+
+body.roguelike .dungeon-cell {
+  border-color: rgba(112, 159, 115, 0.2) !important;
+}
+
+body.roguelike .dungeon-cell.room {
+  background-color: rgba(112, 159, 115, 0.15) !important;
+  box-shadow: inset 0 0 5px var(--crt-green);
+}
+
+body.roguelike .dungeon-cell.corridor {
+  background-color: rgba(112, 159, 115, 0.08) !important;
+}
+
+body.roguelike .dungeon-cell.door {
+  background-color: var(--crt-amber) !important;
+  box-shadow: 0 0 8px var(--crt-amber);
+}
+
+/* Character/Hero Cards */
+body.roguelike .hero-card,
+body.roguelike [class*="border-l-"] {
+  border-left-color: var(--crt-green) !important;
+  background-color: rgba(20, 20, 25, 0.9) !important;
+}
+
+/* HP Bars */
+body.roguelike .hp-bar {
+  background-color: rgba(10, 10, 15, 0.8);
+  border: 1px solid var(--crt-green);
+}
+
+body.roguelike .hp-bar-fill {
+  background: linear-gradient(90deg, var(--crt-green), var(--crt-cyan));
+  box-shadow: 0 0 10px var(--crt-green);
+}
+
+body.roguelike .hp-bar-fill.low {
+  background: linear-gradient(90deg, var(--crt-red), var(--crt-amber));
+  box-shadow: 0 0 10px var(--crt-red);
+}
+
+/* Modals */
+body.roguelike .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.85);
+}
+
+body.roguelike .modal-content {
+  background-color: rgba(20, 20, 25, 0.98) !important;
+  border: 2px solid var(--crt-green);
+  box-shadow: 0 0 30px var(--crt-green),
+              inset 0 0 50px rgba(0, 0, 0, 0.5);
+}
+
+/* Tabs */
+body.roguelike .tab-button {
+  border-bottom: 2px solid transparent;
+}
+
+body.roguelike .tab-button.active {
+  border-bottom-color: var(--crt-green);
+  color: var(--crt-green);
+}
+
+/* Scrollbars */
+body.roguelike ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+body.roguelike ::-webkit-scrollbar-track {
+  background: var(--crt-bg);
+  border: 1px solid var(--crt-green);
+}
+
+body.roguelike ::-webkit-scrollbar-thumb {
+  background: var(--crt-green);
+  box-shadow: 0 0 5px var(--crt-green);
+}
+
+body.roguelike ::-webkit-scrollbar-thumb:hover {
+  background: var(--crt-cyan);
+}
+
+/* Dice Results */
+body.roguelike .dice-result {
+  color: var(--crt-cyan);
+  font-size: 1.5em;
+}
+
+/* Log entries */
+body.roguelike .log-entry {
+  border-left: 2px solid var(--crt-green);
+  padding-left: 8px;
+  margin-bottom: 4px;
+}
+
+body.roguelike .log-entry.combat {
+  border-left-color: var(--crt-red);
+}
+
+body.roguelike .log-entry.treasure {
+  border-left-color: var(--crt-amber);
+}
+
+body.roguelike .log-entry.exploration {
+  border-left-color: var(--crt-cyan);
+}
+
+/* Badges and Pills */
+body.roguelike .badge,
+body.roguelike [class*="rounded-full"] {
+  border: 1px solid currentColor;
+}
+
+/* Icons - remove glow effect for clarity */
+body.roguelike svg {
+  filter: none;
+}
+
+/* Flicker animation for that authentic CRT feel */
+@keyframes crt-flicker {
+  0% { opacity: 1; }
+  3% { opacity: 0.95; }
+  6% { opacity: 1; }
+  7% { opacity: 0.9; }
+  9% { opacity: 1; }
+  30% { opacity: 1; }
+  31% { opacity: 0.98; }
+  33% { opacity: 1; }
+  60% { opacity: 1; }
+  61% { opacity: 0.96; }
+  63% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* Apply flicker to CRT sections only */
+body.roguelike header,
+body.roguelike [data-panel="sidebar"],
+body.roguelike [data-dungeon-grid="true"] {
+  animation: crt-flicker 8s infinite;
+}
+
+/* Turn off the flicker if user prefers reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  body.roguelike header,
+  body.roguelike [data-panel="sidebar"],
+  body.roguelike [data-dungeon-grid="true"] {
+    animation: none;
+  }
+  body.roguelike header::before,
+  body.roguelike header::after,
+  body.roguelike [data-panel="sidebar"]::before,
+  body.roguelike [data-panel="sidebar"]::after,
+  body.roguelike [data-dungeon-grid="true"]::before,
+  body.roguelike [data-dungeon-grid="true"]::after {
+    display: none;
+  }
+}
+
+/* Selection styling */
+body.roguelike ::selection {
+  background-color: var(--crt-green);
+  color: var(--crt-bg);
+}
+
+/* Horizontal rules */
+body.roguelike hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--crt-green), transparent);
+  box-shadow: 0 0 5px var(--crt-green);
+}
+
+/* Tables */
+body.roguelike table {
+  border: 1px solid var(--crt-green);
+}
+
+body.roguelike th {
+  background-color: rgba(112, 159, 115, 0.2);
+  color: var(--crt-amber);
+  border-bottom: 1px solid var(--crt-green);
+}
+
+body.roguelike td {
+  border-bottom: 1px solid rgba(112, 159, 115, 0.3);
+}
+
+body.roguelike tr:hover td {
+  background-color: rgba(112, 159, 115, 0.1);
+}
+
+/* Tooltips */
+body.roguelike [data-tooltip]::after {
+  background-color: rgba(20, 20, 25, 0.95);
+  border: 1px solid var(--crt-green);
+  box-shadow: 0 0 10px var(--crt-green);
+}
+
+/* Progress bars */
+body.roguelike progress {
+  background-color: rgba(10, 10, 15, 0.8);
+  border: 1px solid var(--crt-green);
+}
+
+body.roguelike progress::-webkit-progress-bar {
+  background-color: rgba(10, 10, 15, 0.8);
+}
+
+body.roguelike progress::-webkit-progress-value {
+  background: var(--crt-green);
+  box-shadow: 0 0 5px var(--crt-green);
+}
+
+/* ASCII-style decorative elements */
+body.roguelike .ascii-border {
+  border-style: double;
+  border-color: var(--crt-green);
+}
+
+/* Monster stat blocks */
+body.roguelike .monster-card {
+  border: 1px solid var(--crt-red);
+  background-color: rgba(218, 49, 49, 0.1);
+}
+
+/* Treasure highlights */
+body.roguelike .treasure-highlight {
+  color: var(--crt-amber);
+}
+
+/* Combat damage numbers */
+body.roguelike .damage-number {
+  color: var(--crt-red);
+  font-weight: bold;
+}
+
+body.roguelike .heal-number {
+  color: var(--crt-green);
+  font-weight: bold;
+}

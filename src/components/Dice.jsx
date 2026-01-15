@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { d6, r2d6, d66 } from '../utils/dice.js';
+import { RpguiButton } from './RpguiComponents.jsx';
+import { useTheme } from '../contexts/ThemeContext.jsx';
 
 export default function Dice() {
   const [result, setResult] = useState(null);
+  const { isRpgui } = useTheme();
   
   const handleRoll = (type) => {
     let value;
@@ -22,13 +25,13 @@ export default function Dice() {
   return (
     <div className="bg-slate-800 rounded p-2 flex gap-2 items-center">
       {['d6', '2d6', 'd66'].map(type => (
-        <button 
+        <RpguiButton
           key={type} 
           onClick={() => handleRoll(type)} 
-          className="bg-amber-600 hover:bg-amber-500 px-3 py-1 rounded text-sm font-bold"
+          className={isRpgui ? 'text-sm' : 'px-3 py-1 text-sm'}
         >
           {type}
-        </button>
+        </RpguiButton>
       ))}
       {result && (
         <span className="ml-auto text-amber-400 font-bold text-xl">

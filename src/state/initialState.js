@@ -113,10 +113,10 @@ export const createCampaignState = () => ({
 
 // Full initial state
 export const initialState = {
-  // Current mode: 'adventure' or 'campaign'
-  mode: 'adventure',
+  // Always in campaign mode (simplified)
+  mode: 'campaign',
   
-  // Campaign data (always present, used in campaign mode)
+  // Campaign data (always active)
   campaign: createCampaignState(),
   
   // Current adventure data
@@ -142,16 +142,32 @@ export const initialState = {
   
   // Archived logs (persist until campaign reset)
   logArchive: [],
-  
-  // Monsters (current encounter)
+    // Monsters (current encounter)
   monsters: [],
-  
-  // Hero abilities tracking (keyed by hero index for backward compat)
+    // Hero abilities tracking (keyed by hero index for backward compat)
   abilities: {},
+  
+  // Marching order: array of hero indices [position1, position2, position3, position4]
+  // Positions: 0=top-left, 1=top-right, 2=bottom-right, 3=bottom-left (clockwise)
+  marchingOrder: [null, null, null, null],
   
   // Grid state (keeping at top level for backward compat)
   grid: Array(28).fill(null).map(() => Array(20).fill(0)),
-  doors: [],
+  doors: [], // {x, y, edge, doorType, opened}
+  
+  // Phase 3: Traps
+  traps: [], // {id, x, y, type, detected, disarmed, triggered}
+  
+  // Phase 3: Special rooms
+  specialRooms: [], // {id, x, y, type, interacted, result}
+  
+  // Phase 3: Boss room location
+  bossRoom: null, // {x, y, unlocked, entered}
+  
+  // Phase 3: Current exploration state
+  currentRoom: null, // {type, subtype, resolved}
+  currentTrap: null, // {type, detected}
+  currentDoor: null, // {type, opened}
   
   // UI state
   activeTab: 'party'

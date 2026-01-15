@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, X, Heart } from 'lucide-react';
+import { Plus, X, Heart, Star } from 'lucide-react';
 import { CLASSES, getMaxHP, getSpellSlots, getLuckPoints } from '../data/classes.js';
 import { d6 } from '../utils/dice.js';
+import { getXPForNextLevel, canLevelUp } from '../data/monsters.js';
+import BossMechanics from './BossMechanics.jsx';
 
 export default function Party({ state, dispatch }) {
   const [showClassPicker, setShowClassPicker] = useState(false);
@@ -39,6 +41,24 @@ export default function Party({ state, dispatch }) {
         hp: Math.min(hero.hp, newMaxHp) 
       } 
     });
+  };
+  
+  const handleLevelUp = (index) => {
+    const hero = state.party[index];
+    if (!canLevelUp(hero)) return;
+    
+    const newLevel = hero.lvl + 1;
+    const newMaxHp = getMaxHP(hero.key, newLevel);
+    dispatch({ 
+      type: 'UPD_HERO', 
+      i: index, 
+      u: { 
+        lvl: newLevel, 
+        maxHp: newMaxHp, 
+        hp: hero.hp + 1 // Gain 1 HP on level up
+      } 
+    });
+    dispatch({ type: 'LOG', t: `🎉 ${hero.name} leveled up to L${newLevel}!` });
   };
   
   const adjustHP = (index, delta) => {
@@ -180,22 +200,47 @@ export default function Party({ state, dispatch }) {
       )}
       
       {/* Hero Cards */}
-      {state.party.map((hero, index) => (
-        <div key={hero.id || index} className="bg-slate-700 rounded p-2 text-sm">
+      {state.party.map((hero, index) => {
+        const xpNeeded = getXPForNextLevel(hero.lvl);
+        const currentXP = hero.xp || 0;
+        const readyToLevel = canLevelUp(hero);
+        
+        return (
+        <div key={hero.id || index} className={`bg-slate-700 rounded p-2 text-sm ${readyToLevel ? 'ring-2 ring-yellow-400' : ''}`}>
           <div className="flex justify-between">
-            <input 
-              value={hero.name} 
-              onChange={e => dispatch({ type: 'UPD_HERO', i: index, u: { name: e.target.value } })} 
-              className="bg-transparent text-amber-400 font-bold w-24 outline-none" 
-            />
+            <div className="flex items-center gap-2">
+              <input 
+                value={hero.name} 
+                onChange={e => dispatch({ type: 'UPD_HERO', i: index, u: { name: e.target.value } })} 
+                className="bg-transparent text-amber-400 font-bold w-24 outline-none" 
+              />
+              {/* Marching Order Selector */}
+              <select
+                value={state.marchingOrder?.indexOf(index) ?? ''}
+                onChange={(e) => {
+                  const position = e.target.value === '' ? null : parseInt(e.target.value);
+                  if (position !== null) {
+                    dispatch({ type: 'SET_MARCHING_ORDER', heroIdx: index, position });
+                  }
+                }}
+                className="bg-slate-600 text-slate-300 text-xs px-1 py-0.5 rounded"
+                title="Marching Order Position"
+              >
+                <option value="">-</option>
+                <option value="0">Pos 1</option>
+                <option value="1">Pos 2</option>
+                <option value="2">Pos 3</option>
+                <option value="3">Pos 4</option>
+              </select>
+            </div>
             <button 
               onClick={() => dispatch({ type: 'DEL_HERO', i: index })} 
               className="text-slate-500 hover:text-red-400"
             >
               <X size={14} />
-            </button>
-          </div>
+            </button>          </div>
           
+          {/* Level and HP Controls */}
           <div className="flex justify-between items-center text-xs mt-1">
             <div className="flex items-center gap-1">
               <button 
@@ -207,6 +252,14 @@ export default function Party({ state, dispatch }) {
                 onClick={() => adjustLevel(index, 1)} 
                 className="bg-slate-600 px-1 rounded"
               >+</button>
+              {readyToLevel && (
+                <button
+                  onClick={() => handleLevelUp(index)}
+                  className="bg-yellow-500 hover:bg-yellow-400 text-black px-2 py-0.5 rounded text-xs font-bold animate-pulse ml-2"
+                >
+                  Level Up!
+                </button>
+              )}
             </div>
             <div className="flex items-center gap-1 text-red-400">
               <Heart size={12} />
@@ -222,12 +275,23 @@ export default function Party({ state, dispatch }) {
             </div>
           </div>
           
-          {/* Class Abilities */}
+          {/* Status Effects */}
+          {(hero.status?.blessed || hero.status?.wounded || hero.status?.dead) && (
+            <div className="flex gap-1 mt-1 text-xs">
+              {hero.status?.blessed && <span className="bg-amber-600 px-1 rounded">✨ Blessed</span>}
+              {hero.status?.wounded && <span className="bg-orange-600 px-1 rounded">🩹 Wounded</span>}
+              {hero.status?.dead && <span className="bg-red-800 px-1 rounded">💀 Dead</span>}
+            </div>
+          )}
+            {/* Class Abilities */}
           {renderAbilities(hero, index)}
+          
+          {/* Divider between heroes (RPGUI styled) */}
+          {index < state.party.length - 1 && <hr className="my-2" />}
         </div>
-      ))}
-      
-      {/* Gold Tracker */}
+        );
+      })}
+        {/* Gold Tracker */}
       <div className="bg-slate-800 rounded p-2 text-sm">
         <div className="flex justify-between items-center">
           <span className="text-amber-400">Gold: {state.gold}</span>
@@ -247,6 +311,9 @@ export default function Party({ state, dispatch }) {
           </div>
         </div>
       </div>
+      
+      {/* Boss Mechanics */}
+      <BossMechanics state={state} dispatch={dispatch} />
     </div>
   );
 }
