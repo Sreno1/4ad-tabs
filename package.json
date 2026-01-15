@@ -1,6 +1,20 @@
 {
   "name": "4ad-tabs",
   "version": "1.0.0",
+  "description": "A solo tabletop game companion app for Four Against Darkness",
+  "author": "Steven Lykins",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sreno1/4ad-tabs.git"
+  },
+  "keywords": [
+    "tabletop",
+    "rpg",
+    "game",
+    "solo",
+    "dungeon-crawler",
+    "four-against-darkness"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
