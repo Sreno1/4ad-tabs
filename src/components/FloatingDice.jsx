@@ -27,8 +27,15 @@ export default function FloatingDice() {
 
     const initDiceBox = async () => {
       try {
-        const box = new DiceBox('#dice-canvas', {
-          assetPath: '/dice-box/',
+        // Assets are served from public folder
+        // In dev: Vite serves public at root, so /assets/dice-box/assets/
+        // In production: base is /4ad-tabs/, so /4ad-tabs/assets/dice-box/assets/
+        const assetPath = import.meta.env.DEV ? '/assets/dice-box/assets/' : '/4ad-tabs/assets/dice-box/assets/';
+
+        // v1.1.0 API: single config object with container property
+        const box = new DiceBox({
+          container: '#dice-canvas',
+          assetPath,
           theme: diceTheme,
           themeColor: diceColorHex,
           scale: 6,

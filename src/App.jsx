@@ -14,6 +14,7 @@ import CampaignManagerModal from './components/CampaignManagerModal.jsx';
 import Equipment from './components/Equipment.jsx';
 import Abilities from './components/Abilities.jsx';
 import ActionPane from './components/ActionPane.jsx';
+import FloatingDice from './components/FloatingDice.jsx';
 
 // Layout Components
 import AppHeader from './components/layout/AppHeader.jsx';
@@ -206,6 +207,9 @@ export default function App() {
       <CampaignManagerModal isOpen={showCampaign} onClose={() => setShowCampaign(false)} state={state} dispatch={dispatch} />
       <Equipment isOpen={showEquipment} state={state} dispatch={dispatch} onClose={() => setShowEquipment(false)} />
       <Abilities isOpen={showAbilities} state={state} dispatch={dispatch} onClose={() => setShowAbilities(false)} />
+
+      {/* Floating Dice Roller (Desktop) */}
+      <FloatingDice />
     </div>
   );
 }

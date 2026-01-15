@@ -1,7 +1,5 @@
 import React from 'react';
 import { Book, Save, DoorOpen, Settings, Trophy, Package, Zap } from 'lucide-react';
-import Dice from '../Dice.jsx';
-import MarchingOrder from '../MarchingOrder.jsx';
 
 export default function AppHeader({
   state,
@@ -36,7 +34,6 @@ export default function AppHeader({
 
         {/* Header Actions */}
         <div className="flex items-center gap-1">
-          <Dice />
           <button onClick={onShowRules} className="text-slate-400 hover:text-amber-400 p-1" title="Rules">
             <Book size={18} />
           </button>

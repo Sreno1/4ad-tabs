@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { X, Archive, Palette } from 'lucide-react';
+import { X, Archive, Palette, Dices } from 'lucide-react';
 import { useTheme, THEMES } from '../contexts/ThemeContext.jsx';
+import { useDiceTheme, DICE_COLORS, DICE_THEMES } from '../contexts/DiceContext.jsx';
 
 export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
   const [showArchive, setShowArchive] = useState(false);
   const { theme, setTheme } = useTheme();
+  const { diceColor, setDiceColor, diceTheme, setDiceTheme } = useDiceTheme();
   
   if (!isOpen) return null;
   
@@ -60,6 +62,64 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
               {theme === 'rpgui' && '🎮 RPGUI theme applies retro 8-bit styling.'}
               {theme === 'doodle' && '✏️ Doodle theme uses hand-drawn borders and playful style.'}
             </p>
+          </div>
+
+          {/* Dice Theme Selection */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide flex items-center gap-2">
+              <Dices size={14} />
+              Dice Theme
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.values(DICE_THEMES).map((dt) => (
+                <button
+                  key={dt.id}
+                  onClick={() => setDiceTheme(dt.id)}
+                  className={`p-2 rounded border-2 transition-colors text-center ${
+                    diceTheme === dt.id
+                      ? 'border-amber-400 bg-amber-900/30'
+                      : 'border-slate-600 bg-slate-900 hover:border-slate-500'
+                  }`}
+                  title={dt.description}
+                >
+                  <span className={`text-xs font-medium ${diceTheme === dt.id ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {dt.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-slate-500">
+              Add more themes from <a href="https://github.com/3d-dice/dice-themes" target="_blank" rel="noopener" className="text-blue-400 hover:underline">3d-dice/dice-themes</a>
+            </p>
+          </div>
+
+          {/* Dice Color Selection */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">
+              Dice Color
+            </h3>
+            <div className="grid grid-cols-4 gap-2">
+              {Object.values(DICE_COLORS).map((dc) => (
+                <button
+                  key={dc.id}
+                  onClick={() => setDiceColor(dc.id)}
+                  className={`p-2 rounded border-2 transition-colors flex flex-col items-center ${
+                    diceColor === dc.id
+                      ? 'border-amber-400 bg-amber-900/30'
+                      : 'border-slate-600 bg-slate-900 hover:border-slate-500'
+                  }`}
+                  title={dc.name}
+                >
+                  <div
+                    className="w-6 h-6 rounded shadow-md mb-1"
+                    style={{ backgroundColor: dc.color }}
+                  />
+                  <span className={`text-xs ${diceColor === dc.id ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {dc.name.split(' ')[0]}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
           
           {/* Log Management */}
