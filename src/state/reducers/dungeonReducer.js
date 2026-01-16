@@ -127,6 +127,18 @@ export function dungeonReducer(state, action) {
         bossRoom: { ...state.bossRoom, unlocked: true, entered: true }
       };
 
+    // ========== Tile Exploration ==========
+    case A.MARK_TILE_SEARCHED: {
+      const tileKey = `${action.x},${action.y}`;
+      if (state.searchedTiles.includes(tileKey)) {
+        return state; // Already searched
+      }
+      return {
+        ...state,
+        searchedTiles: [...state.searchedTiles, tileKey]
+      };
+    }
+
     default:
       return state;
   }

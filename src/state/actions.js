@@ -116,3 +116,10 @@ export const USE_PRAYER = 'USE_PRAYER';
 
 // Light source (darkness mechanics)
 export const TOGGLE_LIGHT_SOURCE = 'TOGGLE_LIGHT_SOURCE';
+
+// Combat location (corridor/room restrictions)
+export const SET_COMBAT_LOCATION = 'SET_COMBAT_LOCATION';
+export const CLEAR_COMBAT_LOCATION = 'CLEAR_COMBAT_LOCATION';
+
+// Tile exploration
+export const MARK_TILE_SEARCHED = 'MARK_TILE_SEARCHED';

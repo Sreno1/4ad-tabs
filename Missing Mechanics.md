@@ -1,4 +1,4 @@
-  campaign save system broken
+
   
   Missing Combat Mechanics
    
@@ -31,7 +31,8 @@
       Status: Not implemented. Next: Add weapon penalty logic based on location.
 
   Party Management Gaps
-
+    - Campaign save system broken
+      Status: creating new saves doesn't actually save separately from the local storage, games i created are named the same in the upper left corner as long as my session is the same, but the game is saved with a different name. saves i delete keep restoring.
     - Rogue Outnumbered bonus mechanics
       Status: implemented.
     - ❌ Implement Clues system
@@ -52,6 +53,7 @@
       Status: Not implemented. Next: Track location type and apply combat rules.
     - ❌ Narrow corridor rules
       Status: Not implemented. Next: Add corridor width state and restrict actions.
+    - X TRAPS - NOT IMPLEMENTED
     - ❌ Secret door discovery (1-in-6 shortcut out)
       Status: Not implemented. Next: Add secret door roll and shortcut logic.
     - ❌ Secret passage to different environment

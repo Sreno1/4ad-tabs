@@ -179,6 +179,12 @@ export const initialState = {
   // Light source tracking
   hasLightSource: false, // Whether party currently has light (torch, lantern, etc.)
 
+  // Combat location tracking (for corridor restrictions)
+  currentCombatLocation: null, // { type: 'room'|'corridor', width: 'normal'|'narrow', x: number, y: number }
+
+  // Tile tracking (searched, visited, etc.)
+  searchedTiles: [], // Array of "x,y" strings for tiles that have been searched
+
   // UI state
   activeTab: 'party',
   // Narrative/story beats stored at top-level for quick access

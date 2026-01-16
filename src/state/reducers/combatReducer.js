@@ -222,6 +222,21 @@ export function combatReducer(state, action) {
     case A.TOGGLE_LIGHT_SOURCE:
       return { ...state, hasLightSource: !state.hasLightSource };
 
+    // ========== Combat Location ==========
+    case A.SET_COMBAT_LOCATION:
+      return {
+        ...state,
+        currentCombatLocation: {
+          type: action.locationType,
+          width: action.width || 'normal',
+          x: action.x,
+          y: action.y
+        }
+      };
+
+    case A.CLEAR_COMBAT_LOCATION:
+      return { ...state, currentCombatLocation: null };
+
     default:
       return state;
   }

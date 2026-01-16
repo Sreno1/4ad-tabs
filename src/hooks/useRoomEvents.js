@@ -276,9 +276,12 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
   // Combined tile generation - rolls both shape and contents at once
   const generateTile = () => {
     const shapeRoll = d66();
+    const shapeResult = TILE_SHAPE_TABLE[shapeRoll];
+    const isCorridor = shapeResult?.shape?.includes('corridor');
+
     const newEvents = [{
       type: 'D66_ROLL',
-      data: { roll: shapeRoll },
+      data: { roll: shapeRoll, shape: shapeResult?.shape },
       timestamp: Date.now()
     }];
 
@@ -290,31 +293,101 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
         data: { room: matchedRoom },
         timestamp: Date.now()
       });
-      setAutoPlacedRoom(matchedRoom);
-      setRoomEvents(newEvents);
-      setTileResult(null);
-      setRoomDetails(null);
-      setBossCheckResult(null);
-      return;
+  // Set the auto-placed template but continue to roll contents so the
+  // ActionPane shows the 2d6 result and associated events. Previously
+  // we returned early here which prevented the contents roll from
+  // running when a library match occurred.
+  setAutoPlacedRoom(matchedRoom);
+  setRoomEvents(newEvents);
+  // continue on to roll contents and process them below
     }
 
-    // No match - still roll 2d6 for contents
+    // No match - roll 2d6 for contents
     const contentsRoll = r2d6();
     const contentsResult = TILE_CONTENTS_TABLE[contentsRoll];
 
-    newEvents.push({
-      type: 'CONTENTS_ROLL',
-      data: { roll: contentsRoll, description: contentsResult.description },
-      timestamp: Date.now()
-    });
+    // Check if this content roll has different outcomes for room vs corridor
+    const hasDualContent = contentsResult.corridorType && contentsResult.roomType;
 
-    setRoomEvents(newEvents);
-    setTileResult(null);
-    setRoomDetails(null);
-    setBossCheckResult(null);
+    if (hasDualContent) {
+      // Show both options - let player choose
+      const corridorOption = {
+        type: contentsResult.corridorType,
+        description: `Corridor: ${contentsResult.corridorType === 'empty' ? 'Empty (may search)' : contentsResult.description}`
+      };
+      const roomOption = {
+        type: contentsResult.roomType,
+        description: `Room: ${contentsResult.description.split('//')[1]?.trim() || contentsResult.description}`
+      };
 
-    // Process contents (spawn monsters, treasure, etc)
-    processContents(contentsResult, newEvents);
+      newEvents.push({
+        type: 'DUAL_CONTENT',
+        data: {
+          roll: contentsRoll,
+          isCorridor,
+          corridorOption,
+          roomOption,
+          description: contentsResult.description
+        },
+        timestamp: Date.now()
+      });
+
+      // Also record a generic contents roll event so the UI can show the 2d6 value
+      newEvents.push({
+        type: 'CONTENTS_ROLL',
+        data: { roll: contentsRoll, description: contentsResult.description },
+        timestamp: Date.now()
+      });
+
+      // Store both options so player can choose
+      setTileResult({
+        shape: shapeResult,
+        isCorridor,
+        contentsRoll,
+        hasDualContent: true,
+        corridorOption,
+        roomOption
+      });
+      setRoomEvents(newEvents);
+      setRoomDetails(null);
+      setBossCheckResult(null);
+      setActionMode(ACTION_MODES.IDLE); // Let player choose
+    } else {
+      // Single content type - process immediately
+      newEvents.push({
+        type: 'CONTENTS_ROLL',
+        data: { roll: contentsRoll, description: contentsResult.description },
+        timestamp: Date.now()
+      });
+
+      // Store tile result for searchable rooms/corridors
+      setTileResult({
+        shape: shapeResult,
+        isCorridor,
+        contentsRoll,
+        contentType: contentsResult.type
+      });
+      setRoomEvents(newEvents);
+      setRoomDetails(null);
+      setBossCheckResult(null);
+
+      // Process contents (spawn monsters, treasure, etc)
+      processContents(contentsResult, newEvents);
+    }
+  };
+
+  // Process chosen content option (for dual content rolls)
+  const applyContentChoice = (contentType) => {
+    // Update tileResult to remove dual content flag and add content type
+    setTileResult(prev => prev ? {
+      ...prev,
+      hasDualContent: false,
+      contentType
+    } : null);
+
+    const contentObj = { type: contentType };
+    processContents(contentObj, roomEvents);
+    dispatch(logMessage(`Player chose: ${contentType}`, 'exploration'));
   };
 
   // Clear the current tile result and return to idle
@@ -391,7 +464,18 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
 
   // Helper: Check if tile is a corridor
   const isCorridor = () => {
-    return tileResult?.shape?.shape?.includes('corridor') || tileResult?.shape?.shape === 'corridor_dead_end';
+    if (!tileResult) return false;
+
+    // Check if we stored isCorridor as a boolean
+    if (typeof tileResult.isCorridor === 'boolean') {
+      return tileResult.isCorridor;
+    }
+
+    // Otherwise check shape structure
+    const shapeStr = tileResult?.shape?.shape;
+    if (!shapeStr || typeof shapeStr !== 'string') return false;
+
+    return shapeStr.includes('corridor') || shapeStr === 'corridor_dead_end';
   };
 
   return {
@@ -409,6 +493,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
     generateTile,
     clearTile,
     isCorridor,
-    processContents
+    processContents,
+    applyContentChoice
   };
 }

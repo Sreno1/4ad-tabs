@@ -997,11 +997,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           display: 'block'
         }}
       />
-      {hoveredDoor && (
-        <div className="absolute top-2 left-2 bg-amber-900/90 text-amber-100 px-2 py-1 rounded text-xs font-bold border border-amber-500">
-          Click to place door on {hoveredDoor.edge} edge
-        </div>
-      )}
+  {/* Door placement hint removed */}
       {!partyPos && showPawnHint && (
         <div
           className="absolute top-2 left-2 bg-black/70 text-white px-3 py-1 rounded text-xs font-semibold"

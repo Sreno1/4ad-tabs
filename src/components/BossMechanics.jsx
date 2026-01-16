@@ -1,15 +1,20 @@
 import React, { useState } from "react";
-import { Skull, Info } from "lucide-react";
+import { Skull, Info, MapPin } from "lucide-react";
 import { d6 } from "../utils/dice.js";
-import { checkForBoss } from "../data/rooms.js";
+import { checkForBoss, isGridNearlyFull, countExploredTiles } from "../data/rooms.js";
 import { spawnMajorFoe } from "../utils/gameActions/index.js";
 
 export default function BossMechanics({ state, dispatch }) {
   const [bossCheckResult, setBossCheckResult] = useState(null);
 
+  const isLastTile = isGridNearlyFull(state.grid);
+  const exploredTiles = countExploredTiles(state.grid);
+  const totalTiles = state.grid.length * state.grid[0].length;
+  const percentExplored = ((exploredTiles / totalTiles) * 100).toFixed(1);
+
   const handleBossCheck = () => {
     const roll = d6();
-    const result = checkForBoss(state.majorFoes || 0, roll);
+    const result = checkForBoss(state.majorFoes || 0, roll, { isLastTile });
     setBossCheckResult(result);
     dispatch({ type: "LOG", t: `🎲 Boss Check: ${result.message}` });
 
@@ -58,6 +63,22 @@ export default function BossMechanics({ state, dispatch }) {
           </div>
         </div>
       </div>
+
+      {/* Grid Fullness Warning */}
+      {isLastTile && !state.finalBoss && (
+        <div className="mb-3 p-2 rounded bg-red-900/30 border border-red-600">
+          <div className="flex items-center gap-1 text-red-400 font-bold text-xs mb-1">
+            <MapPin size={12} />
+            <span>Grid Nearly Full!</span>
+          </div>
+          <div className="text-xs text-red-300">
+            {exploredTiles} / {totalTiles} tiles explored ({percentExplored}%)
+          </div>
+          <div className="text-xs text-red-200 mt-1">
+            Next Major Foe is <span className="font-bold">AUTOMATICALLY the BOSS!</span>
+          </div>
+        </div>
+      )}
 
       <button
         onClick={handleBossCheck}

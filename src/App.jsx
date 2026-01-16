@@ -500,6 +500,7 @@ export default function App() {
                 generateTile={roomEvents.generateTile}
                 clearTile={clearTileAndCombat}
                 isCorridor={roomEvents.isCorridor}
+                applyContentChoice={roomEvents.applyContentChoice}
                 combatPhase={combatFlow.combatPhase}
                 getActiveMonsters={combatFlow.getActiveMonsters}
                 isCombatWon={combatFlow.isCombatWon}

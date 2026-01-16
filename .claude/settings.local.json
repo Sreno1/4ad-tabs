@@ -6,7 +6,8 @@
       "Bash(grep:*)",
       "Bash(dir \"C:\\\\Users\\\\slipv\\\\Documents\\\\4ad\\\\4ad-tabs\" /B)",
       "Bash(find:*)",
-      "mcp__acp__Bash"
+      "mcp__acp__Bash",
+      "Bash(ls:*)"
     ]
   }
 }

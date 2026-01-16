@@ -54,17 +54,37 @@ export const TILE_SHAPE_TABLE = {
 // This determines what is in the room AFTER you determine its shape
 // Reference: tables.pdf - Tile Content Table
 export const TILE_CONTENTS_TABLE = {
-  2: { type: 'empty', description: 'Empty' },
-  3: { type: 'vermin', description: 'Vermin (Level 1)' },
-  4: { type: 'vermin', description: 'Vermin (Level 1)' },
-  5: { type: 'minions', description: 'Minions (Level 2)' },
-  6: { type: 'minions', description: 'Minions (Level 2)' },
-  7: { type: 'treasure', description: 'Treasure!' },
-  8: { type: 'special', description: 'Special Feature' },
-  9: { type: 'weird_monster', description: 'Weird Monster (roll on table)' },
-  10: { type: 'minor_boss', description: 'Minor Boss (Level 3)' },
-  11: { type: 'major_foe', description: 'Major Foe (Level = Party Level)' },
-  12: { type: 'quest_room', description: 'Quest Room / Final Room' }
+  2: { type: 'treasure', description: 'Treasure!' },
+  3: { type: 'treasure', description: 'Treasure protected by a trap. Roll on traps table, then treasure.' },
+  4: {
+    type: 'special',
+    description: 'Corridor - Empty // Room - Special Events',
+    corridorType: 'empty',
+    roomType: 'special'
+  },
+  5: { type: 'special', description: 'Empty and may be searched. Then roll on special events in dungeons.' },
+  6: { type: 'vermin', description: 'Roll on Vermin Table' },
+  7: { type: 'minions', description: 'Roll on Minion Table' },
+  8: {
+    type: 'minions',
+    description: 'Corridor - empty // Room - Minion',
+    corridorType: 'empty',
+    roomType: 'minions'
+  },
+  9: { type: 'empty', description: 'May search, or spend 2 clues for a secret passage.' },
+  10: {
+    type: 'weird_monster',
+    description: 'corridor - empty // room - weird monster',
+    corridorType: 'empty',
+    roomType: 'weird_monster'
+  },
+  11: { type: 'major_foe', description: 'Major Foe / Boss Encounter' },
+  12: {
+    type: 'dragon',
+    description: 'Corridor - Empty // Room - Dragon\'s Lair',
+    corridorType: 'empty',
+    roomType: 'dragon'
+  }
 };
 
 // ========== BOSS MECHANICS ==========
@@ -80,21 +100,67 @@ export const BOSS_RULES = {
 };
 
 /**
+ * Count explored tiles on the grid
+ * @param {array} grid - 2D grid array (28x20)
+ * @returns {number} Count of non-empty cells (rooms + corridors)
+ */
+export const countExploredTiles = (grid) => {
+  let count = 0;
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      if (grid[y][x] !== 0) { // 1=room, 2=corridor
+        count++;
+      }
+    }
+  }
+  return count;
+};
+
+/**
+ * Check if grid is nearly full (90% explored)
+ * @param {array} grid - 2D grid array (28x20)
+ * @returns {boolean} True if >= 90% of grid is explored
+ */
+export const isGridNearlyFull = (grid) => {
+  const totalCells = grid.length * grid[0].length; // 28 * 20 = 560
+  const explored = countExploredTiles(grid);
+  const percentFull = (explored / totalCells) * 100;
+  return percentFull >= 90; // Grid is 90%+ full
+};
+
+/**
  * Check if a Major Foe encounter is actually the Boss
  * @param {number} majorFoesFaced - Number of major foes faced this dungeon
  * @param {number} roll - d6 roll result
- * @returns {object} { isBoss, roll, total }
+ * @param {object} options - Optional params { isLastTile: boolean }
+ * @returns {object} { isBoss, roll, total, reason }
  */
-export const checkForBoss = (majorFoesFaced, roll) => {
+export const checkForBoss = (majorFoesFaced, roll, options = {}) => {
+  const { isLastTile = false } = options;
+
+  // If this is the last tile, it's automatically the boss
+  if (isLastTile) {
+    return {
+      isBoss: true,
+      roll,
+      total: roll + majorFoesFaced,
+      modifier: majorFoesFaced,
+      reason: 'last_tile',
+      message: `Last tile reached → IT'S THE BOSS!`
+    };
+  }
+
+  // Normal boss check
   const total = roll + majorFoesFaced;
   const isBoss = total >= BOSS_RULES.rollRequired;
-  return { 
-    isBoss, 
-    roll, 
+  return {
+    isBoss,
+    roll,
     total,
     modifier: majorFoesFaced,
-    message: isBoss 
-      ? `${roll} + ${majorFoesFaced} = ${total} → IT'S THE BOSS!` 
+    reason: isBoss ? 'roll_trigger' : 'not_boss',
+    message: isBoss
+      ? `${roll} + ${majorFoesFaced} = ${total} → IT'S THE BOSS!`
       : `${roll} + ${majorFoesFaced} = ${total} → Major Foe (not the boss)`
   };
 };

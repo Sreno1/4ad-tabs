@@ -11,6 +11,19 @@ import { EVENT_TYPES } from "../constants/gameConstants.js";
 import EventCard from "./actionPane/EventCard.jsx";
 import Combat from "./Combat.jsx";
 import MarchingOrder from './MarchingOrder.jsx';
+import {
+  SearchModal,
+  HiddenTreasureModal,
+  SecretDoorModal,
+  SecretPassageModal
+} from './SearchModal.jsx';
+import {
+  performSearchRoll,
+  findClue,
+  findHiddenTreasure,
+  findSecretDoor,
+  findSecretPassage
+} from '../utils/gameActions/explorationActions.js';
 
 export default function ActionPane({
   state,
@@ -24,6 +37,7 @@ export default function ActionPane({
   generateTile,
   clearTile,
   isCorridor,
+  applyContentChoice,
   // Combat props
   combatPhase,
   getActiveMonsters,
@@ -42,6 +56,10 @@ export default function ActionPane({
   const [showHealTarget, setShowHealTarget] = useState(null);
   const [showBlessTarget, setShowBlessTarget] = useState(null);
   const [showProtectionTarget, setShowProtectionTarget] = useState(null);
+  const [searchResult, setSearchResult] = useState(null);
+  const [hiddenTreasureResult, setHiddenTreasureResult] = useState(null);
+  const [secretDoorResult, setSecretDoorResult] = useState(null);
+  const [secretPassageResult, setSecretPassageResult] = useState(null);
 
   const party = selectParty(state);
   const monsters = selectMonsters(state);
@@ -263,19 +281,7 @@ export default function ActionPane({
             <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} dispatch={dispatch} />
           </div>
 
-          {/* If there's a saved room that's blocking generation, offer a clear button */}
-          <div className="flex justify-end mb-2 gap-2">
-            {hasSavedTile && (
-              <button
-                onClick={() => { try { localStorage.removeItem('lastTileData'); } catch (e) {} ; clearTile(); }}
-                className="text-xs bg-red-700 hover:bg-red-600 px-2 py-1 rounded"
-                title="Clear persisted room and return to exploration"
-              >
-                Clear saved room
-              </button>
-            )}
-            {/* Top Exit button removed; Exit Room is now at the bottom of the pane */}
-          </div>
+          {/* "Clear saved room" button removed; use the Exit Room button below which also clears monsters and persisted tile data. */}
 
           <div className="space-y-1">
             {/* Show any die rolls (d66 and/or 2d6) in a compact row, then render remaining events */}
@@ -333,9 +339,7 @@ export default function ActionPane({
 
           {!hasActiveMonsters && combatPhase === COMBAT_PHASES.NONE && tileResult && (
             <div className="mt-2 pt-2 border-t border-slate-700 space-y-2">
-              <div className="flex justify-end">
-                <button onClick={() => clearTile()} className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded" title="Return to exploration (Generate Tile / Wandering)">← Back to Explore</button>
-              </div>
+              {/* "Back to Explore" button removed; use the Exit room button at the bottom to clear tile and return to exploration */}
 
               {actionMode === ACTION_MODES.SPECIAL && roomDetails?.special && (
                 <div className="bg-purple-900/30 rounded p-3">
@@ -362,11 +366,46 @@ export default function ActionPane({
                 <div className="bg-amber-900/30 rounded p-3"><div className="text-amber-500 font-bold">🏆 Quest Room!</div><div className="text-slate-300 text-sm mt-1">This is the dungeon's final objective! Complete your quest here.</div></div>
               )}
 
-              {(actionMode === ACTION_MODES.EMPTY || actionMode === ACTION_MODES.TREASURE) && (
-                <button onClick={() => setShowDungeonFeatures(true)} className="w-full bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded text-sm">🔍 Search {corridor ? "Corridor" : "Room"}</button>
+              {/* Dual Content Options - Show both room and corridor options when they differ */}
+              {tileResult?.hasDualContent && actionMode === ACTION_MODES.IDLE && (
+                <div className="bg-blue-900/30 rounded p-3 border-2 border-blue-500/50">
+                  <div className="text-blue-400 font-bold text-sm mb-2">⚖️ Choose Content Type:</div>
+                  <div className="text-slate-300 text-xs mb-3">
+                    This roll has different outcomes for rooms vs corridors. Choose which to apply:
+                  </div>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => applyContentChoice(tileResult.corridorOption.type)}
+                      className="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm text-left"
+                    >
+                      <div className="font-bold text-purple-400">🚪 {tileResult.corridorOption.description}</div>
+                    </button>
+                    <button
+                      onClick={() => applyContentChoice(tileResult.roomOption.type)}
+                      className="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm text-left"
+                    >
+                      <div className="font-bold text-amber-400">🏠 {tileResult.roomOption.description}</div>
+                    </button>
+                  </div>
+                </div>
               )}
 
-              <button onClick={clearTile} className="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm">✓ Done / Continue</button>
+              {(actionMode === ACTION_MODES.EMPTY || actionMode === ACTION_MODES.TREASURE) && !(tileResult?.contentType === 'treasure' && [2,3].includes(tileResult?.contentsRoll)) && (
+                <button
+                  onClick={() => {
+                    // Perform search roll - corridor status from tileResult if available
+                    const isInCorridor = tileResult?.isCorridor || corridor;
+                    const result = performSearchRoll({ isInCorridor });
+                    setSearchResult(result);
+                    dispatch({ type: 'LOG', t: result.message });
+                  }}
+                  className="w-full px-3 py-2 rounded text-sm bg-blue-600 hover:bg-blue-500"
+                >
+                  🔍 Search {tileResult?.isCorridor || corridor ? "Corridor" : "Room"}
+                </button>
+              )}
+
+              {/* Done / Continue removed - use "Exit room" which also clears monsters and saved tile data */}
             </div>
           )}
           {/* Bottom action buttons: Withdraw, Flee (only during combat), and Exit room (always) */}
@@ -400,6 +439,89 @@ export default function ActionPane({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Search Modals */}
+      {searchResult && (
+        <SearchModal
+          searchResult={searchResult}
+          state={state}
+          onChoice={(choice) => {
+            // Handle user's search choice
+            if (choice === 'clue') {
+              // TODO: Let user select which hero found the clue
+              const heroIdx = 0; // Default to first hero for now
+              findClue(dispatch, heroIdx, state.party[heroIdx]?.name || 'Hero');
+            } else if (choice === 'hidden_treasure') {
+              const result = findHiddenTreasure(dispatch, state.hcl);
+              setHiddenTreasureResult(result);
+            } else if (choice === 'secret_door') {
+              const result = findSecretDoor(dispatch);
+              setSecretDoorResult(result);
+            } else if (choice === 'secret_passage') {
+              const result = findSecretPassage(dispatch, state.currentEnvironment || 'dungeon');
+              setSecretPassageResult(result);
+            }
+            setSearchResult(null);
+          }}
+          onClose={() => {
+            if (searchResult.type === 'wandering_monsters') {
+              // Trigger wandering monster roll
+              rollWanderingMonster(dispatch, state.hcl);
+            }
+            setSearchResult(null);
+          }}
+        />
+      )}
+
+      {hiddenTreasureResult && (
+        <HiddenTreasureModal
+          treasure={hiddenTreasureResult.treasure}
+          complication={hiddenTreasureResult.complication}
+          state={state}
+          onResolve={(action) => {
+            if (action === 'alarm') {
+              rollWanderingMonster(dispatch, state.hcl);
+            } else if (action === 'disarm_trap') {
+              // TODO: Trigger rogue disarm attempt
+              dispatch({ type: 'LOG', t: `Rogue attempts to disarm trap (L${state.hcl + 1})...` });
+            } else if (action === 'trigger_trap') {
+              // TODO: Trigger trap damage
+              dispatch({ type: 'LOG', t: `Trap triggered! Random PC takes damage.` });
+            } else if (action === 'banish_ghost') {
+              // TODO: Cleric banish attempt
+              dispatch({ type: 'LOG', t: `Cleric attempts to banish ghost (L${state.hcl})...` });
+            } else if (action === 'fight_ghost') {
+              dispatch({ type: 'LOG', t: `All PCs lose 1 Life from the ghost!` });
+              // TODO: Apply damage to all PCs
+            }
+
+            // Award the gold
+            dispatch({ type: 'GOLD', n: hiddenTreasureResult.treasure.gold });
+            setHiddenTreasureResult(null);
+          }}
+          onClose={() => {
+            // Award the gold if complication was resolved
+            if (hiddenTreasureResult.treasure) {
+              dispatch({ type: 'GOLD', n: hiddenTreasureResult.treasure.gold });
+            }
+            setHiddenTreasureResult(null);
+          }}
+        />
+      )}
+
+      {secretDoorResult && (
+        <SecretDoorModal
+          secretDoor={secretDoorResult}
+          onClose={() => setSecretDoorResult(null)}
+        />
+      )}
+
+      {secretPassageResult && (
+        <SecretPassageModal
+          passage={secretPassageResult}
+          onClose={() => setSecretPassageResult(null)}
+        />
       )}
     </div>
   );

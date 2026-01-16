@@ -50,6 +50,7 @@ import {
   updateMonster,
   deleteMonster
 } from '../state/actionCreators.js';
+import { canHeroMeleeAttack } from '../utils/combatLocationHelpers.js';
 
 export default function Combat({ state, dispatch, selectedHero, setSelectedHero, handleRollReaction }) {
   // Per-monster levels are used. Global foeLevel removed in favor of each monster.level.
@@ -147,6 +148,13 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     const hero = state.party[heroIndex];
     if (!hero || hero.hp <= 0) return;
 
+    // Check if hero can melee attack based on location and marching order
+    const meleeCheck = canHeroMeleeAttack(state, heroIndex);
+    if (!meleeCheck.canMelee) {
+      addToCombatLog(`❌ ${hero.name} cannot melee attack: ${meleeCheck.reason}`);
+      return;
+    }
+
     // If player manually attacks, reveal the attack module and ensure it starts with attack
     if (!showCombatModule) {
       setShowCombatModule(true);
@@ -168,6 +176,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
       rageActive: heroAbilities.rageActive,
       blessed: hero.status?.blessed,
       hasLightSource: effectiveHasLight,
+      location: state.currentCombatLocation,
       // Rogue bonus: outnumbers Minor Foes if party size > foe count
       rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(monster) &&
         state.party.filter(h => h.hp > 0).length > (monster.count || 1)
@@ -341,6 +350,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     const options = {
       preInitiativeRanged: true,
       hasLightSource: effectiveHasLight,
+      location: state.currentCombatLocation,
       rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(monster) &&
         state.party.filter(h => h.hp > 0).length > (monster.count || 1)
     };
@@ -447,6 +457,36 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
 
   return (
     <div className="space-y-2">
+      {/* Combat Location Display */}
+      {state.currentCombatLocation && (
+        <div className={`rounded p-2 ${
+          state.currentCombatLocation.type === 'corridor'
+            ? 'bg-blue-900'
+            : 'bg-slate-800'
+        }`}>
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="text-sm font-bold text-blue-300">
+                📍 {state.currentCombatLocation.type === 'corridor' ? 'Corridor Combat' : 'Room Combat'}
+              </span>
+              {state.currentCombatLocation.type === 'corridor' && (
+                <div className="text-xs text-blue-200 mt-1">
+                  ⚠️ Only positions 1-2 can melee attack
+                  {state.currentCombatLocation.width === 'narrow' && (
+                    <span className="text-amber-300"> (Narrow: 2H weapons -1)</span>
+                  )}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => dispatch({ type: 'CLEAR_COMBAT_LOCATION' })}
+              className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Save Roll Modal */}
       {pendingSave && (
@@ -694,6 +734,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
                         rageActive: abilities.rageActive,
                         blessed: hero.status?.blessed,
                         hasLightSource: effectiveHasLight,
+                        location: state.currentCombatLocation,
                         rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(targetMonster) && state.party.filter(h => h.hp > 0).length > (targetMonster?.count || 1)
                       };
                       // Determine equipped weapon name (first weapon in equipment list) or 'Unarmed'
@@ -710,15 +751,26 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
                       }
                       const atk = calculateEnhancedAttack(hero, computedFoeLevel, options);
                       const modLabel = atk.mod >= 0 ? `+${atk.mod}` : `${atk.mod}`;
+
+                      // Check if hero can melee attack
+                      const meleeCheck = canHeroMeleeAttack(state, index);
+                      const canMelee = meleeCheck.canMelee;
+
                       return (
-                        <button 
-                          key={hero.id || index} 
-                          onClick={() => handleAttack(index)} 
-                          disabled={hero.hp <= 0} 
-                          className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-slate-600 py-1 rounded text-sm mb-1 truncate relative"
+                        <button
+                          key={hero.id || index}
+                          onClick={() => handleAttack(index)}
+                          disabled={hero.hp <= 0 || !canMelee}
+                          className={`w-full ${
+                            !canMelee
+                              ? 'bg-slate-700 hover:bg-slate-600 text-slate-400'
+                              : 'bg-orange-600 hover:bg-orange-500'
+                          } disabled:bg-slate-600 py-1 rounded text-sm mb-1 truncate relative`}
+                          title={!canMelee ? meleeCheck.reason : ''}
                         >
                           <span className="font-bold">{hero.name}</span>
-                          <span className="text-xs ml-2 text-slate-300">{weaponName}</span>
+                          {!canMelee && <span className="text-xs ml-2 text-amber-400">🏹 Ranged Only</span>}
+                          {canMelee && <span className="text-xs ml-2 text-slate-300">{weaponName}</span>}
                           <span className="text-xs ml-2">({modLabel})</span>
                           {abilities.rageActive && <span className="ml-1 text-red-300">😤</span>}
                           {hero.status?.blessed && <span className="ml-1 text-yellow-300">✨</span>}

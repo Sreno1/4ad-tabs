@@ -7,24 +7,34 @@ import { TREASURE_TABLE } from '../../data/treasure.js';
 /**
  * Roll on treasure table and award result
  * @param {function} dispatch - Reducer dispatch function
+ * @param {object} options - Optional params { multiplier, minGold }
  * @returns {object} Treasure result
  */
-export const rollTreasure = (dispatch) => {
+export const rollTreasure = (dispatch, options = {}) => {
+  const { multiplier = 1, minGold = 0 } = options;
   const roll = d6();
   const result = TREASURE_TABLE[roll];
 
   if (result.includes('Gold (d6)')) {
-    const gold = d6();
+    let gold = d6() * multiplier;
+    gold = Math.max(gold, minGold); // Apply minimum if specified
     dispatch({ type: 'GOLD', n: gold });
-    dispatch({ type: 'LOG', t: `Treasure: Found ${gold} gold!` });
-    return { roll, type: 'gold', amount: gold };
+
+    const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
+    const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
+    dispatch({ type: 'LOG', t: `Treasure: Found ${gold} gold!${multiplierText}${minText}` });
+    return { roll, type: 'gold', amount: gold, multiplier };
   }
 
   if (result.includes('Gold (2d6)')) {
-    const gold = r2d6();
+    let gold = r2d6() * multiplier;
+    gold = Math.max(gold, minGold); // Apply minimum if specified
     dispatch({ type: 'GOLD', n: gold });
-    dispatch({ type: 'LOG', t: `Treasure: Found ${gold} gold!` });
-    return { roll, type: 'gold', amount: gold };
+
+    const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
+    const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
+    dispatch({ type: 'LOG', t: `Treasure: Found ${gold} gold!${multiplierText}${minText}` });
+    return { roll, type: 'gold', amount: gold, multiplier };
   }
 
   if (result.includes('Clue')) {

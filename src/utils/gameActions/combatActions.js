@@ -14,6 +14,10 @@ import {
   checkMinorFoeMorale,
   checkMajorFoeLevelReduction,
 } from "./monsterActions.js";
+import {
+  getNarrowCorridorPenalty,
+  getEquippedMeleeWeapon
+} from "../combatLocationHelpers.js";
 
 /**
  * Calculate basic attack result (for simple attacks)
@@ -58,7 +62,7 @@ export const calculateAttack = (hero, foeLevel, options = {}) => {
  * Calculate enhanced attack with exploding dice (for Major Foes)
  * @param {object} hero - Hero object
  * @param {number} foeLevel - Target foe level
- * @param {object} options - Combat options (dualWielding, blessed, rage, hasLightSource, etc.)
+ * @param {object} options - Combat options (dualWielding, blessed, rage, hasLightSource, location, etc.)
  * @returns {object} Attack result
  */
 export const calculateEnhancedAttack = (hero, foeLevel, options = {}) => {
@@ -77,6 +81,16 @@ export const calculateEnhancedAttack = (hero, foeLevel, options = {}) => {
   if (options.hasLightSource === false && !hasDarkvision(hero.key)) {
     mod -= 2;
     modifiers.push("-2 (darkness)");
+  }
+
+  // Narrow corridor penalty (two-handed weapons)
+  if (options.location) {
+    const weapon = getEquippedMeleeWeapon(hero);
+    const corridorPenalty = getNarrowCorridorPenalty(options.location, weapon);
+    if (corridorPenalty !== 0) {
+      mod += corridorPenalty;
+      modifiers.push(`${corridorPenalty} (narrow corridor)`);
+    }
   }
 
   // Class-specific attack bonuses
@@ -237,7 +251,7 @@ export const calculateMinorFoeKills = (attackTotal, foeLevel, foeCount) => {
  * Attack Minor Foe with multi-kill calculation
  * @param {object} hero - Attacking hero
  * @param {object} foe - Minor foe group
- * @param {object} options - Combat options (hasLightSource, etc.)
+ * @param {object} options - Combat options (hasLightSource, location, etc.)
  * @returns {object} Attack result
  */
 export const attackMinorFoe = (hero, foe, options = {}) => {
@@ -249,6 +263,16 @@ export const attackMinorFoe = (hero, foe, options = {}) => {
   if (options.hasLightSource === false && !hasDarkvision(hero.key)) {
     mod -= 2;
     modifiers.push("-2 (darkness)");
+  }
+
+  // Narrow corridor penalty (two-handed weapons)
+  if (options.location) {
+    const weapon = getEquippedMeleeWeapon(hero);
+    const corridorPenalty = getNarrowCorridorPenalty(options.location, weapon);
+    if (corridorPenalty !== 0) {
+      mod += corridorPenalty;
+      modifiers.push(`${corridorPenalty} (narrow corridor)`);
+    }
   }
 
   // Class-specific attack bonuses

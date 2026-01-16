@@ -103,30 +103,47 @@ export const rollMonsterReaction = (dispatch, monsterIdx) => {
 };
 
 /**
- * Award XP to party for defeating a monster
+ * Award XP to party for defeating a monster (with d6 rolls)
  * @param {function} dispatch - Reducer dispatch function
  * @param {object} monster - Defeated monster
  * @param {array} party - Party array
- * @returns {object} XP distribution result
+ * @returns {object} XP distribution result with individual rolls
  */
 export const awardXP = (dispatch, monster, party) => {
-  const xp = monster.xp || monster.level;
+  const baseXP = monster.xp || monster.level;
   const aliveHeroes = party.filter(h => h.hp > 0);
 
-  if (aliveHeroes.length === 0) return { xp: 0 };
+  if (aliveHeroes.length === 0) return { xp: 0, rolls: [] };
 
-  // Split XP among surviving party members
-  const xpEach = Math.ceil(xp / aliveHeroes.length);
+  const rolls = [];
 
+  // Each surviving hero rolls d6 for their XP
   party.forEach((hero, idx) => {
     if (hero.hp > 0) {
-      dispatch({ type: 'ADD_XP', heroIdx: idx, amount: xpEach });
+      const roll = d6();
+      // XP = (Monster XP × roll) / 6, rounded down
+      const earnedXP = Math.floor((baseXP * roll) / 6);
+
+      dispatch({ type: 'ADD_XP', heroIdx: idx, amount: earnedXP });
+
+      rolls.push({
+        heroIdx: idx,
+        heroName: hero.name,
+        roll,
+        earnedXP
+      });
+
+      dispatch({
+        type: 'LOG',
+        t: `🎲 ${hero.name} rolls ${roll} for XP: ${earnedXP} XP earned!`
+      });
     }
   });
 
-  dispatch({ type: 'LOG', t: `⭐ Party gains ${xp} XP! (${xpEach} each)` });
+  const totalXP = rolls.reduce((sum, r) => sum + r.earnedXP, 0);
+  dispatch({ type: 'LOG', t: `⭐ Party earned ${totalXP} total XP from ${monster.name}!` });
 
-  return { xp, xpEach, recipients: aliveHeroes.length };
+  return { baseXP, totalXP, rolls, recipients: aliveHeroes.length };
 };
 
 /**
