@@ -62,19 +62,40 @@ const EventCard = memo(function EventCard({ event, index }) {
         </div>
       );
 
-    case EVENT_TYPES.MONSTER:
+    case EVENT_TYPES.MONSTER: {
+      // Build suffix text from monster payload when available: " - xLy type"
+      let suffix = '';
+      const m = event.data.monster;
+      if (m) {
+        const count = m.count || m.initialCount || null;
+        const lvl = m.level || m.lvl || event.data.level || null;
+        const typeName = event.data.monsterType || m.type || m.name || '';
+        if (m.isMinorFoe && count) {
+          suffix = ` - ${count}L${lvl} ${typeName}`;
+        } else if (event.data.isBoss || m.isBoss) {
+          suffix = lvl ? ` - L${lvl} Boss` : ` - Boss`;
+        } else if (lvl) {
+          suffix = ` - L${lvl} ${typeName}`;
+        }
+      } else {
+        // Fallback when monster object isn't present
+        if (event.data.isBoss && event.data.level) suffix = ` - L${event.data.level} Boss`;
+        else if (event.data.level && event.data.monsterType) suffix = ` - L${event.data.level} ${event.data.monsterType}`;
+      }
+
       return (
         <div key={index} className={`rounded p-2 text-xs border-l-2 ${
           event.data.isBoss ? 'bg-red-900/30 border-red-400' : 'bg-orange-900/30 border-orange-400'
         }`}>
           <div className={`font-bold ${event.data.isBoss ? 'text-red-400' : 'text-orange-400'}`}>
-            {event.data.isBoss ? '👑 BOSS APPEARS!' : `⚔️ ${event.data.monsterType} (L${event.data.level})`}
+            {event.data.isBoss ? '👑 BOSS APPEARS!' : `⚔️ ${event.data.monsterType || (m && m.name) || 'Monster'} (L${event.data.level || (m && (m.level || m.lvl)) || '?'})`}{suffix}
           </div>
           {event.data.isBoss && (
             <div className="text-red-300">+1 Life, +1 Attack, 3× Treasure!</div>
           )}
         </div>
       );
+    }
 
     case EVENT_TYPES.BOSS_CHECK:
       return (

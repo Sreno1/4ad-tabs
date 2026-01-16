@@ -39,6 +39,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
       inventory: [],
       abilities: {},
       status: {},
+      clues: 0,
       stats: { monstersKilled: 0, dungeonsSurvived: 0, totalGoldEarned: 0 }
     };
     dispatch(createAddHeroAction(hero));
@@ -317,6 +318,25 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
               {hero.status?.dead && <span className="bg-red-800 px-1 rounded">💀 Dead</span>}
             </div>
           )}
+
+          {/* Clues Tracker */}
+          <div className="flex gap-1 mt-1 text-xs items-center">
+            <span className="text-blue-400 font-semibold">🔍 Clues:</span>
+            <div className="flex gap-0.5">
+              {[1, 2, 3].map(clueNum => (
+                <span
+                  key={clueNum}
+                  className={`w-3 h-3 rounded-full ${
+                    clueNum <= (hero.clues || 0)
+                      ? 'bg-blue-500'
+                      : 'bg-slate-600'
+                  }`}
+                  aria-label={`Clue ${clueNum}`}
+                />
+              ))}
+            </div>
+            <span className="text-blue-300">({hero.clues || 0}/3)</span>
+          </div>
 
           {/* Character Trait */}
           {hasTraits(hero.key) && (

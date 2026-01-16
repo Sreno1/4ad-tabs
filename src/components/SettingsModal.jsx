@@ -296,8 +296,12 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                 <span className="text-amber-400">{state.gold}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Clues Found:</span>
-                <span className="text-blue-400">{state.clues}</span>
+                <span className="text-slate-400">Total Clues Discovered:</span>
+                <span className="text-blue-400">
+                  {state.party && state.party.length > 0
+                    ? state.party.reduce((total, hero) => total + (hero.clues || 0), 0)
+                    : 0}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Minor Encounters:</span>

@@ -25,6 +25,7 @@ export default function AppHeader({
   onBackToCampaigns,
   hasLightSource,
   partyLightNames = [],
+  onShowLantern,
 }) {
   return (
     <header className="bg-slate-800 p-1 border-b border-slate-700 flex-shrink-0">
@@ -54,11 +55,16 @@ export default function AppHeader({
 
         {/* Stats */}
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-amber-400 font-bold">{state.gold}g</span>
+          <Tooltip text="Gold collected">
+            <span className="text-amber-400 font-bold">{state.gold}g</span>
+          </Tooltip>
           <span className="text-slate-500">|</span>
-          <span className="text-slate-400">{state.minorEnc}/10</span>
-          <span className="text-red-400 font-bold">{state.majorFoes}M</span>
-          <span className="text-blue-400">{state.clues}C</span>
+          <Tooltip text="Minor encounters encountered">
+            <span className="text-slate-400">{state.minorEnc}/10</span>
+          </Tooltip>
+          <Tooltip text="Major foes encountered">
+            <span className="text-red-400 font-bold">{state.majorFoes}M</span>
+          </Tooltip>
         </div>
 
         {/* Header Actions */}
@@ -69,9 +75,9 @@ export default function AppHeader({
               <div className="text-red-400 text-xs font-semibold" aria-live="polite">-2 No Light Source</div>
             )}
             <Tooltip text={hasLightSource ? `Light: ${partyLightNames.join(', ')}` : 'No light source'}>
-              <div className="px-2">
+              <button onClick={() => { if (typeof onShowLantern === 'function') onShowLantern(); }} className="px-2">
                 <LanternAnimation size={18} className={hasLightSource ? 'opacity-100' : 'opacity-30'} />
-              </div>
+              </button>
             </Tooltip>
           </div>
           <FloatingDice inline={true} />

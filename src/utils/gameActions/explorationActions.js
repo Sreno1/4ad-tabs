@@ -55,15 +55,17 @@ export const performSearchRoll = (options = {}) => {
 
 /**
  * Find a clue (player selected this choice)
+ * Per 4AD rules: Clues are discovered by a specific PC but shared with allies
+ * Max 3 clues per hero before spending to reveal a secret
  * @param {function} dispatch - Redux dispatch
  * @param {number} heroIdx - Hero who found the clue
  * @param {string} heroName - Hero's name
  */
 export const findClue = (dispatch, heroIdx, heroName) => {
-  dispatch({ type: 'CLUE', n: 1 });
+  dispatch({ type: 'ADD_HERO_CLUE', heroIdx, amount: 1 });
   dispatch({
     type: 'LOG',
-    t: `🔍 ${heroName} discovered a Clue! (Total clues: check inventory)`
+    t: `🔍 ${heroName} discovered a Clue!`
   });
 
   return { success: true, message: 'Clue discovered!' };
@@ -208,8 +210,8 @@ export const findSecretPassage = (dispatch, currentEnvironment) => {
     t: `🗺️ Secret passage found! Leads to the ${envNames[newEnvironment]}!`
   });
 
-  // TODO: Add CHANGE_ENVIRONMENT action when environment system is implemented
-  // dispatch({ type: 'CHANGE_ENVIRONMENT', environment: newEnvironment });
+  // Change the environment
+  dispatch({ type: 'CHANGE_ENVIRONMENT', environment: newEnvironment });
 
   return {
     newEnvironment,
@@ -221,10 +223,12 @@ export const findSecretPassage = (dispatch, currentEnvironment) => {
  * Spend clues to reveal a secret
  * Per 4AD rules: Spend 3 clues to reveal a secret
  * @param {function} dispatch - Redux dispatch
- * @param {number} currentClues - Current clue count
+ * @param {number} heroIdx - Hero index (whose clues to spend)
+ * @param {number} currentClues - Current clue count for that hero
+ * @param {string} heroName - Hero's name for logging
  * @returns {object} Result of spending clues
  */
-export const spendCluesForSecret = (dispatch, currentClues) => {
+export const spendCluesForSecret = (dispatch, heroIdx, currentClues, heroName) => {
   if (currentClues < 3) {
     return {
       success: false,
@@ -232,7 +236,7 @@ export const spendCluesForSecret = (dispatch, currentClues) => {
     };
   }
 
-  dispatch({ type: 'CLUE', n: -3 });
+  dispatch({ type: 'REMOVE_HERO_CLUE', heroIdx, amount: 3 });
 
   // Roll for what secret is revealed (this could be expanded)
   const roll = d6();

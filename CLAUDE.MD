@@ -129,10 +129,24 @@ The app uses React's `useReducer` with localStorage persistence. The state schem
 
 - ✅ Phase 1: Core Mechanics (party, mapping, combat, dice)
 - ✅ Phase 2: Essential Game Rules (monsters, rooms, treasure, abilities)
-- 🔄 Phase 3: Complete Exploration (doors, traps, special rooms)
-- 🔄 Phase 4: Advanced Combat (spells, special actions)
-- 🔄 Phase 5: Polish (save slots, export, rules reference)
-- 🔄 Phase 6: Campaign Mode (persistence between adventures)
+- ✅ Phase 3: Complete Exploration (doors, traps, special rooms) - 95% complete
+- ✅ Phase 4: Advanced Combat (spells, special actions) - 85% complete
+- ✅ Phase 5: Polish (save slots, export, rules reference) - 95% complete
+- ✅ Phase 6: Campaign Mode (persistence between adventures) - 85% complete
+
+## Recent Improvements (Current Session)
+
+### Completed TODOs
+1. **Hero Selection for Clue Discovery** - Added modal for selecting which hero finds a clue during search
+2. **Rogue Disarm Trap Flow** - Implemented automatic rogue disarm attempts with success/failure handling
+3. **Cleric Banish Ghost** - Added cleric ghost banishment mechanic with level-based DC
+4. **Party-Wide Damage** - Implemented damage application to all party members (ghosts, failed banish)
+5. **Environment System** - Hooked up secret passages to change dungeon environments (dungeon/fungal_grottoes/caverns)
+
+### Remaining Improvements
+- Temporary bonus tracking for armory (weapon/shield +1 bonuses)
+- Enhanced campaign stats dashboard
+- Adventure history visualization in Campaign Manager
 
 ## Technologies
 

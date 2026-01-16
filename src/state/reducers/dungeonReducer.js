@@ -37,6 +37,13 @@ export function dungeonReducer(state, action) {
         doors: []
       };
 
+    // ========== Environment ==========
+    case A.CHANGE_ENVIRONMENT:
+      return {
+        ...state,
+        currentEnvironment: action.environment
+      };
+
     // ========== Door Management ==========
     case A.TOGGLE_DOOR: {
       const exists = state.doors.findIndex(

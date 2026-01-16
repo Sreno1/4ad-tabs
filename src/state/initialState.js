@@ -18,7 +18,8 @@ export const createAdventureState = () => ({
   // Room tracking
   roomsExplored: 0,
   currentRoom: null, // {x, y, type, contents}
-  
+  currentEnvironment: 'dungeon', // 'dungeon' | 'fungal_grottoes' | 'caverns'
+
   // Active monsters in current encounter
   monsters: [], // {id, name, level, hp, maxHp, type, special}
   
@@ -71,13 +72,16 @@ export const createHero = (classKey, classData, name = null) => ({
   // Learned spells from scrolls (wizards only, persists between adventures in campaign)
   learnedSpells: [], // Array of spell keys copied from scrolls
 
+  // Clues discovered by this hero (max 3, per game rules)
+  clues: 0,
+
   // Status effects
   status: {
     poisoned: false,
     blessed: false,
     cursed: false
   },
-  
+
   // Campaign stats (persist between adventures)
   stats: {
     monstersKilled: 0,

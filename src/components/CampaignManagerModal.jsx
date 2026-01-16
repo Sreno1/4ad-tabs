@@ -98,8 +98,12 @@ export default function CampaignManagerModal({ isOpen, onClose, state, dispatch 
                   <span className="font-bold text-red-400">{state.majorFoes}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Clues Found</span>
-                  <span className="font-bold text-blue-400">{state.clues}</span>
+                  <span className="text-slate-400">Total Clues Discovered</span>
+                  <span className="font-bold text-blue-400">
+                    {state.party && state.party.length > 0
+                      ? state.party.reduce((total, hero) => total + (hero.clues || 0), 0)
+                      : 0}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Boss Status</span>

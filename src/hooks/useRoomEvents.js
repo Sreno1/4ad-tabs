@@ -4,11 +4,12 @@ import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE, SPECIAL_FEATURE_TABLE, SPECIAL_R
 import { spawnMonster, rollTreasure, spawnMajorFoe } from "../utils/gameActions/index.js";
 import { previewTreasureRoll } from '../utils/gameActions/treasureActions.js';
 import { getTrait } from '../data/traits.js';
-import { createMonsterFromTable, MONSTER_TABLE } from '../data/monsters.js';
+import { createMonsterFromTable, createMonster, MONSTER_TABLE } from '../data/monsters.js';
 import { addMonster, logMessage as logMsgAction } from '../state/actionCreators.js';
 import { ACTION_MODES, EVENT_TYPES } from '../constants/gameConstants.js';
 import { logMessage } from '../state/actionCreators.js';
 import roomLibrary from '../utils/roomLibrary.js';
+import { SET_COMBAT_LOCATION } from '../state/actions.js';
 
 export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview) {
   // Attempt to restore last tile data from localStorage so refresh keeps you in the same room
@@ -28,6 +29,17 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
   const [roomDetails, setRoomDetails] = useState(() => (saved && saved.roomDetails) ? saved.roomDetails : null);
   const [bossCheckResult, setBossCheckResult] = useState(() => (saved && saved.bossCheckResult) ? saved.bossCheckResult : null);
   const [autoPlacedRoom, setAutoPlacedRoom] = useState(() => (saved && saved.autoPlacedRoom) ? saved.autoPlacedRoom : null);
+
+  // Helper to roll a count spec like 'd6', 'd6+2', 'd6-2', or 'd3'
+  const rollCountFromSpec = (spec) => {
+    if (!spec || typeof spec !== 'string') return 1;
+    const m = spec.match(/^d(\d+)([+-]\d+)?$/);
+    if (!m) return 1;
+    const sides = parseInt(m[1], 10);
+    const offset = m[2] ? parseInt(m[2], 10) : 0;
+    const roll = Math.floor(Math.random() * sides) + 1;
+    return Math.max(0, roll + offset);
+  };
 
   // Add an event to the room events stack
   const addRoomEvent = (eventType, eventData = {}) => {
@@ -65,27 +77,24 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
         const candidates = Object.entries(MONSTER_TABLE).filter(([, t]) => t.category === 'dungeonVermin').map(([k]) => k);
         const key = candidates[Math.floor(Math.random() * candidates.length)];
         const template = MONSTER_TABLE[key];
-        // Roll group count from template.count (e.g., 'd6+2')
-        const count = rollCountSpec(template.count || 'd6');
-        const level = Math.max(1, 1 + (template.levelMod || 0));
-        const group = {
-          id: Date.now() + Math.random(),
-          name: template.name,
-          level: level,
-          hp: 1,
-          maxHp: 1,
-          count,
-          initialCount: count,
-          type: key,
-          special: template.special,
-          xp: template.xp || level,
-          moraleMod: template.moraleMod || 0,
-          reaction: null,
-          statuses: [],
-          isMinorFoe: true
-        };
-        dispatch(addMonster(group));
-        dispatch(logMsgAction(`${group.count} ${group.name} L${group.level} appear!`));
+        // Create monster object from the MONSTER_TABLE entry and dispatch
+    const monster = createMonsterFromTable(key, state.hcl);
+        if (monster) {
+          // If count is a spec like 'd6' or 'd6+2', roll it now so monster.count is numeric
+          if (typeof monster.count === 'string') {
+            const numeric = rollCountFromSpec(monster.count);
+            monster.count = numeric;
+            monster.initialCount = numeric;
+            monster.isMinorFoe = true;
+          }
+          dispatch({ type: 'ADD_MONSTER', m: monster });
+          // Log group appearance for minor foes
+          if (monster.isMinorFoe && monster.count) {
+            dispatch(logMsgAction(`${monster.count} ${monster.name} L${monster.level} appear!`));
+          } else {
+            dispatch(logMsgAction(`${monster.name} L${monster.level} (${monster.hp}HP) appears!`));
+          }
+        }
 
         // Dwarf Gold Sense: if any alive dwarf has the trait, offer a preview
         const dwarfIdx = (state.party || []).findIndex(h => h && h.hp > 0 && getTrait(h.key, h.trait)?.key === 'goldSense');
@@ -104,8 +113,8 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
             dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
           }
         }
-        newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'vermin', level: 1, species: key, count }, timestamp: Date.now() });
-        setActionMode(ACTION_MODES.COMBAT);
+  newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'vermin', monster }, timestamp: Date.now() });
+  setActionMode(ACTION_MODES.COMBAT);
         break;
       }
 
@@ -114,26 +123,21 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
         const candidates = Object.entries(MONSTER_TABLE).filter(([, t]) => t.category === 'dungeonMinions').map(([k]) => k);
         const key = candidates[Math.floor(Math.random() * candidates.length)];
         const template = MONSTER_TABLE[key];
-        const count = rollCountSpec(template.count || 'd6+2');
-        const level = Math.max(1, 2 + (template.levelMod || 0));
-        const group = {
-          id: Date.now() + Math.random(),
-          name: template.name,
-          level: level,
-          hp: 1,
-          maxHp: 1,
-          count,
-          initialCount: count,
-          type: key,
-          special: template.special,
-          xp: template.xp || level,
-          moraleMod: template.moraleMod || 0,
-          reaction: null,
-          statuses: [],
-          isMinorFoe: true
-        };
-        dispatch(addMonster(group));
-        dispatch(logMsgAction(`${group.count} ${group.name} L${group.level} appear!`));
+    const monster = createMonsterFromTable(key, state.hcl);
+        if (monster) {
+          if (typeof monster.count === 'string') {
+            const numeric = rollCountFromSpec(monster.count);
+            monster.count = numeric;
+            monster.initialCount = numeric;
+            monster.isMinorFoe = true;
+          }
+          dispatch({ type: 'ADD_MONSTER', m: monster });
+          if (monster.isMinorFoe && monster.count) {
+            dispatch(logMsgAction(`${monster.count} ${monster.name} L${monster.level} appear!`));
+          } else {
+            dispatch(logMsgAction(`${monster.name} L${monster.level} (${monster.hp}HP) appears!`));
+          }
+        }
 
         // Dwarf Gold Sense preview
         const dwarfIdx2 = (state.party || []).findIndex(h => h && h.hp > 0 && getTrait(h.key, h.trait)?.key === 'goldSense');
@@ -150,8 +154,8 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
             dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
           }
         }
-        newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'minions', level: 2, species: key, count }, timestamp: Date.now() });
-        setActionMode(ACTION_MODES.COMBAT);
+  newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'minions', monster }, timestamp: Date.now() });
+  setActionMode(ACTION_MODES.COMBAT);
         break;
       }
 
@@ -273,11 +277,23 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
     setRoomEvents(newEvents);
   };
 
+  // List of d66 values that should be treated as corridors (explicit per user)
+  const CORRIDOR_D66 = new Set([11,12,13,14,26,32,33,42,45,51,53,55,62,63,65]);
+
   // Combined tile generation - rolls both shape and contents at once
-  const generateTile = () => {
-    const shapeRoll = d66();
+  // generateTile optionally accepts overrides: { shapeRoll, contentsRoll }
+  const generateTile = (opts = {}) => {
+    const shapeRoll = (opts && typeof opts.shapeRoll === 'number') ? opts.shapeRoll : d66();
     const shapeResult = TILE_SHAPE_TABLE[shapeRoll];
-    const isCorridor = shapeResult?.shape?.includes('corridor');
+    // Determine corridor purely from the d66 roll (explicit list) - do NOT rely on coordinates
+    const isCorridor = CORRIDOR_D66.has(shapeRoll);
+
+    // Notify reducers of combat location type (derived from d66 only)
+    try {
+      dispatch({ type: SET_COMBAT_LOCATION, locationType: isCorridor ? 'corridor' : 'room', width: 'normal', x: null, y: null });
+    } catch (e) {
+      // ignore dispatch errors
+    }
 
     const newEvents = [{
       type: 'D66_ROLL',
@@ -302,61 +318,52 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
   // continue on to roll contents and process them below
     }
 
-    // No match - roll 2d6 for contents
-    const contentsRoll = r2d6();
-    const contentsResult = TILE_CONTENTS_TABLE[contentsRoll];
+  // No match - roll 2d6 for contents (or use provided override)
+  const contentsRoll = (opts && typeof opts.contentsRoll === 'number') ? opts.contentsRoll : r2d6();
+  const contentsResult = TILE_CONTENTS_TABLE[contentsRoll];
 
     // Check if this content roll has different outcomes for room vs corridor
     const hasDualContent = contentsResult.corridorType && contentsResult.roomType;
 
     if (hasDualContent) {
-      // Show both options - let player choose
-      const corridorOption = {
-        type: contentsResult.corridorType,
-        description: `Corridor: ${contentsResult.corridorType === 'empty' ? 'Empty (may search)' : contentsResult.description}`
-      };
-      const roomOption = {
-        type: contentsResult.roomType,
-        description: `Room: ${contentsResult.description.split('//')[1]?.trim() || contentsResult.description}`
-      };
+      // Automatically select the correct content based on whether this d66 is a corridor
+      const selectedType = isCorridor ? contentsResult.corridorType : contentsResult.roomType;
 
+      // Record the contents roll for UI
       newEvents.push({
-        type: 'DUAL_CONTENT',
-        data: {
-          roll: contentsRoll,
-          isCorridor,
-          corridorOption,
-          roomOption,
-          description: contentsResult.description
+        type: 'CONTENTS_ROLL',
+        data: { 
+          roll: contentsRoll, 
+          description: isCorridor ? contentsResult.corridorDescription : contentsResult.roomDescription
         },
         timestamp: Date.now()
       });
 
-      // Also record a generic contents roll event so the UI can show the 2d6 value
-      newEvents.push({
-        type: 'CONTENTS_ROLL',
-        data: { roll: contentsRoll, description: contentsResult.description },
-        timestamp: Date.now()
-      });
-
-      // Store both options so player can choose
+      // Store tile result and chosen content type
       setTileResult({
         shape: shapeResult,
         isCorridor,
         contentsRoll,
-        hasDualContent: true,
-        corridorOption,
-        roomOption
+        contentType: selectedType
       });
       setRoomEvents(newEvents);
       setRoomDetails(null);
       setBossCheckResult(null);
-      setActionMode(ACTION_MODES.IDLE); // Let player choose
+
+      // Immediately process the selected content as if it were a single-content roll
+      processContents({ type: selectedType }, newEvents);
+      // Ensure UI switches to combat if selected content spawns monsters
+      if (['vermin', 'minions', 'major_foe', 'minor_boss', 'weird_monster', 'dragon', 'boss'].includes(selectedType)) {
+        try { setActionMode(ACTION_MODES.COMBAT); } catch (e) {}
+      }
     } else {
       // Single content type - process immediately
       newEvents.push({
         type: 'CONTENTS_ROLL',
-        data: { roll: contentsRoll, description: contentsResult.description },
+        data: { 
+          roll: contentsRoll, 
+          description: (contentsResult.corridorDescription || contentsResult.roomDescription || contentsResult.description) 
+        },
         timestamp: Date.now()
       });
 
@@ -373,6 +380,10 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
 
       // Process contents (spawn monsters, treasure, etc)
       processContents(contentsResult, newEvents);
+      // Ensure UI switches to combat if this content spawns monsters
+      if (['vermin', 'minions', 'major_foe', 'minor_boss', 'weird_monster', 'dragon', 'boss'].includes(contentsResult.type)) {
+        try { setActionMode(ACTION_MODES.COMBAT); } catch (e) {}
+      }
     }
   };
 

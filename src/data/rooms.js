@@ -54,34 +54,38 @@ export const TILE_SHAPE_TABLE = {
 // This determines what is in the room AFTER you determine its shape
 // Reference: tables.pdf - Tile Content Table
 export const TILE_CONTENTS_TABLE = {
-  2: { type: 'treasure', description: 'Treasure!' },
-  3: { type: 'treasure', description: 'Treasure protected by a trap. Roll on traps table, then treasure.' },
+  2: { type: 'treasure', corridorDescription: 'Treasure!', roomDescription: 'Treasure!' },
+  3: { type: 'treasure', corridorDescription: 'Treasure protected by a trap. Roll on traps table, then treasure.', roomDescription: 'Treasure protected by a trap. Roll on traps table, then treasure.' },
   4: {
     type: 'special',
-    description: 'Corridor - Empty // Room - Special Events',
+    corridorDescription: 'Empty',
+    roomDescription: 'Special Events (roll on Special Features table)',
     corridorType: 'empty',
     roomType: 'special'
   },
-  5: { type: 'special', description: 'Empty and may be searched. Then roll on special events in dungeons.' },
-  6: { type: 'vermin', description: 'Roll on Vermin Table' },
-  7: { type: 'minions', description: 'Roll on Minion Table' },
+  5: { type: 'special', corridorDescription: 'Empty and may be searched. Then roll on special events in dungeons.', roomDescription: 'Empty and may be searched. Then roll on special events in dungeons.' },
+  6: { type: 'vermin', corridorDescription: 'Roll on Vermin Table', roomDescription: 'Roll on Vermin Table' },
+  7: { type: 'minions', corridorDescription: 'Roll on Minion Table', roomDescription: 'Roll on Minion Table' },
   8: {
     type: 'minions',
-    description: 'Corridor - empty // Room - Minion',
+    corridorDescription: 'Empty',
+    roomDescription: 'Minion encounter (roll on Minion Table)',
     corridorType: 'empty',
     roomType: 'minions'
   },
-  9: { type: 'empty', description: 'May search, or spend 2 clues for a secret passage.' },
+  9: { type: 'empty', corridorDescription: 'May search, or spend 2 clues for a secret passage.', roomDescription: 'May search, or spend 2 clues for a secret passage.' },
   10: {
     type: 'weird_monster',
-    description: 'corridor - empty // room - weird monster',
+    corridorDescription: 'Empty',
+    roomDescription: 'Weird Monster (roll on Weird Monster table)',
     corridorType: 'empty',
     roomType: 'weird_monster'
   },
-  11: { type: 'major_foe', description: 'Major Foe / Boss Encounter' },
+  11: { type: 'major_foe', corridorDescription: 'Major Foe / Boss Encounter', roomDescription: 'Major Foe / Boss Encounter' },
   12: {
     type: 'dragon',
-    description: 'Corridor - Empty // Room - Dragon\'s Lair',
+    corridorDescription: 'Empty',
+    roomDescription: "Dragon's Lair",
     corridorType: 'empty',
     roomType: 'dragon'
   }

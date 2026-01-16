@@ -6,6 +6,7 @@ import { d6 } from "../utils/dice.js";
 import { rollTreasure, performCastSpell, rollWanderingMonster, attemptPartyFlee, attemptWithdraw } from "../utils/gameActions/index.js";
 import { SPELLS, getAvailableSpells } from "../data/spells.js";
 import { createMonsterFromTable, MONSTER_CATEGORIES, getAllMonsters } from '../data/monsters.js';
+import { TILE_SHAPE_TABLE } from '../data/rooms.js';
 import { COMBAT_PHASES, ACTION_MODES } from "../constants/gameConstants.js";
 import { EVENT_TYPES } from "../constants/gameConstants.js";
 import EventCard from "./actionPane/EventCard.jsx";
@@ -24,6 +25,7 @@ import {
   findSecretDoor,
   findSecretPassage
 } from '../utils/gameActions/explorationActions.js';
+import { attemptDisarmTrap, triggerTrap } from '../utils/gameActions/dungeonActions.js';
 
 export default function ActionPane({
   state,
@@ -60,6 +62,7 @@ export default function ActionPane({
   const [hiddenTreasureResult, setHiddenTreasureResult] = useState(null);
   const [secretDoorResult, setSecretDoorResult] = useState(null);
   const [secretPassageResult, setSecretPassageResult] = useState(null);
+  const [showHeroSelection, setShowHeroSelection] = useState(null); // For selecting hero who found clue
 
   const party = selectParty(state);
   const monsters = selectMonsters(state);
@@ -186,6 +189,35 @@ export default function ActionPane({
               >
                 Wandering (d6)
               </button>
+
+              <button
+                onClick={() => {
+                  // Prompt for manual d66 and 2d6 values for debugging
+                  const rawD66 = prompt('Enter d66 (e.g. 11, 12, 21, 66):', '11');
+                  if (!rawD66) return;
+                  const shapeRoll = parseInt(rawD66, 10);
+                  if (Number.isNaN(shapeRoll) || !Object.keys(TILE_SHAPE_TABLE).includes(String(shapeRoll))) {
+                    alert('Invalid d66 value');
+                    return;
+                  }
+                  const raw2d6 = prompt('Enter 2d6 result (2-12):', '8');
+                  if (!raw2d6) return;
+                  const contentsRoll = parseInt(raw2d6, 10);
+                  if (Number.isNaN(contentsRoll) || contentsRoll < 2 || contentsRoll > 12) {
+                    alert('Invalid 2d6 value');
+                    return;
+                  }
+                  // Call generateTile with overrides
+                  try {
+                    generateTile({ shapeRoll, contentsRoll });
+                  } catch (e) {
+                    console.error('Custom tile generation failed', e);
+                  }
+                }}
+                className="flex-1 bg-emerald-700 hover:bg-emerald-600 px-3 py-2 rounded text-sm"
+              >
+                Custom Tile
+              </button>
             </div>
             {/* Monster spawn controls moved from Combat: Custom Monster, Quick Minor Foe, and Monster Table */}
             <div className="grid grid-cols-2 gap-1 mt-3">
@@ -285,10 +317,17 @@ export default function ActionPane({
 
           <div className="space-y-1">
             {/* Show any die rolls (d66 and/or 2d6) in a compact row, then render remaining events */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-start">
               {d66Event && (
                 <div className="flex-1 bg-blue-900/30 rounded p-2 text-xs border-l-2 border-blue-400 text-left">
-                  <div className="text-blue-400 font-bold">d66 {d66Event.data.roll}</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-blue-400 font-bold">d66 {d66Event.data.roll}</div>
+                    <div className="ml-2">
+                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${ (tileResult?.isCorridor || corridor) ? 'bg-amber-700 text-black' : 'bg-emerald-700 text-white' }`}>
+                        {(tileResult?.isCorridor || corridor) ? 'Corridor' : 'Room'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
               {contentsEvent && (
@@ -366,29 +405,7 @@ export default function ActionPane({
                 <div className="bg-amber-900/30 rounded p-3"><div className="text-amber-500 font-bold">🏆 Quest Room!</div><div className="text-slate-300 text-sm mt-1">This is the dungeon's final objective! Complete your quest here.</div></div>
               )}
 
-              {/* Dual Content Options - Show both room and corridor options when they differ */}
-              {tileResult?.hasDualContent && actionMode === ACTION_MODES.IDLE && (
-                <div className="bg-blue-900/30 rounded p-3 border-2 border-blue-500/50">
-                  <div className="text-blue-400 font-bold text-sm mb-2">⚖️ Choose Content Type:</div>
-                  <div className="text-slate-300 text-xs mb-3">
-                    This roll has different outcomes for rooms vs corridors. Choose which to apply:
-                  </div>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => applyContentChoice(tileResult.corridorOption.type)}
-                      className="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm text-left"
-                    >
-                      <div className="font-bold text-purple-400">🚪 {tileResult.corridorOption.description}</div>
-                    </button>
-                    <button
-                      onClick={() => applyContentChoice(tileResult.roomOption.type)}
-                      className="w-full bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm text-left"
-                    >
-                      <div className="font-bold text-amber-400">🏠 {tileResult.roomOption.description}</div>
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Dual-content rolls are auto-resolved based on the d66 roll (no player choice required) */}
 
               {(actionMode === ACTION_MODES.EMPTY || actionMode === ACTION_MODES.TREASURE) && !(tileResult?.contentType === 'treasure' && [2,3].includes(tileResult?.contentsRoll)) && (
                 <button
@@ -449,9 +466,9 @@ export default function ActionPane({
           onChoice={(choice) => {
             // Handle user's search choice
             if (choice === 'clue') {
-              // TODO: Let user select which hero found the clue
-              const heroIdx = 0; // Default to first hero for now
-              findClue(dispatch, heroIdx, state.party[heroIdx]?.name || 'Hero');
+              // Show hero selection modal
+              setShowHeroSelection(true);
+              setSearchResult(null);
             } else if (choice === 'hidden_treasure') {
               const result = findHiddenTreasure(dispatch, state.hcl);
               setHiddenTreasureResult(result);
@@ -483,17 +500,86 @@ export default function ActionPane({
             if (action === 'alarm') {
               rollWanderingMonster(dispatch, state.hcl);
             } else if (action === 'disarm_trap') {
-              // TODO: Trigger rogue disarm attempt
-              dispatch({ type: 'LOG', t: `Rogue attempts to disarm trap (L${state.hcl + 1})...` });
+              // Find a rogue in the party
+              const rogueIdx = state.party.findIndex(h => h.class === 'Rogue' && h.hp > 0);
+              if (rogueIdx >= 0) {
+                const rogue = state.party[rogueIdx];
+                // Use a generic trap type for hidden treasure traps (dart trap)
+                const result = attemptDisarmTrap(dispatch, rogue, 'dart');
+
+                if (!result.success) {
+                  // Trap triggered - deal damage to the rogue
+                  const trapResult = triggerTrap(dispatch, rogue, 'dart');
+                  if (trapResult.damage > 0) {
+                    dispatch({ type: 'DAMAGE', idx: rogueIdx, n: trapResult.damage });
+                  }
+                }
+              } else {
+                dispatch({ type: 'LOG', t: `⚠️ No conscious Rogue available to disarm the trap!` });
+                // If no rogue, trigger trap on random party member
+                const aliveParty = state.party.filter(h => h.hp > 0);
+                if (aliveParty.length > 0) {
+                  const targetIdx = state.party.findIndex(h => h.id === aliveParty[Math.floor(Math.random() * aliveParty.length)].id);
+                  const trapResult = triggerTrap(dispatch, state.party[targetIdx], 'dart');
+                  if (trapResult.damage > 0) {
+                    dispatch({ type: 'DAMAGE', idx: targetIdx, n: trapResult.damage });
+                  }
+                }
+              }
             } else if (action === 'trigger_trap') {
-              // TODO: Trigger trap damage
-              dispatch({ type: 'LOG', t: `Trap triggered! Random PC takes damage.` });
+              // Trigger trap on random party member
+              const aliveParty = state.party.filter(h => h.hp > 0);
+              if (aliveParty.length > 0) {
+                const targetIdx = state.party.findIndex(h => h.id === aliveParty[Math.floor(Math.random() * aliveParty.length)].id);
+                const trapResult = triggerTrap(dispatch, state.party[targetIdx], 'dart');
+                if (trapResult.damage > 0) {
+                  dispatch({ type: 'DAMAGE', idx: targetIdx, n: trapResult.damage });
+                }
+              }
             } else if (action === 'banish_ghost') {
-              // TODO: Cleric banish attempt
-              dispatch({ type: 'LOG', t: `Cleric attempts to banish ghost (L${state.hcl})...` });
+              // Find a cleric in the party
+              const clericIdx = state.party.findIndex(h => h.class === 'Cleric' && h.hp > 0);
+              if (clericIdx >= 0) {
+                const cleric = state.party[clericIdx];
+                const roll = d6();
+                const bonus = Math.floor(cleric.lvl / 2); // Clerics get +½L vs undead
+                const total = roll + bonus;
+                const dc = 3 + state.hcl; // DC increases with dungeon level
+
+                if (total >= dc) {
+                  dispatch({
+                    type: 'LOG',
+                    t: `✨ ${cleric.name} banishes the ghost! (${roll}+${bonus}=${total} vs DC${dc})`
+                  });
+                } else {
+                  dispatch({
+                    type: 'LOG',
+                    t: `💀 ${cleric.name} fails to banish the ghost! (${roll}+${bonus}=${total} vs DC${dc}) All PCs lose 1 Life!`
+                  });
+                  // Apply 1 damage to all party members
+                  state.party.forEach((hero, idx) => {
+                    if (hero.hp > 0) {
+                      dispatch({ type: 'DAMAGE', idx, n: 1 });
+                    }
+                  });
+                }
+              } else {
+                dispatch({ type: 'LOG', t: `⚠️ No conscious Cleric available! All PCs lose 1 Life from the ghost!` });
+                // Apply 1 damage to all party members
+                state.party.forEach((hero, idx) => {
+                  if (hero.hp > 0) {
+                    dispatch({ type: 'DAMAGE', idx, n: 1 });
+                  }
+                });
+              }
             } else if (action === 'fight_ghost') {
               dispatch({ type: 'LOG', t: `All PCs lose 1 Life from the ghost!` });
-              // TODO: Apply damage to all PCs
+              // Apply 1 damage to all party members
+              state.party.forEach((hero, idx) => {
+                if (hero.hp > 0) {
+                  dispatch({ type: 'DAMAGE', idx, n: 1 });
+                }
+              });
             }
 
             // Award the gold
@@ -521,6 +607,17 @@ export default function ActionPane({
         <SecretPassageModal
           passage={secretPassageResult}
           onClose={() => setSecretPassageResult(null)}
+        />
+      )}
+
+      {showHeroSelection && (
+        <HeroSelectionModal
+          party={party}
+          onSelect={(heroIdx) => {
+            findClue(dispatch, heroIdx, state.party[heroIdx]?.name || 'Hero');
+            setShowHeroSelection(null);
+          }}
+          onClose={() => setShowHeroSelection(null)}
         />
       )}
     </div>
@@ -568,5 +665,61 @@ function MonsterTableSpawn({ dispatch }) {
       </select>
       <button onClick={handleSpawn} disabled={!selectedMonster} className="bg-purple-600 hover:bg-purple-500 disabled:bg-slate-600 px-2 py-1 rounded text-xs">Spawn</button>
     </>
+  );
+}
+
+function HeroSelectionModal({ party, onSelect, onClose }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border-2 border-amber-400">
+        <div className="flex justify-between items-start mb-4">
+          <h2 className="text-xl font-bold text-amber-400">🔍 Who Found the Clue?</h2>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="text-slate-300 text-sm mb-4">
+          Select which hero discovered the clue while searching:
+        </div>
+
+        <div className="space-y-2">
+          {party.map((hero, idx) => (
+            <button
+              key={hero.id || idx}
+              onClick={() => onSelect(idx)}
+              className={`w-full p-3 rounded border-2 text-left transition-colors ${
+                hero.hp <= 0
+                  ? 'bg-slate-700 border-slate-600 opacity-50 cursor-not-allowed'
+                  : 'bg-slate-700 border-slate-500 hover:border-amber-400 hover:bg-slate-600'
+              }`}
+              disabled={hero.hp <= 0}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <div className="font-bold text-white">{hero.name}</div>
+                  <div className="text-xs text-slate-400">{hero.class}</div>
+                </div>
+                <div className="text-sm">
+                  <span className={hero.hp <= 0 ? 'text-red-400' : 'text-green-400'}>
+                    {hero.hp}/{hero.maxHp} HP
+                  </span>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }

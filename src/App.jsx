@@ -23,6 +23,7 @@ import GoldSenseModal from "./components/GoldSenseModal.jsx";
 
 // Layout Components
 import AppHeader from "./components/layout/AppHeader.jsx";
+import LanternModal from './components/LanternModal.jsx';
 import MobileNavigation from "./components/layout/MobileNavigation.jsx";
 import DesktopSidebar from "./components/layout/DesktopSidebar.jsx";
 import LogBar from "./components/layout/LogBar.jsx";
@@ -238,6 +239,7 @@ export default function App() {
   const [actionMode, setActionMode] = useState(ACTION_MODES.IDLE);
   const [goldSenseModalData, setGoldSenseModalData] = useState(null);
   const [showGoldSenseModal, setShowGoldSenseModal] = useState(false);
+  const [showLantern, setShowLantern] = useState(false);
 
   // Custom hooks for game logic
   const combatFlow = useCombatFlow(state, dispatch);
@@ -327,7 +329,10 @@ export default function App() {
         onBackToCampaigns={handleBackToCampaigns}
   hasLightSource={effectiveHasLight}
   partyLightNames={partyLightNames}
+  onShowLantern={() => setShowLantern(true)}
       />
+
+      <LanternModal isOpen={showLantern} onClose={() => setShowLantern(false)} state={state} dispatch={dispatch} />
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden flex flex-col">

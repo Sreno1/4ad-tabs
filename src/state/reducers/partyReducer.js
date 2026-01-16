@@ -177,6 +177,32 @@ export function partyReducer(state, action) {
       return { ...state, party: newParty };
     }
 
+    // ========== Clues ==========
+    case A.ADD_HERO_CLUE: {
+      const newParty = state.party.map((h, i) => {
+        if (i !== action.heroIdx) return h;
+        // Max 3 clues per hero per game rules
+        const currentClues = h.clues || 0;
+        if (currentClues >= 3) return h;
+        return {
+          ...h,
+          clues: currentClues + (action.amount || 1)
+        };
+      });
+      return { ...state, party: newParty };
+    }
+
+    case A.REMOVE_HERO_CLUE: {
+      const newParty = state.party.map((h, i) => {
+        if (i !== action.heroIdx) return h;
+        return {
+          ...h,
+          clues: Math.max(0, (h.clues || 0) - (action.amount || 1))
+        };
+      });
+      return { ...state, party: newParty };
+    }
+
     // ========== Scrolls & Learned Spells ==========
     case A.ADD_LEARNED_SPELL: {
       const newParty = state.party.map((h, i) => {

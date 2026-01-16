@@ -9,7 +9,9 @@ export const UPD_HERO = 'UPD_HERO';
 
 // Resources
 export const GOLD = 'GOLD';
-export const CLUE = 'CLUE';
+export const CLUE = 'CLUE'; // Legacy: global clues (deprecated)
+export const ADD_HERO_CLUE = 'ADD_HERO_CLUE'; // Add clue to specific hero (max 3)
+export const REMOVE_HERO_CLUE = 'REMOVE_HERO_CLUE'; // Remove clues from hero (for spending)
 
 // Encounter tracking
 export const MINOR = 'MINOR';
@@ -33,6 +35,9 @@ export const TOGGLE_CELL = 'TOGGLE_CELL';
 export const SET_CELL = 'SET_CELL'; // Set cell to specific value (0, 1, or 2)
 export const TOGGLE_DOOR = 'TOGGLE_DOOR';
 export const CLEAR_GRID = 'CLEAR_GRID';
+
+// Environment
+export const CHANGE_ENVIRONMENT = 'CHANGE_ENVIRONMENT';
 
 // Logging
 export const LOG = 'LOG';

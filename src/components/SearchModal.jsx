@@ -95,11 +95,24 @@ export function SearchModal({ searchResult, onChoice, onClose, state }) {
             {/* Current Clues Display */}
             <div className="mt-4 pt-4 border-t border-slate-600">
               <div className="text-xs text-slate-400">
-                Current Clues: <span className="text-amber-400 font-bold">{state.clues}</span>
-                {state.clues >= 3 && (
-                  <span className="text-green-400 ml-2">
-                    (Can reveal a secret!)
-                  </span>
+                <div className="mb-2">Party Clues:</div>
+                {state.party && state.party.length > 0 ? (
+                  state.party.map((hero, idx) => {
+                    const clueCount = hero.clues || 0;
+                    return (
+                      <div key={idx} className="text-xs ml-2 mb-1">
+                        <span className="text-slate-300">{hero.name}:</span>
+                        <span className={`ml-2 font-bold ${clueCount >= 3 ? 'text-green-400' : 'text-blue-400'}`}>
+                          {clueCount}/3
+                        </span>
+                        {clueCount >= 3 && (
+                          <span className="text-green-400 ml-2">(Can reveal a secret!)</span>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-xs text-slate-500">No heroes in party</div>
                 )}
               </div>
             </div>
