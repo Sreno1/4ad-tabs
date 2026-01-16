@@ -1,6 +1,7 @@
 import React from "react";
 import { CLASS_ICONS } from "../data/classIcons.js";
 import { CLASSES } from "../data/classes.js";
+import { Tooltip } from './RulesReference.jsx';
 
 /**
  * MarchingOrder - 2x2 grid showing party formation
@@ -25,8 +26,7 @@ export default function MarchingOrder({ state, selectedHero, onSelectHero }) {
     if (!result?.hero) {
       return (
         <div
-          className="flex items-center gap-2 p-2 bg-slate-700/50 rounded border border-slate-600/30"
-          title={`Position ${positionNumber} - Empty`}
+          className="flex items-center gap-2 p-2 bg-slate-700/50 rounded border border-slate-600/30 w-full"
         >
           <div className="w-10 h-10 rounded flex items-center justify-center text-slate-600 text-xs bg-slate-600/30">
             {positionNumber}
@@ -61,7 +61,6 @@ export default function MarchingOrder({ state, selectedHero, onSelectHero }) {
               ? "border-slate-600 bg-slate-700/50 hover:border-slate-500 hover:bg-slate-700"
               : "border-red-800/50 bg-slate-800/50 cursor-not-allowed"
         }`}
-        title={`${isSelected ? "★ " : ""}${hero.name} - ${className} - ${hero.hp}/${hero.maxHp} HP${isAlive ? " - Click to select" : " - Dead"}`}
       >
         {/* Class icon */}
         <div
@@ -107,15 +106,13 @@ export default function MarchingOrder({ state, selectedHero, onSelectHero }) {
             {className}
           </div>
         </div>
-      </button>
+  </button>
     );
   };
 
   return (
-    <div
-      className="grid grid-cols-1 gap-2"
-      title="Marching Order - Click to select active hero"
-    >
+  <Tooltip text="Marching Order - Click to select active hero">
+  <div className="grid grid-cols-1 gap-2 w-full">
       {/* Row 1: Positions 1 & 2 */}
       <div className="grid grid-cols-2 gap-2">
         {renderCell(0)}
@@ -128,5 +125,6 @@ export default function MarchingOrder({ state, selectedHero, onSelectHero }) {
         {renderCell(2)}
       </div>
     </div>
+    </Tooltip>
   );
 }

@@ -320,7 +320,7 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                 <div><span className="font-mono">Esc</span>: Close modals</div>
                 <div><span className="font-mono">Ctrl/Cmd+D</span>: Dice roller</div>
                 <div><span className="font-mono">p</span>: Party tab</div>
-                <div><span className="font-mono">`</span>: Log tab</div>
+                <div><span className="font-mono">`</span>: Story tab</div>
                 <div><span className="font-mono">o</span>: Stats tab</div>
                 <div><span className="font-mono">r</span>: Rules modal (toggle)</div>
                 <div><span className="font-mono">c</span>: Campaign modal (toggle)</div>

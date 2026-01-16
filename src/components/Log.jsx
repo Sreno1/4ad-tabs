@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Archive, Filter } from 'lucide-react';
 import { selectLog, selectLogArchive } from '../state/selectors.js';
-import { archiveLog } from '../state/actionCreators.js';
+import { archiveLog, addStoryBeat } from '../state/actionCreators.js';
 
 export default function Log({ state, dispatch, isBottomPanel = false }) {
   const log = selectLog(state);
@@ -79,8 +79,19 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
               const timestamp = isObject ? entry.timestamp : new Date().toISOString();
               const type = isObject ? entry.type : 'system';
               
+              const handleContext = (e) => {
+                e.preventDefault();
+                if (!message || (typeof message === 'string' && message.trim().length === 0)) return;
+                dispatch(addStoryBeat(String(message).trim(), 'log'));
+              };
+
               return (
-                <div key={`log-${index}-${isObject ? entry.timestamp : entry.substring(0, 20)}`} className="text-slate-400 border-b border-slate-800 pb-1 font-mono log-entry">
+                <div
+                  key={`log-${index}-${isObject ? entry.timestamp : entry.substring(0, 20)}`}
+                  className="text-slate-400 border-b border-slate-800 pb-1 font-mono log-entry cursor-pointer hover:bg-slate-700 hover:text-slate-100 transition-colors"
+                  onContextMenu={handleContext}
+                  title="Right-click to add this entry to Story Beats"
+                >
                   <span className="text-slate-500 text-xs mr-2">
                     [{formatTimestamp(timestamp)}]
                   </span>
@@ -154,9 +165,20 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
             const message = isObject ? entry.message : entry;
             const timestamp = isObject ? entry.timestamp : new Date().toISOString();
             const type = isObject ? entry.type : 'system';
-            
+
+            const handleContext = (e) => {
+              e.preventDefault();
+              if (!message || (typeof message === 'string' && message.trim().length === 0)) return;
+              dispatch(addStoryBeat(String(message).trim(), 'log'));
+            };
+
             return (
-              <div key={`log-${index}-${isObject ? entry.timestamp : entry.substring(0, 20)}`} className="text-slate-400 border-b border-slate-700 pb-1 log-entry">
+              <div
+                key={`log-${index}-${isObject ? entry.timestamp : entry.substring(0, 20)}`}
+                className="text-slate-400 border-b border-slate-700 pb-1 log-entry cursor-pointer hover:bg-slate-700 hover:text-slate-100 transition-colors"
+                onContextMenu={handleContext}
+                title="Right-click to add this entry to Story Beats"
+              >
                 <span className="text-slate-500 text-xs mr-2">
                   [{formatTimestamp(timestamp)}]
                 </span>

@@ -1,15 +1,6 @@
 import React, { useRef, useEffect, useCallback, memo, useState } from 'react';
 
-const MARKER_STYLES = {
-  monster: { char: '♠', color: '#ef4444' },
-  boss: { char: '☠', color: '#a855f7' },
-  treasure: { char: '★', color: '#eab308' },
-  trap: { char: '†', color: '#f97316' },
-  special: { char: '♦', color: '#3b82f6' },
-  cleared: { char: '⊙', color: '#22c55e' },
-  entrance: { char: '⌂', color: '#06b6d4' },
-  exit: { char: '⛨', color: '#10b981' }
-};
+import MARKER_STYLES from '../constants/markerStyles.js';
 
 /**
  * High-performance canvas-based dungeon grid
@@ -39,6 +30,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const rows = grid.length;
   const width = cols * cellSize;
   const height = rows * cellSize;
+  const canvasWidth = shouldRotate ? height : width;
+  const canvasHeight = shouldRotate ? width : height;
 
   // Draw the entire grid
   const drawGrid = useCallback(() => {
@@ -50,9 +43,15 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
     // Clear canvas
     ctx.fillStyle = '#0f172a'; // slate-900
-    ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
     // Draw cells
+    if (shouldRotate) {
+      // Rotate the drawing so the logical grid is displayed rotated 90deg clockwise
+      ctx.save();
+      ctx.translate(canvasWidth, 0);
+      ctx.rotate(Math.PI / 2);
+    }
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         const cell = grid[y][x];
@@ -102,7 +101,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
     }
 
-    // Draw doors
+  // Draw doors
     const doorThickness = Math.max(2, Math.floor(cellSize * 0.15));
     ctx.fillStyle = '#f59e0b'; // amber-500
 
@@ -121,7 +120,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
     });
 
-    // Draw door placement guides - always show on room cells (but not while dragging)
+  // Draw door placement guides - always show on room cells (but not while dragging)
     if (hoveredCell && !isDragging) {
       const cell = grid[hoveredCell.y]?.[hoveredCell.x];
       if (cell > 0) {
@@ -154,6 +153,10 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
     }
 
+    if (shouldRotate) {
+      ctx.restore();
+    }
+
   }, [grid, doors, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height]);
 
   // Redraw when dependencies change
@@ -170,8 +173,21 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const x = Math.floor(mouseX / cellSize);
-    const y = Math.floor(mouseY / cellSize);
+    // Map mouse coordinates to logical canvas coordinates.
+    // When drawing rotated (we set canvas width/height swapped and applied
+    // ctx.translate(canvasWidth,0); ctx.rotate(+90deg)), the forward mapping is:
+    // sx = -ly + canvasWidth, sy = lx  (where lx,ly are logical pixel coords)
+    // Inverse mapping therefore is:
+    // lx = sy, ly = canvasWidth - sx
+    let logicalX = mouseX;
+    let logicalY = mouseY;
+    if (shouldRotate) {
+      logicalX = mouseY;
+      logicalY = canvasWidth - mouseX;
+    }
+
+    const x = Math.floor(logicalX / cellSize);
+    const y = Math.floor(logicalY / cellSize);
 
     if (x >= 0 && x < cols && y >= 0 && y < rows) {
       // Check if we changed cells
@@ -192,8 +208,9 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       // Check which door edge we're hovering (always detect for room cells)
       const cell = grid[y]?.[x];
       if (cell > 0) {
-        const cellX = mouseX % cellSize;
-        const cellY = mouseY % cellSize;
+        // Use logical (unrotated) cell-local coordinates
+  const cellX = ((logicalX % cellSize) + cellSize) % cellSize;
+  const cellY = ((logicalY % cellSize) + cellSize) % cellSize;
         const threshold = cellSize * 0.35; // Larger threshold = easier to click
 
         let edge = null;
@@ -227,6 +244,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (hoveredDoor) setHoveredDoor(null);
     }
   }, [cellSize, cols, rows, grid, hoveredCell, hoveredDoor, showDoorMode, isDragging, dragFillValue, onCellSet]);
+  
 
   const handleMouseLeave = useCallback(() => {
     setHoveredCell(null);
@@ -347,16 +365,15 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   return (
     <div
       style={{
-        transform: shouldRotate ? 'rotate(90deg)' : 'none',
-        transformOrigin: 'center center',
+        position: 'relative',
         width: 'fit-content',
         height: 'fit-content',
       }}
     >
       <canvas
         ref={canvasRef}
-        width={width}
-        height={height}
+        width={canvasWidth}
+        height={canvasHeight}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}

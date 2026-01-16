@@ -11,14 +11,16 @@ import {
 import { spawnMonster, rollTreasure, performSearch, rollWanderingMonster, spawnMajorFoe } from "../utils/gameActions/index.js";
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
+import RadialMenu from './RadialMenu.jsx';
 
-export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, hideGenerationUI = false, sidebarCollapsed = false }) {
+export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, hideGenerationUI = false, sidebarCollapsed = false, onToggleShowLog = null, showLogMiddle = false }) {
   const [lastShapeRoll, setLastShapeRoll] = useState(null);
   const [lastContentsRoll, setLastContentsRoll] = useState(null);
   const [roomDetails, setRoomDetails] = useState(null); // Additional info for special rooms
   const [bossCheckResult, setBossCheckResult] = useState(null); // Boss check result
   const [showMarkers, setShowMarkers] = useState(true); // Toggle markers visibility
   const [roomMarkers, setRoomMarkers] = useState({}); // {cellKey: {type, label, tooltip}}  const [hoveredCell, setHoveredCell] = useState(null); // For showing tooltip
+  const [radialMenu, setRadialMenu] = useState(null); // {xPx,yPx,cellX,cellY}
   const [cellSize, setCellSize] = useState(20); // Dynamic cell size
   const [shouldRotate, setShouldRotate] = useState(false); // Whether to rotate based on aspect ratio
   const gridContainerRef = React.useRef(null);
@@ -63,27 +65,47 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     dispatch({ type: 'SET_CELL', x, y, value });
   }, [dispatch]);
 
-  // Right-click to add/cycle markers
+  // Right-click opens radial menu for markers
   const handleCellRightClick = useCallback((x, y, e) => {
     e.preventDefault();
-    const marker = getMarker(x, y);
-    const markerTypes = ['monster', 'boss', 'treasure', 'trap', 'special', 'cleared', 'entrance', 'exit'];
-    
-    if (!marker) {
-      // No marker, add monster marker
-      addMarker(x, y, 'monster', 'Monster', 'Monster encounter');
+    // Compute pixel position for menu from event
+    const rect = gridContainerRef.current?.getBoundingClientRect();
+    const xPx = e.clientX;
+    const yPx = e.clientY;
+    setRadialMenu({ xPx, yPx, cellX: x, cellY: y });
+  }, []);
+
+  const closeRadial = useCallback(() => setRadialMenu(null), []);
+
+  const markerOptions = [
+  { key: 'clear', label: 'Clear' },
+    { key: 'monster', label: 'Monster' },
+    { key: 'boss', label: 'Boss' },
+    { key: 'treasure', label: 'Treasure' },
+    { key: 'trap', label: 'Trap' },
+    { key: 'special', label: 'Special' },
+    { key: 'cleared', label: 'Cleared' },
+    { key: 'entrance', label: 'Entrance' },
+    { key: 'exit', label: 'Exit' }
+  ];
+
+  const handleRadialSelect = useCallback((type) => {
+    if (!radialMenu) return;
+    const { cellX, cellY } = radialMenu;
+    const existing = getMarker(cellX, cellY);
+    if (type === 'clear') {
+      if (existing) removeMarker(cellX, cellY);
+    } else if (!existing && type) {
+      addMarker(cellX, cellY, type, type.charAt(0).toUpperCase() + type.slice(1), `${type} marker`);
+    } else if (existing && existing.type === type) {
+      // same type => remove
+      removeMarker(cellX, cellY);
     } else {
-      const currentIdx = markerTypes.indexOf(marker.type);
-      if (currentIdx >= markerTypes.length - 1) {
-        // Last type, remove marker
-        removeMarker(x, y);
-      } else {
-        // Cycle to next type
-        const nextType = markerTypes[currentIdx + 1];
-        addMarker(x, y, nextType, nextType, `${nextType} marker`);
-      }
+      // replace
+      addMarker(cellX, cellY, type, type.charAt(0).toUpperCase() + type.slice(1), `${type} marker`);
     }
-  }, [getMarker, addMarker, removeMarker]);
+    setRadialMenu(null);
+  }, [radialMenu, getMarker, addMarker, removeMarker]);
 
   const handleDoorToggle = useCallback((x, y, edge) => {
     dispatch({ type: 'TOGGLE_DOOR', x, y, edge });
@@ -281,7 +303,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     }
   };
     return (
-    <div className="space-y-2 h-full flex flex-col">
+  <div className="space-y-2 h-full flex flex-col">
       {/* Tile Generation - Two-Roll System (Hidden when hideGenerationUI is true) */}
       {!hideGenerationUI && (
       <div className="bg-slate-800 rounded p-2">
@@ -383,7 +405,19 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
         </div>
       </div>      )}      {/* Dungeon Grid - No extra outline/container, never scrolls */}
       <div className="flex-1 flex flex-col overflow-hidden" data-dungeon-section="true">
-        <div
+        <div className="flex items-center justify-end gap-2 p-1">
+          <div className="text-xs text-slate-300 mr-2">
+            {showLogMiddle ? 'Viewing: Log' : 'Viewing: Map'}
+          </div>
+          <button
+            onClick={() => onToggleShowLog && onToggleShowLog()}
+            className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
+            title={showLogMiddle ? 'Show dungeon' : 'Show full log in middle pane'}
+          >
+            {showLogMiddle ? 'Map' : 'Log'}
+          </button>
+        </div>
+  <div
           ref={gridContainerRef}
           className="flex-1 w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden"
           data-dungeon-grid="true"
@@ -393,8 +427,6 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
           <div
             className="inline-block"
             style={{
-              transform: shouldRotate ? 'rotate(90deg)' : 'none',
-              transformOrigin: 'center center',
               width: 'fit-content',
               height: 'fit-content',
             }}
@@ -411,6 +443,15 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             onCellRightClick={handleCellRightClick}
             onDoorToggle={handleDoorToggle}
           />
+          {radialMenu && (
+            <RadialMenu
+              x={radialMenu.xPx}
+              y={radialMenu.yPx}
+              items={markerOptions}
+              onSelect={handleRadialSelect}
+              onClose={closeRadial}
+            />
+          )}
           </div>
         </div>
       </div>

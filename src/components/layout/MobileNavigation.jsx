@@ -6,7 +6,7 @@ const tabs = [
   { id: 'dungeon', icon: Map, label: 'Dungeon' },
   { id: 'combat', icon: Sword, label: 'Combat' },
   { id: 'analytics', icon: TrendingUp, label: 'Stats' },
-  { id: 'log', icon: Scroll, label: 'Log' }
+  { id: 'story', icon: Scroll, label: 'Story' }
 ];
 
 export default function MobileNavigation({ activeTab, onTabChange }) {

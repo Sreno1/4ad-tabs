@@ -28,44 +28,37 @@ export default function RulesPdfViewer() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* PDF Selection */}
-      <div className="bg-slate-900 p-3 border-b border-slate-700 flex-shrink-0">
-        <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wide mb-2 flex items-center gap-2">
-          <Book size={14} aria-hidden="true" />
-          Rules PDFs
-        </h3>
-        <div className="grid grid-cols-3 gap-1">
-          {PDF_LINKS.map((pdf) => (
-            <button
-              key={pdf.file}
-              onClick={() => {
-                setSelectedPdf(pdf);
-                setPdfError(false);
-              }}
-              className={`px-2 py-1.5 text-xs rounded transition-colors ${
-                selectedPdf.file === pdf.file
-                  ? 'bg-amber-600 text-white'
-                  : 'bg-slate-800 hover:bg-slate-700 text-amber-400 hover:text-amber-300'
-              }`}
-              aria-label={`View ${pdf.name} PDF`}
-            >
-              {pdf.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* PDF Viewer Header */}
       <div className="bg-slate-800 px-3 py-2 border-b border-slate-700 flex justify-between items-center flex-shrink-0">
-        <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
-          <Book size={16} aria-hidden="true" />
-          {selectedPdf.name}
-        </h3>
+        <div className="flex items-center gap-3 w-full">
+          <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+            <Book size={16} aria-hidden="true" />
+            <span className="sr-only">Rules</span>
+          </h3>
+          <label htmlFor="rules-pdf-select" className="sr-only">Select Rules PDF</label>
+          <select
+            id="rules-pdf-select"
+            value={selectedPdf.file}
+            onChange={(e) => {
+              const pdf = PDF_LINKS.find((p) => p.file === e.target.value);
+              setSelectedPdf(pdf);
+              setPdfError(false);
+            }}
+            className="bg-slate-800 text-amber-400 hover:text-amber-300 px-3 py-1.5 text-sm rounded"
+            aria-label="Select rules PDF to view"
+          >
+            {PDF_LINKS.map((pdf) => (
+              <option key={pdf.file} value={pdf.file} className="bg-slate-800 text-slate-100">
+                {pdf.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <a
           href={pdfUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-slate-400 hover:text-amber-400 text-xs px-2 py-1 border border-slate-600 rounded flex items-center gap-1"
+          className="text-slate-400 hover:text-amber-400 text-xs px-2 py-1 border border-slate-600 rounded flex items-center gap-1 ml-3"
           aria-label={`Open ${selectedPdf.name} in new tab`}
         >
           <ExternalLink size={12} aria-hidden="true" />

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Scroll } from 'lucide-react';
 import Log from '../Log.jsx';
+import MarchingOrder from '../MarchingOrder.jsx';
 
-export default function LogBar({ state, dispatch, collapsed, onToggle }) {
+export default function LogBar({ state, dispatch, collapsed, onToggle, selectedHero, onSelectHero }) {
   return (
     <div
-      className={`absolute bottom-0 left-0 right-0 border-t border-slate-700 bg-slate-800 transition-all duration-200 ${
+      className={`border-t border-slate-700 bg-slate-800 transition-all duration-200 flex-shrink-0 ${
         collapsed ? 'h-8' : 'h-[35vh]'
       }`}
       style={{ boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.3)' }}
@@ -32,8 +33,14 @@ export default function LogBar({ state, dispatch, collapsed, onToggle }) {
       </div>
 
       {!collapsed && (
-        <div className="h-[calc(100%-2rem)] overflow-hidden">
-          <Log state={state} dispatch={dispatch} isBottomPanel={true} />
+        <div className="h-[calc(100%-2rem)] overflow-hidden flex">
+          <div className="flex-1 overflow-hidden">
+            <Log state={state} dispatch={dispatch} isBottomPanel={true} />
+          </div>
+
+          <div className="w-96 border-l border-slate-700 bg-slate-850 p-3 flex-shrink-0">
+            <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} />
+          </div>
         </div>
       )}
     </div>

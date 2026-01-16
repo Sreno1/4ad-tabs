@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Party from "../Party.jsx";
 import Analytics from "../Analytics.jsx";
-import Log from "../Log.jsx";
+import StoryLog from "../StoryLog.jsx";
 import RulesPdfViewer from "../RulesPdfViewer.jsx";
 
 export default function DesktopSidebar({
@@ -51,10 +51,10 @@ export default function DesktopSidebar({
         <button
           onClick={() => {
             onToggle(true);
-            onTabChange("log");
+            onTabChange("story");
           }}
-          className={`p-2 rounded hover:bg-slate-700 ${activeTab === "log" ? "text-green-400" : "text-slate-400"}`}
-          title="Open Log Panel"
+          className={`p-2 rounded hover:bg-slate-700 ${activeTab === "story" ? "text-green-400" : "text-slate-400"}`}
+          title="Open Story Panel"
         >
           <Scroll size={20} />
         </button>
@@ -108,14 +108,14 @@ export default function DesktopSidebar({
           <TrendingUp size={16} /> Stats
         </button>
         <button
-          onClick={() => onTabChange("log")}
+          onClick={() => onTabChange("story")}
           className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 ${
-            activeTab === "log"
+            activeTab === "story"
               ? "bg-slate-700 text-green-400"
               : "text-slate-400 hover:bg-slate-750"
           }`}
         >
-          <Scroll size={16} /> Log
+          <Scroll size={16} /> Story
         </button>
         <button
           onClick={() => onTabChange("rules")}
@@ -149,8 +149,10 @@ export default function DesktopSidebar({
           />
         ) : activeTab === "stats" ? (
           <Analytics state={state} />
-        ) : activeTab === "log" ? (
-          <Log state={state} dispatch={dispatch} />
+        ) : activeTab === "story" ? (
+          <div className="space-y-3">
+            <StoryLog state={state} dispatch={dispatch} />
+          </div>
         ) : (
           <RulesPdfViewer />
         )}

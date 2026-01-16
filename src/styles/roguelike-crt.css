@@ -57,8 +57,9 @@ body.roguelike [data-component="log"],
 body.roguelike .log-entry,
 body.roguelike .log-content {
     font-family: "Courier New", "Courier", monospace;
-    font-size: 14px;
-    line-height: 1.4;
+    font-size: 16px; /* slightly larger for readability */
+    line-height: 1.6;
+    font-weight: 600;
 }
 
 /* Root container - NO global CRT effect */
@@ -480,6 +481,35 @@ body.roguelike .log-entry.treasure {
 
 body.roguelike .log-entry.exploration {
     border-left-color: var(--crt-cyan);
+}
+
+/* Log timestamp and type tag: use Monogram and be smaller for compact display */
+body.roguelike [data-component="log"] .log-entry > span.text-slate-500,
+body.roguelike [data-component="log"] .log-entry > span.text-xs,
+body.roguelike [data-component="log"] .log-entry > span.inline-block {
+    font-family: "Monogram", "DungeonMode", "Courier New", monospace;
+    font-size: 1.5rem;
+    line-height: 1rem;
+}
+
+/* Make the type tag slightly bolder so it stands out */
+body.roguelike [data-component="log"] .log-entry > span.inline-block {
+    font-weight: 600;
+}
+
+/* Be more specific for the timestamp span (first child) */
+body.roguelike [data-component="log"] .log-entry > span:first-child {
+    color: var(--crt-amber);
+    opacity: 0.95;
+    margin-right: 0.5rem;
+}
+
+/* Keep tag paddings but ensure the Monogram font scales nicely */
+body.roguelike [data-component="log"] .log-entry > span.inline-block {
+    padding-top: 0.15rem;
+    padding-bottom: 0.15rem;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
 }
 
 /* Badges and Pills */

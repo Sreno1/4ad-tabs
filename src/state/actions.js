@@ -38,6 +38,10 @@ export const CLEAR_GRID = 'CLEAR_GRID';
 export const LOG = 'LOG';
 export const CLEAR_LOG = 'CLEAR_LOG';
 export const ARCHIVE_LOG = 'ARCHIVE_LOG'; // Archive current log and clear it
+// Story beats / narrative
+export const ADD_STORY_BEAT = 'ADD_STORY_BEAT';
+export const DEL_STORY_BEAT = 'DEL_STORY_BEAT';
+export const UPD_STORY_BEAT = 'UPD_STORY_BEAT';
 
 // Game state
 export const RESET = 'RESET';

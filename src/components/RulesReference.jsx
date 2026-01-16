@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Book, X, ChevronDown, ChevronRight, Sword, Shield, Users, Sparkles, Skull, Heart, Map, Dice6 } from 'lucide-react';
+import Tooltip from './Tooltip.jsx';
+export { Tooltip };
 
 // Quick reference data
 const RULES_SECTIONS = {
@@ -236,10 +238,29 @@ export default function RulesReference({ isOpen, onClose }) {
       <div className="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-slate-700">
-          <h2 id="rules-title" className="text-lg font-bold text-amber-400 flex items-center gap-2">
-            <Book size={20} aria-hidden="true" />
-            Rules Reference
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 id="rules-title" className="text-lg font-bold text-amber-400 flex items-center gap-2">
+              <Book size={20} aria-hidden="true" />
+              <span className="sr-only">Rules Reference</span>
+            </h2>
+            <label htmlFor="rules-modal-select" className="sr-only">Select Rules PDF</label>
+            <select
+              id="rules-modal-select"
+              onChange={(e) => {
+                const pdf = PDF_LINKS.find((p) => p.file === e.target.value);
+                if (pdf) openPdf(pdf);
+              }}
+              defaultValue="rules.pdf"
+              className="bg-slate-800 text-amber-400 hover:text-amber-300 px-3 py-1.5 text-sm rounded"
+              aria-label="Select rules PDF to open"
+            >
+              {PDF_LINKS.map((pdf) => (
+                <option key={pdf.file} value={pdf.file} className="bg-slate-800 text-slate-100">
+                  {pdf.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white"
@@ -291,16 +312,24 @@ export default function RulesReference({ isOpen, onClose }) {
               <Book size={14} />
               Rules PDFs
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {PDF_LINKS.map((pdf) => (
-                <button
-                  key={pdf.file}
-                  onClick={() => openPdf(pdf)}
-                  className="bg-slate-800 hover:bg-slate-700 rounded px-3 py-2 text-sm text-center text-amber-400 hover:text-amber-300 transition-colors"
-                >
-                  {pdf.name}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              <label htmlFor="rules-modal-select" className="sr-only">Select Rules PDF</label>
+              <select
+                id="rules-modal-select"
+                onChange={(e) => {
+                  const pdf = PDF_LINKS.find((p) => p.file === e.target.value);
+                  if (pdf) openPdf(pdf);
+                }}
+                defaultValue="rules.pdf"
+                className="bg-slate-800 text-amber-400 hover:text-amber-300 px-3 py-1.5 text-sm rounded w-full"
+                aria-label="Select rules PDF to open"
+              >
+                {PDF_LINKS.map((pdf) => (
+                  <option key={pdf.file} value={pdf.file} className="bg-slate-800 text-slate-100">
+                    {pdf.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           
@@ -326,29 +355,4 @@ export default function RulesReference({ isOpen, onClose }) {
   );
 }
 
-// Tooltip component for reuse
-export function Tooltip({ text, children, position = 'top' }) {
-  const [show, setShow] = useState(false);
-  
-  const positionClasses = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-2'
-  };
-  
-  return (
-    <div 
-      className="relative inline-block"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-    >
-      {children}
-      {show && text && (
-        <div className={`absolute ${positionClasses[position]} z-50 px-2 py-1 text-xs bg-slate-900 border border-slate-600 rounded shadow-lg whitespace-nowrap max-w-xs`}>
-          {text}
-        </div>
-      )}
-    </div>
-  );
-}
+// Tooltip is provided by src/components/Tooltip.jsx (using Floating UI)

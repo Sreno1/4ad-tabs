@@ -432,6 +432,18 @@ export default function OnboardingScreen({ onComplete }) {
             setRemainingGold(remainingGold - item.cost);
           };
 
+          const addToInventory = (itemKey, heroIndex) => {
+            const hero = heroes[heroIndex];
+            if (!hero) return;
+            const currentEquipment = hero.equipment || [];
+            const newHeroes = [...heroes];
+            newHeroes[heroIndex] = {
+              ...hero,
+              equipment: [...currentEquipment, itemKey],
+            };
+            setHeroes(newHeroes);
+          };
+
           return (
             <div className="min-h-screen bg-slate-900 p-4 overflow-y-auto">
               <div className="max-w-6xl mx-auto py-8">
@@ -499,23 +511,41 @@ export default function OnboardingScreen({ onComplete }) {
                           <p className="text-slate-400 text-xs mb-2">
                             {item.description}
                           </p>
-                          <select
-                            className="w-full bg-slate-600 rounded px-2 py-1 text-white text-xs"
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                buyItem(item.key, parseInt(e.target.value));
-                                e.target.value = "";
-                              }
-                            }}
-                            disabled={remainingGold < item.cost}
-                          >
-                            <option value="">Buy for...</option>
-                            {heroes.map((hero, idx) => (
-                              <option key={idx} value={idx}>
-                                {hero.name}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="flex gap-2">
+                            <select
+                              className="flex-1 bg-slate-600 rounded px-2 py-1 text-white text-xs"
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  buyItem(item.key, parseInt(e.target.value));
+                                  e.target.value = "";
+                                }
+                              }}
+                              disabled={remainingGold < item.cost}
+                            >
+                              <option value="">Buy for...</option>
+                              {heroes.map((hero, idx) => (
+                                <option key={idx} value={idx}>
+                                  {hero.name}
+                                </option>
+                              ))}
+                            </select>
+                            <div>
+                              <button
+                                onClick={() => {
+                                  /* Open a small prompt to select hero to add to inventory for simplicity */
+                                  const nameList = heroes.map((h, i) => `${i}: ${h.name}`).join('\n');
+                                  const choice = prompt(`Add to inventory for which hero?\n${nameList}`);
+                                  const idx = parseInt(choice);
+                                  if (!Number.isNaN(idx) && idx >= 0 && idx < heroes.length) {
+                                    addToInventory(item.key, idx);
+                                  }
+                                }}
+                                className="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs"
+                              >
+                                Add to Inventory
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}

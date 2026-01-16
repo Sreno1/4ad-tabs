@@ -8,6 +8,7 @@ import {
   Zap,
   ArrowLeft,
 } from "lucide-react";
+import { Tooltip } from '../RulesReference.jsx';
 
 export default function AppHeader({
   state,
@@ -26,14 +27,15 @@ export default function AppHeader({
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {onBackToCampaigns && (
-            <button
-              onClick={onBackToCampaigns}
-              className="text-slate-400 hover:text-amber-400 p-1 transition-colors"
-              title="Back to Campaigns"
-              aria-label="Back to campaign manager"
-            >
-              <ArrowLeft size={20} />
-            </button>
+            <Tooltip text="Back to Campaigns">
+              <button
+                onClick={onBackToCampaigns}
+                className="text-slate-400 hover:text-amber-400 p-1 transition-colors"
+                aria-label="Back to campaign manager"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            </Tooltip>
           )}
           <div className="hidden sm:block">
             <h1 className="text-lg font-bold text-amber-400">
@@ -57,48 +59,54 @@ export default function AppHeader({
 
         {/* Header Actions */}
         <div className="flex items-center gap-1">
-          <button
-            onClick={onShowRules}
-            className="text-slate-400 hover:text-amber-400 p-1"
-            title="Rules"
-          >
-            <Book size={18} />
-          </button>
-          <button
-            onClick={onShowDungeonFeatures}
-            className="text-slate-400 hover:text-amber-400 p-1"
-            title="Features"
-          >
-            <DoorOpen size={18} />
-          </button>
-          <button
-            onClick={onShowEquipment}
-            className="text-orange-400 hover:text-orange-300 p-1"
-            title="Equipment"
-          >
-            <Package size={18} />
-          </button>
-          <button
-            onClick={onShowAbilities}
-            className="text-purple-400 hover:text-purple-300 p-1"
-            title="Abilities"
-          >
-            <Zap size={18} />
-          </button>
-          <button
-            onClick={onShowCampaign}
-            className="text-indigo-400 hover:text-indigo-300 p-1"
-            title="Campaign"
-          >
-            <Trophy size={18} />
-          </button>
-          <button
-            onClick={onShowSettings}
-            className="text-slate-400 hover:text-amber-400 p-1"
-            title="Settings"
-          >
-            <Settings size={18} />
-          </button>
+          <Tooltip text="Rules">
+            <button
+              onClick={onShowRules}
+              className="text-slate-400 hover:text-amber-400 p-1"
+            >
+              <Book size={18} />
+            </button>
+          </Tooltip>
+          <Tooltip text="Features">
+            <button
+              onClick={onShowDungeonFeatures}
+              className="text-slate-400 hover:text-amber-400 p-1"
+            >
+              <DoorOpen size={18} />
+            </button>
+          </Tooltip>
+          <Tooltip text="Equipment">
+            <button
+              onClick={onShowEquipment}
+              className="text-orange-400 hover:text-orange-300 p-1"
+            >
+              <Package size={18} />
+            </button>
+          </Tooltip>
+          <Tooltip text="Abilities">
+            <button
+              onClick={onShowAbilities}
+              className="text-purple-400 hover:text-purple-300 p-1"
+            >
+              <Zap size={18} />
+            </button>
+          </Tooltip>
+          <Tooltip text="Campaign">
+            <button
+              onClick={onShowCampaign}
+              className="text-indigo-400 hover:text-indigo-300 p-1"
+            >
+              <Trophy size={18} />
+            </button>
+          </Tooltip>
+          <Tooltip text="Settings">
+            <button
+              onClick={onShowSettings}
+              className="text-slate-400 hover:text-amber-400 p-1"
+            >
+              <Settings size={18} />
+            </button>
+          </Tooltip>
         </div>
       </div>
     </header>

@@ -96,6 +96,35 @@ export function campaignReducer(state, action) {
       };
     }
 
+    // ========== Story Beats ==========
+    case A.ADD_STORY_BEAT: {
+      const beat = {
+        id: Date.now(),
+        timestamp: action.timestamp || new Date().toISOString(),
+        source: action.source || 'player',
+        text: action.text
+      };
+
+      return {
+        ...state,
+        storyBeats: [...(state.storyBeats || []), beat]
+      };
+    }
+
+    case A.DEL_STORY_BEAT: {
+      return {
+        ...state,
+        storyBeats: (state.storyBeats || []).filter(b => b.id !== action.id)
+      };
+    }
+
+    case A.UPD_STORY_BEAT: {
+      return {
+        ...state,
+        storyBeats: (state.storyBeats || []).map(b => b.id === action.id ? { ...b, text: action.text, timestamp: new Date().toISOString() } : b)
+      };
+    }
+
     case A.START_ADVENTURE: {
       // Start a new adventure, preserving campaign/party data
       return {

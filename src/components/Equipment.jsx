@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 import {
   ALL_EQUIPMENT,
   getEquipment,
@@ -25,6 +26,11 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
   const [selectedHero, setSelectedHero] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('weapon');
   const [showShop, setShowShop] = useState(false);
+  const [showNewItemModal, setShowNewItemModal] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemDesc, setNewItemDesc] = useState('');
+  const [newItemEquipable, setNewItemEquipable] = useState(false);
+  const [newItemError, setNewItemError] = useState('');
 
   if (!isOpen) return null;
 
@@ -84,14 +90,40 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
     }
 
   dispatch(equipItem(selectedHero, itemKey));
-  dispatch(logMessage(`${hero.name} equipped ${getEquipment(itemKey).name}`, 'equipment'));
+  // Safe name lookup (support custom items which are not in ALL_EQUIPMENT)
+  const equippedItem = getEquipment(itemKey);
+  let equippedName = itemKey;
+  if (equippedItem) equippedName = equippedItem.name;
+  else if (typeof itemKey === 'string' && itemKey.startsWith('custom:')) {
+    const parts = itemKey.split(':');
+    if (parts.length >= 5) {
+      equippedName = decodeURIComponent(parts.slice(3, parts.length - 1).join(':'));
+    } else if (parts.length >= 4) {
+      equippedName = decodeURIComponent(parts[3] || parts[1]);
+    }
+  }
+
+  dispatch(logMessage(`${hero.name} equipped ${equippedName}`, 'equipment'));
   };
 
   // Handle unequipping an item
   const handleUnequip = (itemKey) => {
   dispatch(unequipItem(selectedHero, itemKey));
   dispatch(addToInventory(selectedHero, itemKey));
-  dispatch(logMessage(`${hero.name} unequipped ${getEquipment(itemKey).name}`, 'equipment'));
+  // Safe name lookup for unequipping (handle custom items)
+  const unequippedItem = getEquipment(itemKey);
+  let unequippedName = itemKey;
+  if (unequippedItem) unequippedName = unequippedItem.name;
+  else if (typeof itemKey === 'string' && itemKey.startsWith('custom:')) {
+    const parts = itemKey.split(':');
+    if (parts.length >= 5) {
+      unequippedName = decodeURIComponent(parts.slice(3, parts.length - 1).join(':'));
+    } else if (parts.length >= 4) {
+      unequippedName = decodeURIComponent(parts[3] || parts[1]);
+    }
+  }
+
+  dispatch(logMessage(`${hero.name} unequipped ${unequippedName}`, 'equipment'));
   };
 
   // Handle using a consumable
@@ -127,6 +159,42 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
   dispatch(adjustGold(-item.cost));
   dispatch(addToInventory(selectedHero, itemKey));
   dispatch(logMessage(`${hero.name} bought ${item.name} for ${item.cost}gp`));
+  };
+
+  // Add item to inventory without spending gold
+  const handleAddToInventory = (itemKey) => {
+    const item = getEquipment(itemKey);
+    if (!item) return;
+
+    dispatch(addToInventory(selectedHero, itemKey));
+    dispatch(logMessage(`${hero.name} received ${item.name} (added to inventory, no cost)`, 'equipment'));
+  };
+
+  // New item modal handlers
+  const openNewItemModal = () => {
+    setNewItemName('');
+    setNewItemDesc('');
+    setNewItemEquipable(false); // default to not equipable
+    setNewItemError('');
+    setShowNewItemModal(true);
+  };
+
+  const submitNewItem = () => {
+    const trimmed = (newItemName || '').trim();
+    if (!trimmed) {
+      setNewItemError('Name is required');
+      return;
+    }
+
+    const ts = Date.now();
+    const key = `custom:${ts}:${newItemEquipable ? '1' : '0'}:${encodeURIComponent(trimmed)}:${encodeURIComponent(newItemDesc || '')}`;
+    dispatch(addToInventory(selectedHero, key));
+    dispatch(logMessage(`${hero.name} added custom item "${trimmed}" to inventory${newItemEquipable ? ' (equipable)' : ''}`, 'equipment'));
+    setShowNewItemModal(false);
+  };
+
+  const cancelNewItem = () => {
+    setShowNewItemModal(false);
   };
 
   // Give starting equipment
@@ -247,64 +315,180 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
               )}
               {equipped.map((itemKey, idx) => {
                 const item = getEquipment(itemKey);
-                if (!item) return null;
-                return (
-                  <div key={idx} className="bg-slate-700 rounded p-2 flex justify-between items-center">
-                    <div>
-                      <div className="text-white text-sm font-bold">{item.name}</div>
-                      <div className="text-slate-400 text-xs">{item.description}</div>
+                if (item) {
+                  return (
+                    <div key={idx} className="bg-slate-700 rounded p-2 flex justify-between items-center">
+                      <div>
+                        <div className="text-white text-sm font-bold">{item.name}</div>
+                        <div className="text-slate-400 text-xs">{item.description}</div>
+                      </div>
+                      <button
+                        onClick={() => handleUnequip(itemKey)}
+                        className="bg-red-600 hover:bg-red-500 px-2 py-1 rounded text-xs"
+                      >
+                        Unequip
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleUnequip(itemKey)}
-                      className="bg-red-600 hover:bg-red-500 px-2 py-1 rounded text-xs"
-                    >
-                      Unequip
-                    </button>
-                  </div>
-                );
+                  );
+                }
+
+                // Render custom equipped items
+                const isCustomEq = typeof itemKey === 'string' && itemKey.startsWith('custom:');
+                if (isCustomEq) {
+                  // Parse custom key: custom:ts:flag:encodedName:encodedDesc
+                  const parts = itemKey.split(':');
+                  let displayName = itemKey;
+                  let displayDesc = '';
+                  if (parts.length >= 5) {
+                    displayName = decodeURIComponent(parts.slice(3, parts.length - 1).join(':'));
+                    displayDesc = decodeURIComponent(parts[parts.length - 1] || '');
+                  } else if (parts.length >= 4) {
+                    displayName = decodeURIComponent(parts[3] || parts[1]);
+                  }
+
+                  return (
+                    <div key={idx} className="bg-slate-700 rounded p-2 flex justify-between items-center">
+                      <div>
+                        <div className="text-white text-sm font-bold">{displayName}</div>
+                        {displayDesc && <div className="text-slate-400 text-xs">{displayDesc}</div>}
+                      </div>
+                      <button
+                        onClick={() => handleUnequip(itemKey)}
+                        className="bg-red-600 hover:bg-red-500 px-2 py-1 rounded text-xs"
+                      >
+                        Unequip
+                      </button>
+                    </div>
+                  );
+                }
+
+                return null;
               })}
             </div>
           </div>
 
           {/* Inventory */}
           <div className="bg-slate-800 rounded p-3">
-            <div className="text-amber-400 font-bold text-sm mb-2">🎁 Inventory ({inventory.length})</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-amber-400 font-bold text-sm">🎁 Inventory ({inventory.length})</div>
+              <div>
+                <button onClick={openNewItemModal} className="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs">New Item</button>
+              </div>
+            </div>
             <div className="space-y-1 max-h-40 overflow-y-auto">
               {inventory.length === 0 && (
                 <div className="text-slate-500 text-xs text-center py-2">Empty inventory</div>
               )}
               {inventory.map((itemKey, idx) => {
                 const item = getEquipment(itemKey);
-                if (!item) return null;
-                const isConsumable = item.category === 'consumable';
+                const isCustom = !item && typeof itemKey === 'string' && itemKey.startsWith('custom:');
+                let displayName = item ? item.name : itemKey;
+                let displayDesc = item ? item.description : '';
+                let customEquipable = false;
+                if (isCustom) {
+                  const parts = itemKey.split(':');
+                  // Expect: ['custom', ts, equipFlag, encodedName, encodedDesc]
+                  if (parts.length >= 5) {
+                    displayName = decodeURIComponent(parts.slice(3, parts.length - 1).join(':'));
+                    displayDesc = decodeURIComponent(parts[parts.length - 1] || '');
+                    customEquipable = parts[2] === '1';
+                  } else if (parts.length >= 4) {
+                    displayName = decodeURIComponent(parts[3] || parts[1]);
+                  } else {
+                    displayName = itemKey;
+                  }
+                }
+
+                const isConsumable = item?.category === 'consumable';
+
                 return (
                   <div key={idx} className="bg-slate-700 rounded p-2 flex justify-between items-center">
                     <div>
-                      <div className="text-white text-sm font-bold">{item.name}</div>
-                      <div className="text-slate-400 text-xs">{item.description}</div>
+                      <div className="text-white text-sm font-bold">{displayName}</div>
+                      {displayDesc && <div className="text-slate-400 text-xs">{displayDesc}</div>}
                     </div>
-                    <div className="flex gap-1">
-                      {isConsumable ? (
-                        <button
-                          onClick={() => handleUseConsumable(itemKey, idx)}
-                          className="bg-green-600 hover:bg-green-500 px-2 py-1 rounded text-xs"
-                        >
-                          Use
-                        </button>
+                    <div className="flex items-center gap-2">
+                      {/* Only offer Use/Equip for known items */}
+                      {item ? (
+                        isConsumable ? (
+                          <button
+                            onClick={() => handleUseConsumable(itemKey, idx)}
+                            className="bg-green-600 hover:bg-green-500 px-2 py-1 rounded text-xs"
+                          >
+                            Use
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleEquip(itemKey)}
+                            className="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs"
+                          >
+                            Equip
+                          </button>
+                        )
                       ) : (
-                        <button
-                          onClick={() => handleEquip(itemKey)}
-                          className="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs"
-                        >
-                          Equip
-                        </button>
+                        customEquipable ? (
+                          <button
+                            onClick={() => {
+                              // remove from inventory at this idx then equip
+                              dispatch(removeFromInventory(selectedHero, idx));
+                              dispatch(equipItem(selectedHero, itemKey));
+                              dispatch(logMessage(`${hero.name} equipped ${displayName}`, 'equipment'));
+                            }}
+                            className="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs"
+                          >
+                            Equip
+                          </button>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">Custom item</span>
+                        )
                       )}
+
+                      <button
+                        onClick={() => {
+                          dispatch(removeFromInventory(selectedHero, idx));
+                          dispatch(logMessage(`${hero.name} removed ${displayName} from inventory`, 'equipment'));
+                        }}
+                        className="text-red-400 hover:text-red-300 p-1"
+                        aria-label={`Remove ${displayName} from inventory`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
+          {/* New Item Modal */}
+          {showNewItemModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-slate-900 rounded-lg w-full max-w-md p-4 border-2 border-amber-500">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="text-xl font-bold text-white">Add New Item</div>
+                  <button onClick={cancelNewItem} className="text-white">✕</button>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-sm text-slate-300">Name</label>
+                    <input value={newItemName} onChange={(e) => setNewItemName(e.target.value)} className="w-full mt-1 p-2 rounded bg-slate-800 text-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-slate-300">Description (optional)</label>
+                    <input value={newItemDesc} onChange={(e) => setNewItemDesc(e.target.value)} className="w-full mt-1 p-2 rounded bg-slate-800 text-white text-sm" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input id="equipable" type="checkbox" checked={newItemEquipable} onChange={(e) => setNewItemEquipable(e.target.checked)} />
+                    <label htmlFor="equipable" className="text-sm text-slate-300">Equipable</label>
+                  </div>
+                  {newItemError && <div className="text-red-400 text-sm">{newItemError}</div>}
+                  <div className="flex justify-end gap-2 mt-2">
+                    <button onClick={cancelNewItem} className="px-3 py-1 rounded bg-slate-700 text-sm">Cancel</button>
+                    <button onClick={submitNewItem} className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-500 text-sm">Add Item</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Shop */}
           <div className="bg-slate-800 rounded p-3">
@@ -348,17 +532,25 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
                           <div className="text-slate-400 text-xs">{item.description}</div>
                           <div className="text-yellow-400 text-xs font-bold mt-0.5">{item.cost} gold</div>
                         </div>
-                        <button
-                          onClick={() => handleBuy(item.key)}
-                          disabled={!canAfford}
-                          className={`px-2 py-1 rounded text-xs ${
-                            canAfford
-                              ? 'bg-green-600 hover:bg-green-500'
-                              : 'bg-slate-600 cursor-not-allowed'
-                          }`}
-                        >
-                          Buy
-                        </button>
+                        <div className="flex flex-col gap-1">
+                          <button
+                            onClick={() => handleBuy(item.key)}
+                            disabled={!canAfford}
+                            className={`px-2 py-1 rounded text-xs ${
+                              canAfford
+                                ? 'bg-green-600 hover:bg-green-500'
+                                : 'bg-slate-600 cursor-not-allowed'
+                            }`}
+                          >
+                            Buy
+                          </button>
+                          <button
+                            onClick={() => handleAddToInventory(item.key)}
+                            className="px-2 py-1 rounded text-xs bg-blue-600 hover:bg-blue-500"
+                          >
+                            Add to Inventory
+                          </button>
+                        </div>
                       </div>
                     );
                   })}

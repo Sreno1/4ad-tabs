@@ -72,6 +72,8 @@ Week 6: Testing & Polish (6-8 hours)
 
 - can you implement the scroll system as outlined in /public/magic.txt
 
+- figure out what info needs to go where, ie party should show equiped wweappons?
+
 ## WEEK 6: Testing & Polish
 **Focus:** Set up tests, documentation, final cleanup
 **Effort:** 6-8 hours

@@ -3,9 +3,10 @@ import React, { useState } from "react";
 // Components
 import Party from "./components/Party.jsx";
 import Dungeon from "./components/Dungeon.jsx";
+import Log from "./components/Log.jsx";
 import Combat from "./components/Combat.jsx";
 import Analytics from "./components/Analytics.jsx";
-import Log from "./components/Log.jsx";
+// Log is displayed only in the bottom LogBar; not in the Story sidebar
 import SettingsModal from "./components/SettingsModal.jsx";
 import RulesReference from "./components/RulesReference.jsx";
 
@@ -59,12 +60,28 @@ export default function App() {
 
   // Layout state
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
-  const [leftPanelTab, setLeftPanelTab] = useState("party"); // 'party', 'stats', 'log', or 'rules'
+  const [leftPanelTab, setLeftPanelTab] = useState("party"); // 'party', 'stats', 'story', or 'rules'
+  const [showLogMiddle, setShowLogMiddle] = useState(false);
   // ...existing code...
 
     // Keyboard shortcuts and focus management
     React.useEffect(() => {
       const handleKeyboard = (e) => {
+        // If the user is typing in a form control, don't trigger global hotkeys
+        const active = document.activeElement;
+        if (active) {
+          const tag = active.tagName?.toLowerCase();
+          const isEditable = active.isContentEditable;
+          if (
+            tag === 'input' ||
+            tag === 'textarea' ||
+            tag === 'select' ||
+            isEditable ||
+            active.getAttribute('role') === 'textbox'
+          ) {
+            return;
+          }
+        }
         // Escape closes all modals
         if (e.key === "Escape") {
           setShowSettings(false);
@@ -129,10 +146,10 @@ export default function App() {
           setLeftPanelTab("party");
           if (showSettings) setShowSettings(false);
         }
-        // ` for log tab
+  // ` for story tab
         if (e.key === "`" && !e.ctrlKey && !e.metaKey) {
-          setTab("log");
-          setLeftPanelTab("log");
+          setTab("story");
+          setLeftPanelTab("story");
           if (showSettings) setShowSettings(false);
         }
         // o for stats tab
@@ -295,100 +312,127 @@ export default function App() {
               />
             )}
             {tab === "analytics" && <Analytics state={state} />}
-            {tab === "log" && <Log state={state} dispatch={dispatch} />}
+            {tab === "story" && (
+              <div className="space-y-3">
+                <StoryLog state={state} dispatch={dispatch} />
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Desktop: Flexible equal-width columns layout */}
-        <div
-          className={`hidden md:flex flex-1 overflow-hidden relative ${leftPanelTab !== "log" ? "pb-8" : ""}`}
-        >
-          {/* Left Column - Party/Stats (Collapsible) */}
-          <DesktopSidebar
+        {/* Desktop: Flexible equal-width columns layout with LogBar in-flow */}
+        <div className="hidden md:flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-hidden flex">
+            {/* Left Column - Party/Stats (Collapsible) */}
+            <DesktopSidebar
+              state={state}
+              dispatch={dispatch}
+              isOpen={leftPanelOpen}
+              activeTab={leftPanelTab}
+              onToggle={setLeftPanelOpen}
+              onTabChange={setLeftPanelTab}
+              selectedHero={selectedHero}
+              onSelectHero={setSelectedHero}
+            />
+
+            {/* Middle Column - Dungeon Map or Full Log (toggleable) */}
+            <div className="flex-1 overflow-hidden flex flex-col min-w-0 border-r border-slate-700">
+              <div className="flex-1 overflow-y-auto p-2">
+                {!showLogMiddle ? (
+                  <Dungeon
+                    state={state}
+                    dispatch={dispatch}
+                    tileResult={roomEvents.tileResult}
+                    generateTile={roomEvents.generateTile}
+                    clearTile={clearTileAndCombat}
+                    bossCheckResult={roomEvents.bossCheckResult}
+                    roomDetails={roomEvents.roomDetails}
+                    hideGenerationUI={true}
+                    sidebarCollapsed={!leftPanelOpen}
+                    onToggleShowLog={() => setShowLogMiddle((s) => !s)}
+                    showLogMiddle={showLogMiddle}
+                  />
+                ) : (
+                  <div className="h-full flex flex-col">
+                    <div className="flex items-center justify-between p-2 border-b border-slate-700 bg-slate-800">
+                      <div className="text-sm font-semibold text-amber-400">Adventure Log</div>
+                      <div>
+                        <button
+                          onClick={() => setShowLogMiddle(false)}
+                          className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
+                          title="Show dungeon"
+                        >
+                          Map
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <Log state={state} dispatch={dispatch} isBottomPanel={true} />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column - Action Pane (slightly narrower) */}
+            <div className="flex-[0.8] overflow-y-auto p-3 bg-slate-850 min-w-0">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-sm font-bold text-slate-400">
+                  {actionMode === ACTION_MODES.COMBAT
+                    ? "Combat"
+                    : actionMode === ACTION_MODES.SPECIAL
+                      ? "Special"
+                      : actionMode === ACTION_MODES.TREASURE
+                        ? "Treasure"
+                        : actionMode === ACTION_MODES.QUEST
+                          ? "Quest"
+                          : actionMode === ACTION_MODES.WEIRD
+                            ? "Weird"
+                            : actionMode === ACTION_MODES.EMPTY
+                              ? "Empty"
+                              : "Actions"}
+                </span>
+                {state.monsters?.length > 0 && (
+                  <span className="text-xs text-red-400">
+                    {state.monsters.filter((m) => m.hp > 0).length} active
+                  </span>
+                )}
+              </div>
+              <ActionPane
+                state={state}
+                dispatch={dispatch}
+                actionMode={actionMode}
+                roomEvents={roomEvents.roomEvents}
+                tileResult={roomEvents.tileResult}
+                roomDetails={roomEvents.roomDetails}
+                generateTile={roomEvents.generateTile}
+                clearTile={clearTileAndCombat}
+                isCorridor={roomEvents.isCorridor}
+                combatPhase={combatFlow.combatPhase}
+                getActiveMonsters={combatFlow.getActiveMonsters}
+                isCombatWon={combatFlow.isCombatWon}
+                handleRollReaction={combatFlow.handleRollReaction}
+                handlePartyAttacks={combatFlow.handlePartyAttacks}
+                handleEndPartyTurn={combatFlow.handleEndPartyTurn}
+                handleEndMonsterTurn={combatFlow.handleEndMonsterTurn}
+                handleEndCombat={combatFlow.handleEndCombat}
+                setCombatPhase={combatFlow.setCombatPhase}
+                setRoomEvents={roomEvents.setRoomEvents}
+                setShowDungeonFeatures={setShowDungeonFeatures}
+              />
+              {/* StoryLog moved into the sidebar log tab */}
+            </div>
+          </div>
+
+          {/* Log Bar - now in-flow so it reduces space above when expanded */}
+          <LogBar
             state={state}
             dispatch={dispatch}
-            isOpen={leftPanelOpen}
-            activeTab={leftPanelTab}
-            onToggle={setLeftPanelOpen}
-            onTabChange={setLeftPanelTab}
+            collapsed={logCollapsed}
+            onToggle={() => setLogCollapsed(!logCollapsed)}
             selectedHero={selectedHero}
             onSelectHero={setSelectedHero}
           />
-
-          {/* Middle Column - Dungeon Map */}
-          <div className="flex-1 overflow-hidden flex flex-col min-w-0 border-r border-slate-700">
-            <div className="flex-1 overflow-y-auto p-2">
-              <Dungeon
-                state={state}
-                dispatch={dispatch}
-                tileResult={roomEvents.tileResult}
-                generateTile={roomEvents.generateTile}
-                clearTile={clearTileAndCombat}
-                bossCheckResult={roomEvents.bossCheckResult}
-                roomDetails={roomEvents.roomDetails}
-                hideGenerationUI={true}
-                sidebarCollapsed={!leftPanelOpen}
-              />
-            </div>
-          </div>
-
-          {/* Right Column - Action Pane */}
-          <div className="flex-1 overflow-y-auto p-3 bg-slate-850 min-w-0">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm font-bold text-slate-400">
-                {actionMode === ACTION_MODES.COMBAT
-                  ? "Combat"
-                  : actionMode === ACTION_MODES.SPECIAL
-                    ? "Special"
-                    : actionMode === ACTION_MODES.TREASURE
-                      ? "Treasure"
-                      : actionMode === ACTION_MODES.QUEST
-                        ? "Quest"
-                        : actionMode === ACTION_MODES.WEIRD
-                          ? "Weird"
-                          : actionMode === ACTION_MODES.EMPTY
-                            ? "Empty"
-                            : "Actions"}
-              </span>
-              {state.monsters?.length > 0 && (
-                <span className="text-xs text-red-400">
-                  {state.monsters.filter((m) => m.hp > 0).length} active
-                </span>
-              )}
-            </div>
-            <ActionPane
-              state={state}
-              dispatch={dispatch}
-              actionMode={actionMode}
-              roomEvents={roomEvents.roomEvents}
-              tileResult={roomEvents.tileResult}
-              roomDetails={roomEvents.roomDetails}
-              generateTile={roomEvents.generateTile}
-              clearTile={clearTileAndCombat}
-              isCorridor={roomEvents.isCorridor}
-              combatPhase={combatFlow.combatPhase}
-              getActiveMonsters={combatFlow.getActiveMonsters}
-              isCombatWon={combatFlow.isCombatWon}
-              handleRollReaction={combatFlow.handleRollReaction}
-              handlePartyAttacks={combatFlow.handlePartyAttacks}
-              handleEndPartyTurn={combatFlow.handleEndPartyTurn}
-              handleEndMonsterTurn={combatFlow.handleEndMonsterTurn}
-              handleEndCombat={combatFlow.handleEndCombat}
-              setCombatPhase={combatFlow.setCombatPhase}
-              setRoomEvents={roomEvents.setRoomEvents}
-              setShowDungeonFeatures={setShowDungeonFeatures}
-            />
-          </div>
-
-          {/* Log Bar - Hidden when log tab is open in sidebar */}
-          {leftPanelTab !== "log" && (
-            <LogBar
-              state={state}
-              dispatch={dispatch}
-              collapsed={logCollapsed}
-              onToggle={() => setLogCollapsed(!logCollapsed)}
-            />
-          )}
         </div>
       </main>
 

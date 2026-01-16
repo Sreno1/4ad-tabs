@@ -43,5 +43,5 @@ export const MOBILE_TABS = [
   { id: 'dungeon', label: 'Dungeon' },
   { id: 'combat', label: 'Combat' },
   { id: 'analytics', label: 'Stats' },
-  { id: 'log', label: 'Log' }
+  { id: 'story', label: 'Story' }
 ];
