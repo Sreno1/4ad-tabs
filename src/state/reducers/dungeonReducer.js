@@ -21,6 +21,15 @@ export function dungeonReducer(state, action) {
       return { ...state, grid: newGrid };
     }
 
+    case A.SET_CELL: {
+      const newGrid = state.grid.map((row, y) =>
+        row.map((cell, x) =>
+          (x === action.x && y === action.y) ? action.value : cell
+        )
+      );
+      return { ...state, grid: newGrid };
+    }
+
     case A.CLEAR_GRID:
       return {
         ...state,

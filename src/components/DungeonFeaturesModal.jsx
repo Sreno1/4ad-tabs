@@ -145,6 +145,9 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
     <div
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dungeon-features-title"
     >
       <div
         className="bg-slate-800 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto"
@@ -152,12 +155,13 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-700 sticky top-0 bg-slate-800">
-          <h2 className="text-lg font-bold text-amber-400">Dungeon Features</h2>
+          <h2 id="dungeon-features-title" className="text-lg font-bold text-amber-400">Dungeon Features</h2>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white p-1"
+            aria-label="Close dungeon features"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>        <div className="p-4 space-y-4">
           {/* Active Hero Display */}

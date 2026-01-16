@@ -96,6 +96,8 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                   key={n}
                   onClick={() => toggleAbility(index, `heal${n}`)}
                   className={`w-4 h-4 rounded ${heroAbilities[`heal${n}`] ? 'bg-slate-600' : 'bg-green-600'}`}
+                  aria-label={`${hero.name} heal slot ${n}: ${heroAbilities[`heal${n}`] ? 'used' : 'available'}`}
+                  aria-pressed={!heroAbilities[`heal${n}`]}
                 >
                   {!heroAbilities[`heal${n}`] && '✓'}
                 </button>
@@ -111,6 +113,8 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                   key={n}
                   onClick={() => toggleAbility(index, `bless${n}`)}
                   className={`w-4 h-4 rounded ${heroAbilities[`bless${n}`] ? 'bg-slate-600' : 'bg-yellow-600'}`}
+                  aria-label={`${hero.name} bless slot ${n}: ${heroAbilities[`bless${n}`] ? 'used' : 'available'}`}
+                  aria-pressed={!heroAbilities[`bless${n}`]}
                 >
                   {!heroAbilities[`bless${n}`] && '✓'}
                 </button>
@@ -134,6 +138,8 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 key={n}
                 onClick={() => toggleAbility(index, `spell${n}`)}
                 className={`w-4 h-4 rounded ${heroAbilities[`spell${n}`] ? 'bg-slate-600' : 'bg-purple-600'}`}
+                aria-label={`${hero.name} spell slot ${n + 1}: ${heroAbilities[`spell${n}`] ? 'used' : 'available'}`}
+                aria-pressed={!heroAbilities[`spell${n}`]}
               >
                 {!heroAbilities[`spell${n}`] && '✓'}
               </button>
@@ -156,6 +162,8 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 key={n}
                 onClick={() => toggleAbility(index, `luck${n}`)}
                 className={`w-4 h-4 rounded ${heroAbilities[`luck${n}`] ? 'bg-slate-600' : 'bg-cyan-600'}`}
+                aria-label={`${hero.name} luck point ${n + 1}: ${heroAbilities[`luck${n}`] ? 'used' : 'available'}`}
+                aria-pressed={!heroAbilities[`luck${n}`]}
               >
                 {!heroAbilities[`luck${n}`] && '✓'}
               </button>
@@ -173,6 +181,8 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
           <button
             onClick={() => toggleAbility(index, 'rage')}
             className={`px-2 py-0.5 rounded ${isRaging ? 'bg-red-600 text-white' : 'bg-slate-600'}`}
+            aria-label={`${hero.name} rage: ${isRaging ? 'active' : 'inactive'}`}
+            aria-pressed={isRaging}
           >
             {isRaging ? '🔥 RAGING' : 'Rage'}
           </button>
@@ -205,6 +215,8 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
           <button
             onClick={() => setShowClassPicker(!showClassPicker)}
             className="bg-amber-600 px-2 py-1 rounded text-sm"
+            aria-label="Add hero to party"
+            aria-expanded={showClassPicker}
           >
             <Plus size={14} />
           </button>
@@ -213,12 +225,14 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
 
       {/* Class Picker */}
       {showClassPicker && (
-        <div className="grid grid-cols-2 gap-1">
+        <div className="grid grid-cols-2 gap-1" role="menu" aria-label="Character class selection">
           {Object.entries(CLASSES).map(([key, classData]) => (
             <button
               key={key}
-              onClick={() => addHeroToParty(classKey)}
+              onClick={() => addHeroToParty(key)}
               className="bg-slate-700 p-1.5 rounded text-left"
+              role="menuitem"
+              aria-label={`Add ${classData.name}: ${classData.sp}`}
             >
               <div className="text-amber-400 text-sm font-bold">{classData.name}</div>
               <div className="text-slate-400 text-xs truncate">{classData.sp}</div>
@@ -241,6 +255,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 value={hero.name}
                 onChange={e => dispatch(updateHero(i, { name: e.target.value }))}
                 className="bg-transparent text-amber-400 font-bold w-24 outline-none"
+                aria-label={`Hero ${i + 1} name`}
               />
               {/* Marching Order Selector */}
               <select
@@ -253,6 +268,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 }}
                 className="bg-slate-600 text-slate-300 text-xs px-1 py-0.5 rounded"
                 title="Marching Order Position"
+                aria-label={`${hero.name} marching order position`}
               >
                 <option value="">-</option>
                 <option value="0">Pos 1</option>
@@ -264,6 +280,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
             <button
               onClick={() => dispatch(deleteHero(i))}
               className="text-slate-500 hover:text-red-400"
+              aria-label={`Remove ${hero.name} from party`}
             >
               <X size={14} />
             </button>          </div>
@@ -274,31 +291,38 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
               <button
                 onClick={() => adjustLevel(i, -1)}
                 className="bg-slate-600 px-1 rounded"
+                aria-label={`Decrease ${hero.name} level`}
               >-</button>
-              <span>L{hero.lvl} {CLASSES[hero.key].name}</span>
+              <span id={`hero-${i}-level`}>L{hero.lvl} {CLASSES[hero.key].name}</span>
               <button
                 onClick={() => adjustLevel(i, 1)}
                 className="bg-slate-600 px-1 rounded"
+                aria-label={`Increase ${hero.name} level`}
               >+</button>
               {readyToLevel && (
                 <button
                   onClick={() => handleLevelUp(i)}
                   className="bg-yellow-500 hover:bg-yellow-400 text-black px-2 py-0.5 rounded text-xs font-bold animate-pulse ml-2"
+                  aria-label={`Level up ${hero.name} to level ${hero.lvl + 1}`}
                 >
                   Level Up!
                 </button>
               )}
             </div>
             <div className="flex items-center gap-1 text-red-400">
-              <Heart size={12} />
+              <Heart size={12} aria-hidden="true" />
               <button
                 onClick={() => adjustHP(i, -1)}
                 className="bg-slate-600 px-1 rounded"
+                aria-label={`Decrease ${hero.name} HP`}
+                aria-describedby={`hero-${i}-hp`}
               >-</button>
-              {hero.hp}/{hero.maxHp}
+              <span id={`hero-${i}-hp`}>{hero.hp}/{hero.maxHp}</span>
               <button
                 onClick={() => adjustHP(i, 1)}
                 className="bg-slate-600 px-1 rounded"
+                aria-label={`Increase ${hero.name} HP`}
+                aria-describedby={`hero-${i}-hp`}
               >+</button>
             </div>
           </div>
@@ -329,6 +353,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                     onClick={() => setTraitSelectorHero({ hero, index: i })}
                     className="text-cyan-400 hover:text-cyan-300 text-xs ml-2"
                     title="Change Trait"
+                    aria-label={`Change ${hero.name} trait`}
                   >
                     ✏️
                   </button>
@@ -337,8 +362,9 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 <button
                   onClick={() => setTraitSelectorHero({ hero, index: i })}
                   className="flex-1 bg-slate-600 hover:bg-slate-500 rounded px-2 py-1 text-xs text-slate-300 flex items-center justify-center gap-1"
+                  aria-label={`Select trait for ${hero.name}`}
                 >
-                  <Target size={12} />
+                  <Target size={12} aria-hidden="true" />
                   <span>Select Trait</span>
                 </button>
               )}
@@ -355,19 +381,25 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
         {/* Gold Tracker */}
       <div className="bg-slate-800 rounded p-2 text-sm">
         <div className="flex justify-between items-center">
-          <span className="text-amber-400">Gold: {state.gold}</span>
+          <span className="text-amber-400" id="gold-amount">Gold: {state.gold}</span>
           <div className="flex gap-1">
             <button
               onClick={() => dispatch(adjustGold(-1))}
               className="bg-slate-700 px-2 rounded"
+              aria-label="Decrease gold by 1"
+              aria-describedby="gold-amount"
             >-</button>
             <button
               onClick={() => dispatch(adjustGold(1))}
               className="bg-slate-700 px-2 rounded"
+              aria-label="Increase gold by 1"
+              aria-describedby="gold-amount"
             >+</button>
             <button
               onClick={() => dispatch(adjustGold(d6()))}
               className="bg-amber-600 px-2 rounded"
+              aria-label="Add 1d6 gold"
+              aria-describedby="gold-amount"
             >+d6</button>
           </div>
         </div>

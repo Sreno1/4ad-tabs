@@ -23,6 +23,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   cellSize,
   shouldRotate,
   onCellClick,
+  onCellSet,
   onCellRightClick,
   onDoorToggle
 }) {
@@ -30,6 +31,9 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const [hoveredCell, setHoveredCell] = useState(null);
   const [hoveredDoor, setHoveredDoor] = useState(null);
   const [showDoorMode, setShowDoorMode] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragFillValue, setDragFillValue] = useState(null); // 0, 1, or 2
+  const draggedCellsRef = useRef(new Set()); // Track which cells we've already filled during this drag
 
   const cols = grid[0]?.length || 0;
   const rows = grid.length;
@@ -117,8 +121,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
     });
 
-    // Draw door placement guides - always show on room cells
-    if (hoveredCell) {
+    // Draw door placement guides - always show on room cells (but not while dragging)
+    if (hoveredCell && !isDragging) {
       const cell = grid[hoveredCell.y]?.[hoveredCell.x];
       if (cell > 0) {
         const px = hoveredCell.x * cellSize;
@@ -173,6 +177,16 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       // Check if we changed cells
       if (!hoveredCell || hoveredCell.x !== x || hoveredCell.y !== y) {
         setHoveredCell({ x, y });
+
+        // If we're dragging, fill this cell
+        if (isDragging && dragFillValue !== null && onCellSet) {
+          const cellKey = `${x},${y}`;
+          // Only fill if we haven't already filled this cell in this drag session
+          if (!draggedCellsRef.current.has(cellKey)) {
+            draggedCellsRef.current.add(cellKey);
+            onCellSet(x, y, dragFillValue);
+          }
+        }
       }
 
       // Check which door edge we're hovering (always detect for room cells)
@@ -212,14 +226,61 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (hoveredCell) setHoveredCell(null);
       if (hoveredDoor) setHoveredDoor(null);
     }
-  }, [cellSize, cols, rows, grid, hoveredCell, hoveredDoor, showDoorMode]);
+  }, [cellSize, cols, rows, grid, hoveredCell, hoveredDoor, showDoorMode, isDragging, dragFillValue, onCellSet]);
 
   const handleMouseLeave = useCallback(() => {
     setHoveredCell(null);
     setHoveredDoor(null);
+    // Don't reset isDragging or didDragRef here - let mouseUp handle it
+    // This prevents doors from being placed when dragging ends outside the canvas
+  }, []);
+
+  const handleMouseDown = useCallback((e) => {
+    // Don't start drag on right click
+    if (e.button !== 0) return;
+    if (!hoveredCell) return;
+
+    const cell = grid[hoveredCell.y]?.[hoveredCell.x];
+
+    // Don't drag when placing doors
+    if (hoveredDoor && cell > 0) {
+      return;
+    }
+
+    // Start dragging - determine what value to fill
+    // Cycle: 0 -> 1 -> 2 -> 0
+    const nextValue = cell === 0 ? 1 : cell === 1 ? 2 : 0;
+    setDragFillValue(nextValue);
+    setIsDragging(true);
+    draggedCellsRef.current.clear();
+
+    // Add the starting cell
+    const cellKey = `${hoveredCell.x},${hoveredCell.y}`;
+    draggedCellsRef.current.add(cellKey);
+
+    // Use onCellSet if available for consistent drag behavior, otherwise toggle
+    if (onCellSet) {
+      onCellSet(hoveredCell.x, hoveredCell.y, nextValue);
+    } else {
+      onCellClick(hoveredCell.x, hoveredCell.y);
+    }
+  }, [hoveredCell, hoveredDoor, grid, onCellClick, onCellSet]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+    setDragFillValue(null);
+    // Don't clear draggedCellsRef yet - we need it for the click check
+    // It will be cleared in the next mousedown or mouseup via ref reset
   }, []);
 
   const handleClick = useCallback((e) => {
+    // Don't process click if we dragged across multiple cells
+    if (draggedCellsRef.current.size > 1) {
+      draggedCellsRef.current.clear();
+      return;
+    }
+    draggedCellsRef.current.clear();
+
     if (!hoveredCell) return;
 
     const cell = grid[hoveredCell.y]?.[hoveredCell.x];
@@ -228,10 +289,10 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     if (hoveredDoor && cell > 0) {
       onDoorToggle(hoveredCell.x, hoveredCell.y, hoveredDoor.edge);
     } else {
-      // Regular cell click
-      onCellClick(hoveredCell.x, hoveredCell.y);
+      // Regular cell click (now handled by mousedown/mouseup for drag support)
+      // This only fires for pure clicks without drag
     }
-  }, [hoveredCell, hoveredDoor, grid, onCellClick, onDoorToggle]);
+  }, [hoveredCell, hoveredDoor, grid, onDoorToggle]);
 
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
@@ -261,6 +322,14 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     };
   }, [handleKeyDown, handleKeyUp]);
 
+  // Add global mouseup listener to handle drag ending outside canvas
+  useEffect(() => {
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseUp]);
+
   return (
     <div
       style={{
@@ -274,13 +343,15 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         ref={canvasRef}
         width={width}
         height={height}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         style={{
           imageRendering: 'pixelated',
-          cursor: hoveredDoor ? 'crosshair' : 'pointer',
+          cursor: isDragging ? 'grabbing' : hoveredDoor ? 'crosshair' : 'pointer',
           display: 'block'
         }}
       />

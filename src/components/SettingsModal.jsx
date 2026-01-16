@@ -119,6 +119,9 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
     <div
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title"
     >
       <div
         className="bg-slate-800 rounded-lg max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col"
@@ -126,12 +129,13 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
       >
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-slate-700">
-          <h2 className="text-lg font-bold text-amber-400">⚙️ Settings</h2>
-          <button 
+          <h2 id="settings-title" className="text-lg font-bold text-amber-400">⚙️ Settings</h2>
+          <button
             onClick={onClose}
             className="text-slate-400 hover:text-white"
+            aria-label="Close settings"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
         

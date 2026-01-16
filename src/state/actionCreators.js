@@ -293,6 +293,14 @@ export const adjustClues = (amount) => ({ type: A.CLUE, n: amount });
 export const toggleCell = (x, y) => ({ type: A.TOGGLE_CELL, x, y });
 
 /**
+ * Set a cell to a specific value (for drag-to-fill)
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {number} value - Cell value (0 = empty, 1 = room, 2 = corridor)
+ */
+export const setCell = (x, y, value) => ({ type: A.SET_CELL, x, y, value });
+
+/**
  * Clear the dungeon grid
  */
 export const clearGrid = () => ({ type: A.CLEAR_GRID });

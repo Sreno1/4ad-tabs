@@ -40,6 +40,9 @@ export default function CampaignManagerModal({ isOpen, onClose, state, dispatch 
     <div
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="campaign-title"
     >
       <div
         className="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
@@ -48,14 +51,15 @@ export default function CampaignManagerModal({ isOpen, onClose, state, dispatch 
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-slate-700">
           <div className="flex items-center gap-2">
-            <Trophy className="text-purple-400" size={24} />
-            <h2 className="text-lg font-bold text-purple-400">Campaign Manager</h2>
+            <Trophy className="text-purple-400" size={24} aria-hidden="true" />
+            <h2 id="campaign-title" className="text-lg font-bold text-purple-400">Campaign Manager</h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="text-slate-400 hover:text-white"
+            aria-label="Close campaign manager"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>        {/* Content */}
         <div className="p-4 space-y-4 overflow-y-auto flex-1">

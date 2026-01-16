@@ -145,8 +145,7 @@ export const TOOLTIPS = {
   exploding: 'On a 6, roll again and add to total!'
 };
 
-// PDF links (with correct base path for GitHub Pages)
-const BASE_PATH = '/4ad-tabs';
+// PDF links - using Vite's automatic base path
 const PDF_LINKS = [
   { name: 'Base Rules', file: 'base rules.pdf' },
   { name: 'Characters', file: 'characters.pdf' },
@@ -170,7 +169,8 @@ export default function RulesReference({ isOpen, onClose }) {
   };
   
   const openPdf = (pdf) => {
-    setPdfViewer({ name: pdf.name, url: `${BASE_PATH}/${pdf.file}` });
+    // Use Vite's BASE_URL which is automatically set based on environment
+    setPdfViewer({ name: pdf.name, url: `${import.meta.env.BASE_URL}${pdf.file}` });
   };
   
   const closePdf = () => {
@@ -180,12 +180,17 @@ export default function RulesReference({ isOpen, onClose }) {
   // PDF Viewer Modal
   if (pdfViewer) {
     return (
-      <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2">
+      <div
+        className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pdf-title"
+      >
         <div className="bg-slate-800 rounded-lg w-full h-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="flex justify-between items-center p-3 border-b border-slate-700 flex-shrink-0">
-            <h2 className="text-lg font-bold text-amber-400 flex items-center gap-2">
-              <Book size={20} />
+            <h2 id="pdf-title" className="text-lg font-bold text-amber-400 flex items-center gap-2">
+              <Book size={20} aria-hidden="true" />
               {pdfViewer.name}
             </h2>
             <div className="flex items-center gap-2">
@@ -194,14 +199,16 @@ export default function RulesReference({ isOpen, onClose }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-slate-400 hover:text-amber-400 text-xs px-2 py-1 border border-slate-600 rounded"
+                aria-label="Open PDF in new tab"
               >
                 Open in New Tab
               </a>
-              <button 
+              <button
                 onClick={closePdf}
                 className="text-slate-400 hover:text-white p-1"
+                aria-label="Close PDF viewer"
               >
-                <X size={20} />
+                <X size={20} aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -220,19 +227,25 @@ export default function RulesReference({ isOpen, onClose }) {
   }
   
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rules-title"
+    >
       <div className="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b border-slate-700">
-          <h2 className="text-lg font-bold text-amber-400 flex items-center gap-2">
-            <Book size={20} />
+          <h2 id="rules-title" className="text-lg font-bold text-amber-400 flex items-center gap-2">
+            <Book size={20} aria-hidden="true" />
             Rules Reference
           </h2>
-          <button 
+          <button
             onClick={onClose}
             className="text-slate-400 hover:text-white"
+            aria-label="Close rules reference"
           >
-            <X size={20} />
+            <X size={20} aria-hidden="true" />
           </button>
         </div>
         

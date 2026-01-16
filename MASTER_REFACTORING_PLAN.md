@@ -69,152 +69,11 @@ Week 6: Testing & Polish (6-8 hours)
 **Effort:** 6-8 hours
 **Risk:** Low
 
-### Day 1 (3 hours): Performance Optimization
+- its really hard to add doors right now
 
-#### Task 5.1: Add React.memo to Components (1.5 hours)
-**Priority:** 🟡 MEDIUM
+- can you add a button that brings up a modal with a 7x7 version of the dungeon grid, where rooms can be drafted and saved so they can be placed again later, imported and exported? do this efficiently using all the optimized coding standards we've been implementing in the refactor.
 
-**Target components for memoization:**
-
-```jsx
-// src/components/actionPane/EventCard.jsx
-import React, { memo } from 'react';
-
-const EventCard = memo(function EventCard({ event, index }) {
-  // ... component code
-});
-
-export default EventCard;
-```
-
-**Components to memoize:**
-- EventCard
-- ActiveMonsters
-- CombatInitiative
-- HeroCard
-- MonsterCard
-- DoorEdge (in Dungeon.jsx)
-- All combat phase components
-
-**Files to edit:** 10-15 component files
-
-**Success Criteria:**
-- [ ] 10+ components memoized
-- [ ] Re-render count reduced (check React DevTools)
-
----
-
-#### Task 5.2: Add useCallback to Event Handlers (1.5 hours)
-**Priority:** 🟡 MEDIUM
-
-**Pattern:**
-
-```jsx
-// BEFORE
-const handleAttack = (heroIdx) => {
-  // ... logic
-};
-
-// AFTER
-const handleAttack = useCallback((heroIdx) => {
-  // ... logic
-}, [dispatch, state.monsters]); // Dependencies
-```
-
-**Target locations:**
-- ActionPane.jsx (10+ handlers)
-- Combat.jsx (15+ handlers)
-- Party.jsx (8+ handlers)
-- Dungeon.jsx (5+ handlers)
-
-**Files to edit:** 5-10 component files
-
----
-
-### Day 2 (2-3 hours): Accessibility Implementation
-
-#### Task 5.3: Add ARIA Labels Everywhere (2 hours)
-**Priority:** 🟠 HIGH
-
-**Comprehensive ARIA audit:**
-
-**Interactive elements without labels:**
-```jsx
-// Header dice buttons
-<Button onClick={...} aria-label="Roll d6">
-  <Dices size={18} />
-</Button>
-
-// HP adjustment buttons
-<Button
-  onClick={...}
-  aria-label={`Decrease ${hero.name} HP`}
-  aria-describedby={`${hero.name}-hp-current`}
->
-  -
-</Button>
-
-// Combat attack buttons
-<Button
-  onClick={...}
-  aria-label={`${hero.name} attacks ${monster.name}`}
-  aria-disabled={hero.hp <= 0}
->
-  {hero.name}
-</Button>
-
-// Modal close buttons
-<button
-  onClick={onClose}
-  aria-label="Close dialog"
->
-  ✕
-</button>
-```
-
-**Add ARIA live regions:**
-```jsx
-// Log component
-<div
-  role="log"
-  aria-live="polite"
-  aria-atomic="false"
->
-  {state.log.map(...)}
-</div>
-
-// Combat results
-<div
-  role="status"
-  aria-live="assertive"
-  aria-atomic="true"
->
-  {combatResult}
-</div>
-```
-
-**Add dialog roles:**
-```jsx
-// All modals
-<div
-  role="dialog"
-  aria-modal="true"
-  aria-labelledby="modal-title"
->
-  <h2 id="modal-title">Settings</h2>
-  {/* ... */}
-</div>
-```
-
-**Files to edit:** 15-20 component files
-
-**Success Criteria:**
-- [ ] All interactive elements have labels
-- [ ] All modals have dialog role
-- [ ] Log has aria-live
-- [ ] Screen reader can navigate entire app
-
----
+- i need to implement a party tracker that can be dragged around the dungeon
 
 #### Task 5.4: Keyboard Navigation (1 hour)
 **Priority:** 🟡 MEDIUM
@@ -240,6 +99,18 @@ useEffect(() => {
 
     // Tab through combat actions
     // Space/Enter to activate
+    // enter to confirm modals or dialogues
+    // escape to exit modals
+    // p for party
+    // ` for log
+    // o for stats
+    // r for rules modal
+    // esc for settings modal while nothing else is open
+    // c for campaign modal
+    // u for abilities modal
+    // i for equipment modal
+    // f for features modal
+    // w, s, a or d while hovering a dungeon tile to place a door on north south west or east side respectively
   };
 
   window.addEventListener('keydown', handleKeyboard);

@@ -59,6 +59,10 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     dispatch({ type: 'TOGGLE_CELL', x, y });
   }, [dispatch]);
 
+  const handleCellSet = useCallback((x, y, value) => {
+    dispatch({ type: 'SET_CELL', x, y, value });
+  }, [dispatch]);
+
   // Right-click to add/cycle markers
   const handleCellRightClick = useCallback((x, y, e) => {
     e.preventDefault();
@@ -403,6 +407,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             cellSize={cellSize}
             shouldRotate={shouldRotate}
             onCellClick={handleCellClick}
+            onCellSet={handleCellSet}
             onCellRightClick={handleCellRightClick}
             onDoorToggle={handleDoorToggle}
           />
