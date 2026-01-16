@@ -15,7 +15,11 @@ export function logReducer(state, action) {
     case A.LOG:
       return {
         ...state,
-        log: [action.t, ...state.log].slice(0, 80)
+        log: [{
+          message: action.t,
+          type: action.logType || 'system',
+          timestamp: action.timestamp || new Date().toISOString()
+        }, ...state.log].slice(0, 80)
       };
 
     case A.CLEAR_LOG:

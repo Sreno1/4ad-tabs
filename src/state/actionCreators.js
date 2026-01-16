@@ -403,8 +403,14 @@ export const enterBossRoom = () => ({ type: A.ENTER_BOSS_ROOM });
 /**
  * Add a message to the log
  * @param {string} message - Message text
+ * @param {string} type - Log entry type (combat, exploration, equipment, system)
  */
-export const logMessage = (message) => ({ type: A.LOG, t: message });
+export const logMessage = (message, type = 'system') => ({ 
+  type: A.LOG, 
+  t: message, 
+  logType: type,
+  timestamp: new Date().toISOString()
+});
 
 /**
  * Clear the log

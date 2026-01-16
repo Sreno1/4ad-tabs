@@ -2,6 +2,7 @@ import { useState } from "react";
 import { COMBAT_PHASES } from "../constants/gameConstants.js";
 import { rollMonsterReaction } from "../data/monsters.js";
 import { awardXP, checkLevelUp } from "../utils/gameActions/index.js";
+import { logMessage } from "../state/actionCreators.js";
 
 export function useCombatFlow(state, dispatch) {
   const [combatPhase, setCombatPhase] = useState(COMBAT_PHASES.NONE);
@@ -34,20 +35,17 @@ export function useCombatFlow(state, dispatch) {
     setMonsterReaction(result);
 
     // Log the result
-    dispatch({
-      type: "LOG",
-      t: `🎲 ${monster.name} Reaction (${result.roll}): ${result.name} - ${result.description}`,
-    });
+    dispatch(logMessage(`🎲 ${monster.name} Reaction (${result.roll}): ${result.name} - ${result.description}`, 'combat'));
 
     // Determine initiative based on reaction
     if (result.hostile === true) {
       setPartyGoesFirst(false);
       setCombatPhase(COMBAT_PHASES.MONSTER_TURN);
-      dispatch({ type: "LOG", t: `${monster.name} attacks first!` });
+      dispatch(logMessage(`${monster.name} attacks first!`, 'combat'));
     } else if (result.hostile === false) {
       setPartyGoesFirst(true);
       setCombatPhase(COMBAT_PHASES.PARTY_TURN);
-      dispatch({ type: "LOG", t: `Party has initiative!` });
+      dispatch(logMessage(`Party has initiative!`, 'combat'));
     } else {
       setPartyGoesFirst(true);
       setCombatPhase(COMBAT_PHASES.INITIATIVE);
@@ -60,14 +58,14 @@ export function useCombatFlow(state, dispatch) {
   const handlePartyAttacks = () => {
     setPartyGoesFirst(true);
     setCombatPhase(COMBAT_PHASES.PARTY_TURN);
-    dispatch({ type: "LOG", t: `Party attacks!` });
+    dispatch(logMessage(`Party attacks!`, 'combat'));
   };
 
   // End party turn, monster turn begins
   const handleEndPartyTurn = () => {
     if (getActiveMonsters().length > 0) {
       setCombatPhase(COMBAT_PHASES.MONSTER_TURN);
-      dispatch({ type: "LOG", t: `Monsters' turn to attack!` });
+      dispatch(logMessage(`Monsters' turn to attack!`, 'combat'));
     } else {
       handleCombatVictory();
     }
@@ -76,13 +74,13 @@ export function useCombatFlow(state, dispatch) {
   // End monster turn, party turn begins
   const handleEndMonsterTurn = () => {
     setCombatPhase(COMBAT_PHASES.PARTY_TURN);
-    dispatch({ type: "LOG", t: `Party's turn!` });
+    dispatch(logMessage(`Party's turn!`, 'combat'));
   };
 
   // Handle combat victory
   const handleCombatVictory = () => {
     setCombatPhase(COMBAT_PHASES.VICTORY);
-    dispatch({ type: "LOG", t: `🎉 Combat Victory!` });
+    dispatch(logMessage(`🎉 Combat Victory!`, 'combat'));
 
     // Award XP for all defeated monsters
     state.monsters?.forEach((monster) => {

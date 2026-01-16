@@ -21,7 +21,7 @@ export default function LogBar({ state, dispatch, collapsed, onToggle }) {
           </span>
           {collapsed && state.log && state.log.length > 0 && (
             <span className="text-xs text-slate-400 truncate ml-2">
-              {state.log[0]}
+              {typeof state.log[0] === 'object' ? state.log[0].message : state.log[0]}
               <span className="inline-block w-2 h-3 ml-1 bg-slate-400 animate-pulse" style={{ animation: 'blink 1s step-end infinite' }}></span>
             </span>
           )}

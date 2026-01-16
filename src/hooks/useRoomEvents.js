@@ -3,6 +3,7 @@ import { d66, d6, r2d6 } from '../utils/dice.js';
 import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE, SPECIAL_FEATURE_TABLE, SPECIAL_ROOMS, checkForBoss } from '../data/rooms.js';
 import { spawnMonster, rollTreasure, spawnMajorFoe } from "../utils/gameActions/index.js";
 import { ACTION_MODES, EVENT_TYPES } from '../constants/gameConstants.js';
+import { logMessage } from '../state/actionCreators.js';
 
 export function useRoomEvents(state, dispatch, setActionMode) {
   const [roomEvents, setRoomEvents] = useState([]);
@@ -27,7 +28,7 @@ export function useRoomEvents(state, dispatch, setActionMode) {
       case 'empty':
         newEvents.push({ type: EVENT_TYPES.EMPTY, data: {}, timestamp: Date.now() });
         setActionMode(ACTION_MODES.EMPTY);
-        dispatch({ type: 'LOG', t: `The room is empty.` });
+        dispatch(logMessage(`The room is empty.`, 'exploration'));
         break;
 
       case 'vermin':
@@ -55,14 +56,14 @@ export function useRoomEvents(state, dispatch, setActionMode) {
         const details = { type: 'special', specialKey, special, specialRoll };
         setRoomDetails(details);
         newEvents.push({ type: EVENT_TYPES.SPECIAL, data: details, timestamp: Date.now() });
-  dispatch({ type: 'LOG', t: `Special Feature! ${special.name}` });
-        dispatch({ type: 'LOG', t: `📜 ${special.description}` });
+  dispatch(logMessage(`Special Feature! ${special.name}`, 'exploration'));
+        dispatch(logMessage(`📜 ${special.description}`, 'exploration'));
         setActionMode(ACTION_MODES.SPECIAL);
         break;
       }
 
       case 'weird_monster':
-        dispatch({ type: 'LOG', t: `👾 Weird Monster! Roll on the Weird Monster table.` });
+        dispatch(logMessage(`👾 Weird Monster! Roll on the Weird Monster table.`, 'exploration'));
         const weirdDetails = { type: 'weird_monster' };
         setRoomDetails(weirdDetails);
         newEvents.push({ type: EVENT_TYPES.WEIRD, data: weirdDetails, timestamp: Date.now() });
@@ -72,7 +73,7 @@ export function useRoomEvents(state, dispatch, setActionMode) {
       case 'minor_boss':
         spawnMonster(dispatch, 'boss', 3);
         dispatch({ type: 'MINOR' });
-  dispatch({ type: 'LOG', t: `Minor Boss appears! (Level 3)` });
+  dispatch(logMessage(`Minor Boss appears! (Level 3)`, 'exploration'));
         newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'boss', level: 3, isBoss: false }, timestamp: Date.now() });
         setActionMode(ACTION_MODES.COMBAT);
         break;
@@ -81,18 +82,18 @@ export function useRoomEvents(state, dispatch, setActionMode) {
         const bossRoll = d6();
         const bossResult = checkForBoss(state.majorFoes || 0, bossRoll);
         setBossCheckResult(bossResult);
-        dispatch({ type: 'LOG', t: `🎲 Boss Check: ${bossResult.message}` });
+        dispatch(logMessage(`🎲 Boss Check: ${bossResult.message}`, 'exploration'));
         newEvents.push({ type: EVENT_TYPES.BOSS_CHECK, data: bossResult, timestamp: Date.now() });
 
         if (bossResult.isBoss) {
           spawnMajorFoe(dispatch, state.hcl, true);
           dispatch({ type: 'BOSS' });
-          dispatch({ type: 'LOG', t: `👑 THE BOSS APPEARS! (+1 Life, +1 Attack, 3x Treasure)` });
+          dispatch(logMessage(`👑 THE BOSS APPEARS! (+1 Life, +1 Attack, 3x Treasure)`, 'exploration'));
           newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'boss', level: state.hcl, isBoss: true }, timestamp: Date.now() });
         } else {
           spawnMajorFoe(dispatch, state.hcl, false);
           dispatch({ type: 'MAJOR' });
-          dispatch({ type: 'LOG', t: `Major Foe appears! (Level ${state.hcl})` });
+          dispatch(logMessage(`Major Foe appears! (Level ${state.hcl})`, 'exploration'));
           newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'major', level: state.hcl, isBoss: false }, timestamp: Date.now() });
         }
         setActionMode(ACTION_MODES.COMBAT);
@@ -100,7 +101,7 @@ export function useRoomEvents(state, dispatch, setActionMode) {
       }
 
       case 'quest_room':
-        dispatch({ type: 'LOG', t: `🏆 Quest Room / Final Room! The dungeon's objective is here.` });
+        dispatch(logMessage(`🏆 Quest Room / Final Room! The dungeon's objective is here.`, 'exploration'));
         const questDetails = { type: 'quest_room' };
         setRoomDetails(questDetails);
         newEvents.push({ type: EVENT_TYPES.QUEST, data: questDetails, timestamp: Date.now() });
@@ -122,9 +123,9 @@ export function useRoomEvents(state, dispatch, setActionMode) {
     const contentsRoll = r2d6();
     const contentsResult = TILE_CONTENTS_TABLE[contentsRoll];
 
-    dispatch({ type: 'LOG', t: `🎲 NEW TILE: Shape d66=${shapeRoll}, Contents 2d6=${contentsRoll}` });
-  dispatch({ type: 'LOG', t: `${shapeResult.description} | Doors: ${shapeResult.doors}` });
-    dispatch({ type: 'LOG', t: `📦 ${contentsResult.description}` });
+    dispatch(logMessage(`🎲 NEW TILE: Shape d66=${shapeRoll}, Contents 2d6=${contentsRoll}`, 'exploration'));
+  dispatch(logMessage(`${shapeResult.description} | Doors: ${shapeResult.doors}`, 'exploration'));
+    dispatch(logMessage(`📦 ${contentsResult.description}`, 'exploration'));
 
     const result = {
       shape: { roll: shapeRoll, ...shapeResult },

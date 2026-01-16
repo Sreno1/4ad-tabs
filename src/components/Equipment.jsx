@@ -84,14 +84,14 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
     }
 
   dispatch(equipItem(selectedHero, itemKey));
-  dispatch(logMessage(`${hero.name} equipped ${getEquipment(itemKey).name}`));
+  dispatch(logMessage(`${hero.name} equipped ${getEquipment(itemKey).name}`, 'equipment'));
   };
 
   // Handle unequipping an item
   const handleUnequip = (itemKey) => {
   dispatch(unequipItem(selectedHero, itemKey));
   dispatch(addToInventory(selectedHero, itemKey));
-  dispatch(logMessage(`${hero.name} unequipped ${getEquipment(itemKey).name}`));
+  dispatch(logMessage(`${hero.name} unequipped ${getEquipment(itemKey).name}`, 'equipment'));
   };
 
   // Handle using a consumable
@@ -110,7 +110,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
 
       // Remove from inventory
   dispatch(removeFromInventory(selectedHero, itemIdx));
-  dispatch(logMessage(result.message));
+  dispatch(logMessage(result.message, 'equipment'));
     }
   };
 

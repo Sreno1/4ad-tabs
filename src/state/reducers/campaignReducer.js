@@ -26,14 +26,22 @@ export function campaignReducer(state, action) {
           clues: state.clues,
           hcl: state.hcl
         },
-        log: [...state.log, `📜 Campaign mode enabled!`]
+        log: [...state.log, {
+          message: `📜 Campaign mode enabled!`,
+          type: 'system',
+          timestamp: new Date().toISOString()
+        }]
       };
 
     case A.END_CAMPAIGN:
       return {
         ...state,
         mode: 'adventure',
-        log: [...state.log, '📜 Campaign mode disabled.']
+        log: [...state.log, {
+          message: '📜 Campaign mode disabled.',
+          type: 'system',
+          timestamp: new Date().toISOString()
+        }]
       };
 
     case A.SYNC_TO_CAMPAIGN: {
@@ -77,7 +85,11 @@ export function campaignReducer(state, action) {
         // Reset per-adventure ability uses
         abilities: {},
         // Archive old log and start fresh
-        log: [`=== Started new dungeon: ${action.name || 'New Dungeon'} ===`],
+        log: [{
+          message: `=== Started new dungeon: ${action.name || 'New Dungeon'} ===`,
+          type: 'system',
+          timestamp: new Date().toISOString()
+        }],
         logArchive: archiveEntry
           ? [...(state.logArchive || []), archiveEntry]
           : (state.logArchive || [])
@@ -144,14 +156,22 @@ export function campaignReducer(state, action) {
             clues: state.clues,
             hcl: state.hcl
           },
-          log: [...state.log, `🏆 Adventure ${success ? 'completed' : 'ended'}! ${adventureSummary.survivors} survivors.`]
+          log: [...state.log, {
+            message: `🏆 Adventure ${success ? 'completed' : 'ended'}! ${adventureSummary.survivors} survivors.`,
+            type: 'system',
+            timestamp: new Date().toISOString()
+          }]
         };
       }
 
       return {
         ...state,
         party: updatedParty,
-        log: [...state.log, `Adventure ${success ? 'completed' : 'ended'}! ${adventureSummary.survivors} survivors.`]
+        log: [...state.log, {
+          message: `Adventure ${success ? 'completed' : 'ended'}! ${adventureSummary.survivors} survivors.`,
+          type: 'system',
+          timestamp: new Date().toISOString()
+        }]
       };
     }
 
