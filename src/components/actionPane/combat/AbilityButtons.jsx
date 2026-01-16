@@ -1,4 +1,5 @@
 import React, { memo } from 'react';
+import { getScroll } from '../../../data/scrolls.js';
 // TODO: Import Button and any other needed UI components
 
 /**
@@ -16,6 +17,8 @@ const AbilityButtons = memo(function AbilityButtons({
   setShowBlessTarget,
   showProtectionTarget,
   setShowProtectionTarget,
+  showScrolls,
+  setShowScrolls,
   ...rest
 }) {
   // Ability buttons and popups extracted from ActionPane.jsx
@@ -104,6 +107,17 @@ const AbilityButtons = memo(function AbilityButtons({
                   title="Cast any wizard spell (Lvl per adventure)"
                 >
                   {hero.name.slice(0,3)} Spell ({hero.lvl - (abilities.spellsUsed || 0)}/{hero.lvl})
+                </button>
+              )}
+
+              {/* Use Scroll (any hero except barbarians) */}
+              {hero.key !== 'barbarian' && (hero.inventory || []).some(key => key.startsWith('scroll_')) && (
+                <button
+                  onClick={() => setShowScrolls(index)}
+                  className="bg-purple-700 hover:bg-purple-600 px-2 py-0.5 rounded text-xs"
+                  title="Read and cast a spell from a scroll"
+                >
+                  {hero.name.slice(0,3)} Scroll ({(hero.inventory || []).filter(k => k.startsWith('scroll_')).length})
                 </button>
               )}
             </React.Fragment>
@@ -281,6 +295,56 @@ const AbilityButtons = memo(function AbilityButtons({
                 </button>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Scroll Selection Popup */}
+      {showScrolls !== null && state.party[showScrolls] && (
+        <div className="mt-2 p-2 bg-slate-700 rounded border border-purple-500">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-bold text-purple-400">
+              {state.party[showScrolls]?.name} - Select Scroll
+            </span>
+            <button
+              onClick={() => setShowScrolls(null)}
+              className="text-slate-400 hover:text-white text-xs"
+            >
+              ✕ Cancel
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto">
+            {(state.party[showScrolls]?.inventory || [])
+              .filter(key => key.startsWith('scroll_'))
+              .map((scrollKey, idx) => {
+                const scroll = getScroll(scrollKey);
+                return scroll ? (
+                  <div key={`${scrollKey}-${idx}`} className="bg-slate-600 rounded p-1.5 border border-purple-600">
+                    <div className="font-bold text-purple-300 text-xs mb-1">{scroll.name}</div>
+                    <div className="text-purple-200 text-[10px] mb-1">{scroll.description}</div>
+                    <button
+                      onClick={() => {
+                        rest.handleCastScroll?.(showScrolls, scrollKey);
+                        setShowScrolls(null);
+                      }}
+                      className="bg-purple-600 hover:bg-purple-500 px-2 py-0.5 rounded text-xs w-full"
+                    >
+                      Cast
+                    </button>
+                    {state.party[showScrolls]?.key === 'wizard' && (
+                      <button
+                        onClick={() => {
+                          rest.handleCopyScroll?.(showScrolls, scrollKey);
+                          setShowScrolls(null);
+                        }}
+                        className="bg-indigo-600 hover:bg-indigo-500 px-2 py-0.5 rounded text-xs w-full mt-0.5"
+                      >
+                        Copy to Spellbook
+                      </button>
+                    )}
+                  </div>
+                ) : null;
+              })}
           </div>
         </div>
       )}

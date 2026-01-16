@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useCallback, memo, useState } from 'react';
+import { getEquipment } from '../data/equipment.js';
 
 import MARKER_STYLES from '../constants/markerStyles.js';
 
@@ -21,15 +22,20 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   onPartyMove,
   partySelected,
   onPartySelect,
+  partyMembers = [],
   showPawnHint = true,
   placementTemplate = null,
   autoPlacedRoom = null,
   setAutoPlacedRoom = null,
   onCommitPlacement = null,
+  onEditComplete = null,
+  partyHasLight = false,
 }) {
   const canvasRef = useRef(null);
   const pressedKeysRef = useRef(new Set()); // Track currently pressed arrow keys for continuous movement
   const gameLoopRef = useRef(null); // Track the animation frame ID for pawn movement
+  const lightAnimRef = useRef(null); // RAF id for light flicker animation
+  const drawGridRef = useRef(null);
   const currentStateRef = useRef(null); // Keep current state accessible
   const [hoveredCell, setHoveredCell] = useState(null);
   const [hoveredDoor, setHoveredDoor] = useState(null);
@@ -38,9 +44,19 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const [dragFillValue, setDragFillValue] = useState(null); // 0, 1, or 2
   const [isPawnDragging, setIsPawnDragging] = useState(false);
   const draggedCellsRef = useRef(new Set()); // Track which cells we've already filled during this drag
+  const rectStartRef = useRef(null); // {x,y} when cmd/meta rectangle drag starts
+  const [rectPreview, setRectPreview] = useState(null); // {x1,y1,x2,y2,value}
 
   const cols = grid[0]?.length || 0;
   const rows = grid.length;
+
+  // If the party composition changes such that no alive member carries an equipped
+  // light source, cancel the light animation and force an immediate redraw so the
+  // glow disappears without requiring the user to alt-tab. (Effect is added later
+  // after drawGrid is available; see below.)
+
+  // Party members array (from parent) - used to detect if an alive member still carries a light
+  // ...existing code...
 
   // Initialize currentStateRef on first render
   if (!currentStateRef.current) {
@@ -83,7 +99,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
         // Cell color
         if (cell === 1) {
-          ctx.fillStyle = '#b45309'; // amber-700
+          // Room cells: render as true black
+          ctx.fillStyle = '#000000';
         } else if (cell === 2) {
           ctx.fillStyle = '#1d4ed8'; // blue-700
         } else {
@@ -149,6 +166,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (cell > 0) {
         const px = hoveredCell.x * cellSize;
         const py = hoveredCell.y * cellSize;
+        const threshold = cellSize * 0.2; // Match the detection threshold
 
         const edges = [
           { edge: 'N', x1: px, y1: py, x2: px + cellSize, y2: py },
@@ -157,14 +175,34 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           { edge: 'W', x1: px, y1: py, x2: px, y2: py + cellSize }
         ];
 
+        // Draw clickable zones behind the guides
+        edges.forEach(({ edge }) => {
+          const isHoveredDoor = hoveredDoor?.edge === edge;
+
+          if (isHoveredDoor) {
+            ctx.fillStyle = 'rgba(251, 191, 36, 0.15)'; // amber glow
+
+            // Draw zone rectangle for this edge
+            if (edge === 'N') {
+              ctx.fillRect(px, py - threshold, cellSize, threshold);
+            } else if (edge === 'S') {
+              ctx.fillRect(px, py + cellSize, cellSize, threshold);
+            } else if (edge === 'E') {
+              ctx.fillRect(px + cellSize, py, threshold, cellSize);
+            } else if (edge === 'W') {
+              ctx.fillRect(px - threshold, py, threshold, cellSize);
+            }
+          }
+        });
+
         edges.forEach(({ edge, x1, y1, x2, y2 }) => {
           const hasDoor = doors.some(d => d.x === hoveredCell.x && d.y === hoveredCell.y && d.edge === edge);
           const isHoveredDoor = hoveredDoor?.edge === edge;
 
           // Always show edges on hover, bright when edge is hovered
-          ctx.strokeStyle = isHoveredDoor ? '#fbbf24' : '#64748b'; // amber-400 or slate-500
-          ctx.lineWidth = isHoveredDoor ? 3 : 2;
-          ctx.globalAlpha = isHoveredDoor ? 1.0 : 0.5;
+          ctx.strokeStyle = isHoveredDoor ? '#fbbf24' : '#94a3b8'; // amber-400 or slate-400
+          ctx.lineWidth = isHoveredDoor ? 4 : 2;
+          ctx.globalAlpha = isHoveredDoor ? 1.0 : 0.6;
 
           ctx.beginPath();
           ctx.moveTo(x1, y1);
@@ -176,36 +214,13 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
     }
 
-    // Draw party pawn on top (inside same rotated context so it aligns)
-    if (partyPos && typeof partyPos.x === 'number' && typeof partyPos.y === 'number') {
-      const px = partyPos.x * cellSize;
-      const py = partyPos.y * cellSize;
-      const cx = px + cellSize / 2;
-      const cy = py + cellSize / 2;
-      const radius = Math.max(4, cellSize * 0.32);
-
-      // Outer ring (selected -> brighter)
-      ctx.beginPath();
-      ctx.fillStyle = partySelected ? '#fbbf24' : '#f59e0b';
-      ctx.arc(cx, cy, radius + 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Inner pawn body
-      ctx.beginPath();
-      ctx.fillStyle = '#0f172a';
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Letter P
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = `bold ${Math.max(8, Math.floor(cellSize * 0.45))}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('P', cx, cy + 1);
-    }
+  // NOTE: we intentionally do not draw the party pawn here when the canvas
+  // context is rotated, because we want the pawn icon and label to remain
+  // visually upright for readability. The pawn will be drawn after the
+  // rotation is restored (see below).
 
     // Draw placement preview centered on hoveredCell when placementTemplate or autoPlacedRoom present
-    const activeTemplate = placementTemplate || autoPlacedRoom;
+  const activeTemplate = placementTemplate || autoPlacedRoom;
     if (activeTemplate && hoveredCell) {
       const tpl = activeTemplate.grid || activeTemplate;
       const tplDoors = activeTemplate.doors || [];
@@ -249,16 +264,344 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       });
     }
 
+    // Draw rectangle preview when user is holding Meta/Cmd and dragging
+    if (rectPreview) {
+      const { x1, y1, x2, y2, value } = rectPreview;
+      for (let gy = y1; gy <= y2; gy++) {
+        for (let gx = x1; gx <= x2; gx++) {
+          if (gx < 0 || gx >= cols || gy < 0 || gy >= rows) continue;
+          const px = gx * cellSize;
+          const py = gy * cellSize;
+          // Choose preview color based on value
+          if (value === 1) ctx.fillStyle = 'rgba(180,83,9,0.45)';
+          else if (value === 2) ctx.fillStyle = 'rgba(29,78,216,0.45)';
+          else ctx.fillStyle = 'rgba(120,120,120,0.35)';
+          ctx.fillRect(px, py, cellSize, cellSize);
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
+        }
+      }
+    }
+
         if (shouldRotate) {
           ctx.restore();
         }
 
-  }, [grid, doors, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected]);
+    // Draw the party pawn on top of everything, but outside the rotated
+    // drawing context so the icon/text stays upright. Compute screen-space
+    // coordinates that correspond to the logical party position.
+    if (partyPos && typeof partyPos.x === 'number' && typeof partyPos.y === 'number') {
+      // logical center in pixels
+      const logicalCx = partyPos.x * cellSize + cellSize / 2;
+      const logicalCy = partyPos.y * cellSize + cellSize / 2;
+
+      // convert logical -> screen coordinates depending on rotation
+      let screenCx = logicalCx;
+      let screenCy = logicalCy;
+      if (shouldRotate) {
+        // when we rotated the canvas with: translate(canvasWidth,0); rotate(+90deg)
+        // the forward mapping was: sx = canvasWidth - ly, sy = lx
+        // so here we invert that: sx = canvasWidth - logicalCy, sy = logicalCx
+        screenCx = canvasWidth - logicalCy;
+        screenCy = logicalCx;
+      }
+
+      const radius = Math.max(4, cellSize * 0.32);
+
+          // Draw flickering light glow behind pawn if party has a light source
+          if (partyHasLight) {
+  // Compute whether pawn is inside a room cell now (used both for clipping and corner bounces)
+  const inRoom = partyPos && typeof partyPos.x === 'number' && typeof partyPos.y === 'number' && grid[partyPos.y] && grid[partyPos.y][partyPos.x] === 1;
+
+  // Prepare clipping: when inside a room, clip light to that room rect;
+  // when outside, exclude all room rects so light doesn't travel into rooms.
+  ctx.save();
+  try {
+    // helper: convert logical cell rect (rx,ry) to screen-space rect depending on rotation
+    const screenRectFor = (rx, ry) => {
+      const lx = rx * cellSize;
+      const ly = ry * cellSize;
+      if (shouldRotate) {
+        // mapping: sx = canvasWidth - ly, sy = lx for logical pixel coords. For a rect, compute
+        // top-left in screen space as: (canvasWidth - (ly + cellSize), lx)
+        return { x: canvasWidth - (ly + cellSize), y: lx };
+      }
+      return { x: lx, y: ly };
+    };
+
+    if (inRoom) {
+      // Flood-fill connected room cells (orthogonal) starting at partyPos
+      const toVisit = [{ x: partyPos.x, y: partyPos.y }];
+      const visited = new Set();
+      const cells = [];
+      while (toVisit.length) {
+        const c = toVisit.pop();
+        const key = `${c.x},${c.y}`;
+        if (visited.has(key)) continue;
+        visited.add(key);
+        if (!(c.y >= 0 && c.y < rows && c.x >= 0 && c.x < cols)) continue;
+        if (!grid[c.y] || grid[c.y][c.x] !== 1) continue;
+        cells.push({ x: c.x, y: c.y });
+        // add neighbors
+        toVisit.push({ x: c.x + 1, y: c.y });
+        toVisit.push({ x: c.x - 1, y: c.y });
+        toVisit.push({ x: c.x, y: c.y + 1 });
+        toVisit.push({ x: c.x, y: c.y - 1 });
+      }
+
+      if (cells.length > 0) {
+        // Build path of all connected room rects in screen space and clip to it
+        ctx.beginPath();
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        cells.forEach(cell => {
+          const sr = screenRectFor(cell.x, cell.y);
+          ctx.rect(sr.x, sr.y, cellSize, cellSize);
+          minX = Math.min(minX, sr.x);
+          minY = Math.min(minY, sr.y);
+          maxX = Math.max(maxX, sr.x);
+          maxY = Math.max(maxY, sr.y);
+        });
+        ctx.clip();
+
+        // Draw a soft room-wide fill across the clipped region so black rooms show as lit
+        try {
+          // tighten the room-wide gradient so it doesn't bleed too far outside the room
+          const roomGrad = ctx.createRadialGradient(screenCx, screenCy, radius * 0.35, screenCx, screenCy, Math.max(cellSize * 0.9, Math.max(maxX - minX, maxY - minY) * 0.9));
+          roomGrad.addColorStop(0, `rgba(255,220,140,${0.22 * inRoomAlpha})`);
+          roomGrad.addColorStop(0.6, `rgba(255,180,90,${0.08 * inRoomAlpha})`);
+          roomGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = roomGrad;
+          // Fill entire canvas; clipping ensures only the room region is affected
+          ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        } catch (e) {
+          // ignore
+        }
+
+        // Use bounding box for corner glints below
+        // store bounding values for later use
+        var __roomBounds = { minX, minY, maxX: maxX + cellSize, maxY: maxY + cellSize };
+      }
+    } else {
+      // Create an outer rect and add each room rect so clip with 'evenodd' will cut holes
+      ctx.beginPath();
+      ctx.rect(0, 0, canvasWidth, canvasHeight);
+      for (let ry = 0; ry < rows; ry++) {
+        for (let rx = 0; rx < cols; rx++) {
+          if (grid[ry] && grid[ry][rx] === 1) {
+            const sr = screenRectFor(rx, ry);
+            ctx.rect(sr.x, sr.y, cellSize, cellSize);
+          }
+        }
+      }
+      // Use even-odd rule to exclude room rectangles from the clipping region. If unsupported,
+      // fall back to the default clip (which will not exclude rooms) to avoid throwing.
+      try { ctx.clip('evenodd'); } catch (e) { ctx.clip(); }
+    }
+  } catch (e) {
+    // If clipping fails for any reason, continue without clipping
+  }
+
+  // Use two offset gradients with independent motion to make the glow irregular
+  const t = Date.now() / 700; // time base
+  const ox1 = Math.sin(t * 0.9) * radius * 0.35 + Math.sin(t * 0.45) * radius * 0.15;
+  const oy1 = Math.cos(t * 1.1) * radius * 0.25 + Math.cos(t * 0.35) * radius * 0.1;
+  const ox2 = Math.sin(t * 1.5 + 1.7) * radius * 0.45 + Math.cos(t * 0.6) * radius * 0.12;
+  const oy2 = Math.cos(t * 1.3 + 0.9) * radius * 0.35 + Math.sin(t * 0.4) * radius * 0.08;
+  const flicker = 1.0 + 0.02 * Math.sin(t * 0.7) + 0.01 * Math.sin(t * 1.9);
+  // Make lights larger when outside rooms, but tighter when inside
+  // slightly increase in-room base so it reads better on black rooms
+  // Preset B (amplified): noticeably bigger and brighter
+  const baseRadius = inRoom ? (radius * (3.9 + flicker * 0.8)) : (radius * (5.5 + flicker * 1.1));
+  // Increase interior alpha so the whole room reads brighter on dark tiles.
+  // This intentionally uses >1.0 so room fills are boosted relative to outside.
+  const inRoomAlpha = inRoom ? 1.2 : 1.0;
+
+  // Composite two gradients additively for an irregular shape
+  const prevComp = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+
+  // If a flood-filled multi-cell room region was computed earlier, we've already
+  // drawn a room-wide fill into that clipped region. Only draw the single-cell
+  // fallback fill if __roomBounds wasn't created above.
+  if (inRoom && typeof __roomBounds === 'undefined') {
+    try {
+      const roomPx = partyPos.x * cellSize;
+      const roomPy = partyPos.y * cellSize;
+      const roomGrad = ctx.createRadialGradient(screenCx, screenCy, radius * 0.35, screenCx, screenCy, cellSize * 0.9);
+      roomGrad.addColorStop(0, `rgba(255,240,180,${0.45 * inRoomAlpha})`);
+      roomGrad.addColorStop(0.6, `rgba(255,200,120,${0.18 * inRoomAlpha})`);
+      roomGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = roomGrad;
+      ctx.beginPath();
+      ctx.rect(roomPx, roomPy, cellSize, cellSize);
+      ctx.fill();
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  // Adjust inner/out radii depending on whether we're inside a room
+  const innerMult1 = inRoom ? 0.22 : 0.28;
+  const outerScale1 = inRoom ? 0.7 : 0.85;
+  const innerMult2 = inRoom ? 0.38 : 0.45;
+  const outerScale2 = inRoom ? 0.95 : 1.1;
+
+  // First soft blob
+  const grad1 = ctx.createRadialGradient(screenCx + ox1, screenCy + oy1, radius * innerMult1, screenCx + ox1, screenCy + oy1, baseRadius * outerScale1);
+  grad1.addColorStop(0, `rgba(255,240,180,${Math.min(1,0.6 * flicker) * (inRoom ? inRoomAlpha : 1.0)})`);
+  grad1.addColorStop(0.5, `rgba(255,200,110,${Math.min(1,0.28 * flicker) * (inRoom ? inRoomAlpha : 1.0)})`);
+  grad1.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad1;
+  ctx.beginPath();
+  ctx.arc(screenCx + ox1, screenCy + oy1, baseRadius * outerScale1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Second, slightly larger and offset blob
+  const grad2 = ctx.createRadialGradient(screenCx + ox2, screenCy + oy2, radius * innerMult2, screenCx + ox2, screenCy + oy2, baseRadius * outerScale2);
+  grad2.addColorStop(0, `rgba(255,215,120,${Math.min(1,0.45 * flicker) * (inRoom ? inRoomAlpha : 1.0)})`);
+  grad2.addColorStop(0.6, `rgba(255,165,80,${Math.min(1,0.18 * flicker) * (inRoom ? inRoomAlpha : 1.0)})`);
+  grad2.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad2;
+  ctx.beginPath();
+  ctx.arc(screenCx + ox2, screenCy + oy2, baseRadius * outerScale2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Restore blending
+  ctx.globalCompositeOperation = prevComp;
+
+  // If pawn is inside a room cell, draw small corner highlights to simulate light bouncing off the walls
+  try {
+    if (inRoom) {
+      const cornerOffset = Math.max(4, cellSize * 0.12);
+      const cornerGlareRadius = Math.max(8, cellSize * 1.0);
+      // If we computed multi-cell bounds earlier, use them; otherwise fallback to single cell
+      const bounds = (typeof __roomBounds !== 'undefined') ? __roomBounds : { minX: partyPos.x * cellSize, minY: partyPos.y * cellSize, maxX: partyPos.x * cellSize + cellSize, maxY: partyPos.y * cellSize + cellSize };
+      const corners = [
+        { x: bounds.minX + cornerOffset, y: bounds.minY + cornerOffset },
+        { x: bounds.maxX - cornerOffset, y: bounds.minY + cornerOffset },
+        { x: bounds.minX + cornerOffset, y: bounds.maxY - cornerOffset },
+        { x: bounds.maxX - cornerOffset, y: bounds.maxY - cornerOffset }
+      ];
+
+      // Use lighter blending so corner glints add to the main glow
+      const prev = ctx.globalCompositeOperation;
+      ctx.globalCompositeOperation = 'lighter';
+
+      // Make corner bounce intensity depend on distance and angle relative to the light center
+      corners.forEach((c, idx) => {
+        const dx = c.x - screenCx;
+        const dy = c.y - screenCy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const nd = Math.max(1, dist);
+        // intensity falls off with distance, but with a baseline so corners still catch light
+        const intensity = Math.max(0.12, 0.7 * (1 - Math.min(1, nd / (Math.max(cellSize, Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY)) * 1.5))));
+        const phase = (Date.now() / 1000) + idx;
+  const k = intensity * (0.85 + 0.15 * Math.sin(phase)) * (inRoom ? inRoomAlpha : 1.0);
+
+        // Draw a focused radial spot near the corner to simulate a reflected highlight
+        const gx = ctx.createRadialGradient(c.x, c.y, 1, c.x, c.y, cornerGlareRadius * 0.6);
+        gx.addColorStop(0, `rgba(255,245,200,${0.35 * k})`);
+        gx.addColorStop(0.5, `rgba(255,210,130,${0.18 * k})`);
+        gx.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = gx;
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, cornerGlareRadius * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.globalCompositeOperation = prev;
+    }
+  } catch (e) {
+    // Safety: if any reference is missing, ignore corner glints
+  }
+
+  ctx.restore();
+          }
+
+      // Draw outer ring
+      ctx.beginPath();
+      ctx.fillStyle = partySelected ? '#fbbf24' : '#f59e0b';
+      ctx.arc(screenCx, screenCy, radius + 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner pawn body
+      ctx.beginPath();
+      ctx.fillStyle = '#0f172a';
+      ctx.arc(screenCx, screenCy, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Letter P (drawn upright)
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = `bold ${Math.max(8, Math.floor(cellSize * 0.45))}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('P', screenCx, screenCy + 1);
+    }
+
+  }, [grid, doors, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected, shouldRotate, canvasWidth, partyHasLight]);
+
+  // Keep a stable ref to the latest drawGrid implementation so other effects
+  // can call it without referencing the function before it's initialized.
+  useEffect(() => {
+    drawGridRef.current = drawGrid;
+  }, [drawGrid]);
+
+  // When the party composition changes such that no alive member carries an
+  // equipped light source, cancel the light animation and force an immediate
+  // redraw so the glow disappears without requiring the user to alt-tab.
+  useEffect(() => {
+    try {
+      const anyAliveEquipped = (partyMembers || []).some(h => h?.hp > 0 && Array.isArray(h?.equipment) && h.equipment.some(k => {
+        const it = getEquipment(k);
+        return it && it.lightSource;
+      }));
+      if (!anyAliveEquipped) {
+        if (lightAnimRef.current) {
+          cancelAnimationFrame(lightAnimRef.current);
+          lightAnimRef.current = null;
+        }
+        try { drawGridRef.current && drawGridRef.current(); } catch (e) { /* ignore */ }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, [partyMembers]);
 
   // Redraw when dependencies change
   useEffect(() => {
     drawGrid();
   }, [drawGrid]);
+
+  // Continuous animation loop for light flicker when party has light
+  useEffect(() => {
+    if (!partyHasLight) {
+      if (lightAnimRef.current) {
+        cancelAnimationFrame(lightAnimRef.current);
+        lightAnimRef.current = null;
+      }
+  // Immediately redraw once without the light animation so the glow clears
+  try { drawGrid(); } catch (e) { /* ignore drawing errors */ }
+  return;
+    }
+
+    const loop = () => {
+      drawGrid();
+      lightAnimRef.current = requestAnimationFrame(loop);
+    };
+
+    // Start loop
+    if (!lightAnimRef.current) {
+      lightAnimRef.current = requestAnimationFrame(loop);
+    }
+
+    return () => {
+      if (lightAnimRef.current) {
+        cancelAnimationFrame(lightAnimRef.current);
+        lightAnimRef.current = null;
+      }
+    };
+  }, [partyHasLight, drawGrid]);
 
   // Mouse event handlers
   const handleMouseMove = useCallback((e) => {
@@ -285,7 +628,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     const x = Math.floor(logicalX / cellSize);
     const y = Math.floor(logicalY / cellSize);
 
-    if (x >= 0 && x < cols && y >= 0 && y < rows) {
+  if (x >= 0 && x < cols && y >= 0 && y < rows) {
       // Check if we changed cells
       if (!hoveredCell || hoveredCell.x !== x || hoveredCell.y !== y) {
         setHoveredCell({ x, y });
@@ -296,13 +639,25 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         }
 
         // If we're dragging to paint, fill this cell
-        if (isDragging && dragFillValue !== null && onCellSet) {
+        if (isDragging && dragFillValue !== null && onCellSet && !rectStartRef.current) {
           const cellKey = `${x},${y}`;
           // Only fill if we haven't already filled this cell in this drag session
           if (!draggedCellsRef.current.has(cellKey)) {
             draggedCellsRef.current.add(cellKey);
             onCellSet(x, y, dragFillValue);
           }
+        }
+
+        // If we're performing a meta/cmd-rectangle drag, update preview
+        if (rectStartRef.current) {
+          const sx = rectStartRef.current.x;
+          const sy = rectStartRef.current.y;
+          const x1 = Math.min(sx, x);
+          const y1 = Math.min(sy, y);
+          const x2 = Math.max(sx, x);
+          const y2 = Math.max(sy, y);
+          const value = rectStartRef.current.value;
+          setRectPreview({ x1, y1, x2, y2, value });
         }
       }
 
@@ -312,7 +667,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         // Use logical (unrotated) cell-local coordinates
   const cellX = ((logicalX % cellSize) + cellSize) % cellSize;
   const cellY = ((logicalY % cellSize) + cellSize) % cellSize;
-        const threshold = cellSize * 0.35; // Larger threshold = easier to click
+        const threshold = cellSize * 0.2; // Reduced from 0.35 for more precise placement
 
         let edge = null;
         // Prioritize corners by checking them first
@@ -378,7 +733,17 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       return;
     }
 
-    // Start dragging - determine what value to fill
+    // If Meta/Cmd or Ctrl is held, start rectangle-fill mode
+    if (e.metaKey || e.ctrlKey) {
+      const nextValue = cell === 0 ? 1 : cell === 1 ? 2 : 0;
+      rectStartRef.current = { x: hoveredCell.x, y: hoveredCell.y, value: nextValue };
+      setRectPreview({ x1: hoveredCell.x, y1: hoveredCell.y, x2: hoveredCell.x, y2: hoveredCell.y, value: nextValue });
+      // Set dragging state so visual cursor updates behave consistently
+      setIsDragging(true);
+      return;
+    }
+
+    // Start normal dragging - determine what value to fill
     // Cycle: 0 -> 1 -> 2 -> 0
     const nextValue = cell === 0 ? 1 : cell === 1 ? 2 : 0;
     setDragFillValue(nextValue);
@@ -398,12 +763,27 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   }, [hoveredCell, hoveredDoor, grid, onCellClick, onCellSet, partyPos, onPartyMove, onPartySelect]);
 
   const handleMouseUp = useCallback(() => {
+    // If we were doing a rectangle fill (meta/cmd drag), apply it now
+    if (rectStartRef.current && rectPreview && onCellSet) {
+      const { x1, y1, x2, y2, value } = rectPreview;
+      for (let gy = y1; gy <= y2; gy++) {
+        for (let gx = x1; gx <= x2; gx++) {
+          if (gx < 0 || gx >= cols || gy < 0 || gy >= rows) continue;
+          try { onCellSet(gx, gy, value); } catch (e) { /* ignore individual failures */ }
+        }
+      }
+    }
+
     setIsDragging(false);
     setDragFillValue(null);
     setIsPawnDragging(false);
+    // Clear rectangle state
+    rectStartRef.current = null;
+    setRectPreview(null);
     // Don't clear draggedCellsRef yet - we need it for the click check
     // It will be cleared in the next mousedown or mouseup via ref reset
-  }, []);
+    try { if (onEditComplete) onEditComplete(); } catch (e) { /* ignore */ }
+  }, [rectPreview, onCellSet, cols, rows, onEditComplete]);
 
   const handleClick = useCallback((e) => {
     // Don't process click if we dragged across multiple cells
@@ -520,9 +900,25 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (pressedKeysRef.current.has('ArrowLeft')) dx -= 1;
       if (pressedKeysRef.current.has('ArrowRight')) dx += 1;
 
-      if (dx !== 0 || dy !== 0) {
-        const nx = Math.min(Math.max(0, pp.x + dx), c - 1);
-        const ny = Math.min(Math.max(0, pp.y + dy), r - 1);
+      // When the map is rotated, the logical coordinate system is rotated
+      // relative to screen arrows. We want the d-pad to always move the pawn
+      // visually up/left/down/right on screen. Apply an inverse rotation to
+      // the movement delta so the on-screen arrow maps correctly to logical coords.
+      let appliedDx = dx;
+      let appliedDy = dy;
+      if (shouldRotate && (dx !== 0 || dy !== 0)) {
+        // For a +90deg rotation (clockwise) applied to the drawing, the
+        // mapping from logical -> screen was: sx = canvasWidth - ly, sy = lx
+        // To map a screen-space delta (dx,dy) back to logical delta, invert:
+        // logical_dx = dy
+        // logical_dy = -dx
+        appliedDx = dy;
+        appliedDy = -dx;
+      }
+
+      if (appliedDx !== 0 || appliedDy !== 0) {
+        const nx = Math.min(Math.max(0, pp.x + appliedDx), c - 1);
+        const ny = Math.min(Math.max(0, pp.y + appliedDy), r - 1);
         if (opm) opm(nx, ny);
       }
 

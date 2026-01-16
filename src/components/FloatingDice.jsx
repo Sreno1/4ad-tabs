@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Dices } from 'lucide-react';
 import DiceBox from '@3d-dice/dice-box';
 import { useDiceTheme } from '../contexts/DiceContext.jsx';
@@ -12,13 +13,15 @@ const DICE_OPTIONS = [
   { type: 'd10', label: 'D10', notation: '1d10' },
 ];
 
-export default function FloatingDice({ onLogRoll = null }) {
+export default function FloatingDice({ onLogRoll = null, inline = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [diceBox, setDiceBox] = useState(null);
   const [result, setResult] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
+  const [menuPos, setMenuPos] = useState(null);
   const initRef = useRef(false);
   const { diceColorHex, diceTheme } = useDiceTheme();
+  const btnRef = useRef(null);
 
   // Initialize dice-box
   useEffect(() => {
@@ -81,6 +84,14 @@ export default function FloatingDice({ onLogRoll = null }) {
       }
     }
   };
+
+  useEffect(() => {
+    if (inline && isOpen && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      // position menu slightly below the button center
+      setMenuPos({ left: rect.left + rect.width / 2, top: rect.bottom + 8 });
+    }
+  }, [inline, isOpen]);
 
   const handleRoll = async (option) => {
     if (isRolling) return;
@@ -160,9 +171,12 @@ export default function FloatingDice({ onLogRoll = null }) {
 
   // Calculate positions in a radial pattern
   const getPosition = (index, total) => {
-    const startAngle = -90;
-    const spreadAngle = 150;
-    const angle = startAngle - (spreadAngle / (total - 1)) * index;
+  const startAngle = -90;
+  const spreadAngle = 150;
+  // Rotate the whole radial menu by ~20 degrees clockwise to keep
+  // some items from flying off the top of the viewport when used in the header.
+  const rotationOffset = -70; // degrees, negative = clockwise
+  const angle = startAngle + rotationOffset - (spreadAngle / (total - 1)) * index;
     const radius = 120;
     const x = Math.cos((angle * Math.PI) / 180) * radius;
     const y = Math.sin((angle * Math.PI) / 180) * radius;
@@ -172,35 +186,40 @@ export default function FloatingDice({ onLogRoll = null }) {
   return (
     <>
       {/* 3D Dice Canvas - full screen overlay when rolling */}
-      <div
-        id="dice-canvas"
-        className={`fixed inset-0 z-50 transition-opacity duration-300 ${
-          isRolling ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        style={{ 
-          background: isRolling ? 'rgba(0,0,0,0.8)' : 'transparent',
-        }}
-        onClick={() => {
-          if (isRolling) {
-            clearDice();
-            setResult(null);
-            setIsRolling(false);
-          }
-        }}
-      />
+      {createPortal(
+        <div
+          id="dice-canvas"
+          className={`fixed inset-0 transition-opacity duration-300 ${
+            isRolling ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+          style={{ 
+            background: isRolling ? 'rgba(0,0,0,0.8)' : 'transparent',
+            zIndex: 2147483646,
+          }}
+          onClick={() => {
+            if (isRolling) {
+              clearDice();
+              setResult(null);
+              setIsRolling(false);
+            }
+          }}
+        />,
+        document.body
+      )}
 
       {/* Result display */}
-      {result && (
-        <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[60] pointer-events-none">
+      {result && createPortal(
+        <div style={{ position: 'fixed', bottom: '8rem', left: '50%', transform: 'translateX(-50%)', zIndex: 2147483647, pointerEvents: 'none' }}>
           <div className="text-6xl font-bold text-amber-400 bg-slate-900/90 px-8 py-4 rounded-xl shadow-2xl border-2 border-amber-500/50">
             {result.total}
             <span className="text-2xl text-slate-400 ml-3">({result.type})</span>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Floating button - desktop only */}
-      <div className="hidden md:block fixed bottom-8 right-8 z-40">
+  {/* Floating button - desktop only. If `inline` is true we render inline (for header). */}
+  <div className={inline ? 'relative inline-block' : 'hidden md:block fixed bottom-8 right-8 z-40'}>
         {/* Hidden 2d6 roll button for double-spacebar shortcut */}
         <button
           data-dice-roll="2d6"
@@ -219,35 +238,67 @@ export default function FloatingDice({ onLogRoll = null }) {
         />
         {/* Radial options */}
         {isOpen && (
-          <div className="absolute bottom-0 right-0">
-            {DICE_OPTIONS.map((option, index) => {
-              const pos = getPosition(index, DICE_OPTIONS.length);
-              return (
-                <button
-                  key={option.type}
-                  onClick={() => handleRoll(option)}
-                  disabled={isRolling}
-                  className="absolute w-14 h-14 rounded-full bg-slate-700 hover:bg-amber-500 
-                           text-amber-400 hover:text-slate-900 font-bold text-sm
-                           shadow-lg transition-all duration-200 flex items-center justify-center
-                           border-2 border-slate-600 hover:border-amber-400
-                           disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    transform: `translate(${pos.x - 28}px, ${pos.y - 28}px)`,
-                    animation: `fadeIn 0.2s ease-out ${index * 0.05}s both`,
-                  }}
-                  {...(option.type === 'd6' ? { 'data-dice-roll': 'd6' } : {})}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+          inline ? (
+            // For inline/header mode, render radial options into body positioned near button
+            createPortal(
+              <div style={{ position: 'fixed', left: `${menuPos?.left || 0}px`, top: `${menuPos?.top || 0}px`, transform: 'translate(-50%, 0)', zIndex: 2147483646 }} className="pointer-events-auto">
+                {DICE_OPTIONS.map((option, index) => {
+                  const pos = getPosition(index, DICE_OPTIONS.length);
+                  return (
+                    <button
+                      key={option.type}
+                      onClick={() => handleRoll(option)}
+                      disabled={isRolling}
+                      className="absolute w-14 h-14 rounded-full bg-slate-700 hover:bg-amber-500 
+                               text-amber-400 hover:text-slate-900 font-bold text-sm
+                               shadow-lg transition-all duration-200 flex items-center justify-center
+                               border-2 border-slate-600 hover:border-amber-400
+                               disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        transform: `translate(${pos.x - 28}px, ${pos.y - 28}px)`,
+                        animation: `fadeIn 0.2s ease-out ${index * 0.05}s both`,
+                      }}
+                      {...(option.type === 'd6' ? { 'data-dice-roll': 'd6' } : {})}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>,
+              document.body
+            )
+          ) : (
+            <div className={`absolute bottom-0 right-0 z-[10000]`}>
+              {DICE_OPTIONS.map((option, index) => {
+                const pos = getPosition(index, DICE_OPTIONS.length);
+                return (
+                  <button
+                    key={option.type}
+                    onClick={() => handleRoll(option)}
+                    disabled={isRolling}
+                    className="absolute w-14 h-14 rounded-full bg-slate-700 hover:bg-amber-500 
+                             text-amber-400 hover:text-slate-900 font-bold text-sm
+                             shadow-lg transition-all duration-200 flex items-center justify-center
+                             border-2 border-slate-600 hover:border-amber-400
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      transform: `translate(${pos.x - 28}px, ${pos.y - 28}px)`,
+                      animation: `fadeIn 0.2s ease-out ${index * 0.05}s both`,
+                    }}
+                    {...(option.type === 'd6' ? { 'data-dice-roll': 'd6' } : {})}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          )
         )}
 
-        {/* Main button */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
+  {/* Main button */}
+  <button
+    ref={btnRef}
+    onClick={() => setIsOpen(!isOpen)}
           disabled={isRolling}
           className={`
             w-16 h-16 rounded-full shadow-xl flex items-center justify-center
@@ -258,7 +309,7 @@ export default function FloatingDice({ onLogRoll = null }) {
             }
             disabled:opacity-50 disabled:cursor-not-allowed
           `}
-        >
+  >
           <Dices size={28} />
         </button>
       </div>

@@ -34,6 +34,10 @@ import { useRoomEvents } from "./hooks/useRoomEvents.js";
 // Constants
 import { ACTION_MODES } from "./constants/gameConstants.js";
 
+// Equipment / class helpers for top-right light indicator
+import { hasEquipment, getEquipment } from "./data/equipment.js";
+import { hasDarkvision } from "./data/classes.js";
+
 // Campaign utilities
 import {
   createCampaign,
@@ -73,6 +77,32 @@ export default function App() {
   React.useEffect(() => {
     setLeftPanelContracted(false);
   }, []);
+  // Compute light source / darkvision summary for header
+  const party = state.party || [];
+  const partyHasEquippedLight = party.some((h) => {
+    if (!h) return false;
+    if (hasEquipment(h, 'lantern')) return true;
+    const eq = h.equipment || [];
+    if (!Array.isArray(eq)) return false;
+    return eq.some((k) => {
+      const item = getEquipment(k);
+      return item && item.lightSource === true;
+    });
+  });
+  const effectiveHasLight = state.hasLightSource || partyHasEquippedLight;
+  const partyLightNames = [];
+  party.forEach((h) => {
+    const eq = h?.equipment || [];
+    if (!Array.isArray(eq)) return;
+    eq.forEach((k) => {
+      const it = getEquipment(k);
+      if (it && it.lightSource && !partyLightNames.includes(it.name)) {
+        partyLightNames.push(it.name);
+      }
+    });
+  });
+  const partyHasDarkvision = party.some(h => h.hp > 0 && hasDarkvision(h.key));
+  const partyLacksDarkvision = party.some(h => h.hp > 0 && !hasDarkvision(h.key));
   // ...existing code...
 
     // Keyboard shortcuts and focus management
@@ -323,6 +353,7 @@ export default function App() {
                 dispatch={dispatch}
                 selectedHero={selectedHero}
                 setSelectedHero={setSelectedHero}
+                handleRollReaction={combatFlow.handleRollReaction}
               />
             )}
             {tab === "analytics" && <Analytics state={state} />}
@@ -447,28 +478,7 @@ export default function App() {
 
             {/* Right Column - Action Pane (col 3) - span both rows so its background remains visible under the LogBar */}
             <div style={{ gridColumn: '3 / 4', gridRow: '1 / 3' }} className="overflow-y-auto p-3 bg-slate-850 min-w-0">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-bold text-slate-400">
-                  {actionMode === ACTION_MODES.COMBAT
-                    ? "Combat"
-                    : actionMode === ACTION_MODES.SPECIAL
-                      ? "Special"
-                      : actionMode === ACTION_MODES.TREASURE
-                        ? "Treasure"
-                        : actionMode === ACTION_MODES.QUEST
-                          ? "Quest"
-                          : actionMode === ACTION_MODES.WEIRD
-                            ? "Weird"
-                            : actionMode === ACTION_MODES.EMPTY
-                              ? "Empty"
-                              : "Actions"}
-                </span>
-                {state.monsters?.length > 0 && (
-                  <span className="text-xs text-red-400">
-                    {state.monsters.filter((m) => m.hp > 0).length} active
-                  </span>
-                )}
-              </div>
+              <div className="mb-2" />
               <ActionPane
                 state={state}
                 dispatch={dispatch}
@@ -493,6 +503,7 @@ export default function App() {
                 setRoomEvents={roomEvents.setRoomEvents}
                 setShowDungeonFeatures={setShowDungeonFeatures}
               />
+              {/* Desktop uses ActionPane for combat UI to avoid duplication */}
               {/* StoryLog moved into the sidebar log tab */}
             </div>
 
@@ -559,8 +570,7 @@ export default function App() {
         onClose={() => setShowAbilities(false)}
       />
 
-      {/* Floating Dice Roller (Desktop) */}
-  <FloatingDice onLogRoll={(text) => dispatch({ type: 'LOG', t: text })} />
+  {/* Floating Dice Roller moved into header */}
     </div>
   );
 }

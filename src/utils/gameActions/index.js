@@ -22,7 +22,7 @@ export {
   rollSurprise,
 } from './monsterActions.js';
 
-// Combat Actions - Attack, defense, saves, fleeing, initiative
+// Combat Actions - Attack, defense, saves, fleeing, withdrawal, initiative
 export {
   calculateAttack,
   calculateEnhancedAttack,
@@ -34,6 +34,8 @@ export {
   useLuckForSave,
   attemptFlee,
   attemptPartyFlee,
+  attemptWithdraw,
+  foeStrikeDuringEscape,
   determineInitiative,
   processMinorFoeAttack,
   processMajorFoeAttack,

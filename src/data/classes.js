@@ -64,6 +64,7 @@ export const CLASSES = {
     life: 5,
     sp: "Gold sense",
     abilities: [],
+    darkvision: true, // Can see in the dark, no darkness penalties
     startingWealth: "4d6",
   },
   elf: {
@@ -73,6 +74,7 @@ export const CLASSES = {
     life: 4,
     sp: "L spells",
     abilities: ["spells"],
+    darkvision: true, // Can see in the dark, no darkness penalties
     startingWealth: "3d6",
   },
   paladin: {
@@ -260,6 +262,16 @@ export const getTier = (level) => {
   if (level >= 5) return 2; // Expert
   if (level >= 3) return 1; // Heroic
   return 0; // Novice
+};
+
+/**
+ * Check if a character class has darkvision
+ * @param {string} classKey - The class key
+ * @returns {boolean} True if the class can see in the dark
+ */
+export const hasDarkvision = (classKey) => {
+  const classData = CLASSES[classKey];
+  return classData?.darkvision === true;
 };
 
 /**

@@ -10,6 +10,7 @@ import {
   loadCampaign,
   saveCampaign,
 } from "../utils/campaignStorage.js";
+import { getEquipment } from "../data/equipment.js";
 
 const STORAGE_KEY = "4ad-state"; // Legacy key for backward compatibility
 const SAVE_DEBOUNCE_MS = 1000;
@@ -54,7 +55,7 @@ const loadState = () => {
     }
 
     // Merge with initialState to ensure new properties exist (migration)
-    return {
+    const merged = {
       ...initialState,
       ...parsed,
       // Ensure nested objects have all required properties
@@ -65,6 +66,24 @@ const loadState = () => {
       campaign: { ...initialState.campaign, ...(parsed.campaign || {}) },
       adventure: { ...initialState.adventure, ...(parsed.adventure || {}) },
     };
+
+    // If the loaded party has no equipped items that are light sources, clear the persisted global light flag
+    try {
+      const anyLightEquipped = (merged.party || []).some((h) => {
+        const eq = h?.equipment || [];
+        if (!Array.isArray(eq)) return false;
+        return eq.some((k) => {
+          const item = getEquipment(k);
+          return item && item.lightSource;
+        });
+      });
+      if (!anyLightEquipped) merged.hasLightSource = false;
+    } catch (e) {
+      // If equipment lookup fails for any reason, default to leaving the flag as-is
+      console.warn('Failed to evaluate equipped light items during load:', e);
+    }
+
+    return merged;
   } catch (e) {
     console.error("Failed to load state:", e);
     // Return initial state if there's any error

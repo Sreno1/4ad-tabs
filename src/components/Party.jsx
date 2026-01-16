@@ -1,3 +1,27 @@
+import { hasEquipment } from '../data/equipment.js';
+
+// Lantern animation component
+function LanternAnimation({ size = 24, className = '' }) {
+  const [frame, setFrame] = React.useState(0);
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setFrame(f => (f + 1) % 38);
+    }, 60);
+    return () => clearInterval(interval);
+  }, []);
+  const pad = n => n.toString().padStart(3, '0');
+  const src = `/assets/lantern/Lantern 6 - Bronze and Orange_${pad(frame)}.png`;
+  return (
+    <img
+      src={src}
+      alt="Lantern"
+      width={size}
+      height={size}
+      className={className + ' inline-block align-middle'}
+      style={{ imageRendering: 'pixelated' }}
+    />
+  );
+}
 import React, { useState, useCallback } from 'react';
 import { Plus, X, Heart, Star, Target } from 'lucide-react';
 import { CLASSES, getMaxHP, getSpellSlots, getLuckPoints } from '../data/classes.js';
@@ -252,7 +276,10 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 className="bg-transparent text-amber-400 font-bold w-24 outline-none"
                 aria-label={`Hero ${i + 1} name`}
               />
-              {/* (drag handle removed - tiles are draggable directly in MarchingOrder) */}
+              {/* Lantern animation if hero has lantern */}
+              {hasEquipment(hero, 'lantern') && (
+                <LanternAnimation size={22} className="ml-1" />
+              )}
             </div>
             <button
               onClick={() => dispatch(deleteHero(i))}

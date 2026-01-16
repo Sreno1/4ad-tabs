@@ -1,0 +1,1015 @@
+{
+  "total": 72,
+  "withCustom": 72,
+  "withDefault": 0,
+  "rows": [
+    {
+      "key": "rats",
+      "name": "Rats",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "flee",
+        "3": "fleeIfOutnumbered",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "skeletonHorde",
+      "name": "Skeleton Horde",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fightToTheDeath",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "swarmOfBats",
+      "name": "Swarm of Bats",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "flee",
+        "3": "ignore",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "zombies",
+      "name": "Zombies",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "vampireBats",
+      "name": "Vampire Bats",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "goblins",
+      "name": "Goblins",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "fleeIfOutnumbered",
+        "3": "bribe",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "orcs",
+      "name": "Orcs",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "fleeIfOutnumbered",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "hobgoblins",
+      "name": "Hobgoblins",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fleeIfOutnumbered",
+        "2": "bribe",
+        "3": "bribe",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "ghouls",
+      "name": "Ghouls",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "trolls",
+      "name": "Trolls",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "bribe",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "fungiFolk",
+      "name": "Fungi Folk",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "peaceful",
+        "2": "ignore",
+        "3": "tradeInformation",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "ogreGuard",
+      "name": "Ogre Guard",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "medusa",
+      "name": "Medusa",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "puzzle",
+        "2": "magicChallenge",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "ettin",
+      "name": "Ettin",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "trialOfChampions",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "smallDragon",
+      "name": "Small Dragon",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "puzzle",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "vampireLord",
+      "name": "Vampire Lord",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bloodOffering",
+        "2": "capture",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "catacombLich",
+      "name": "Catacomb Lich",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "magicChallenge",
+        "2": "quest",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "greaterDemon",
+      "name": "Greater Demon",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bloodOffering",
+        "2": "quest",
+        "3": "fight",
+        "4": "fight",
+        "5": "fightToTheDeath",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "wanderingSwordsman",
+      "name": "Wandering Swordsman",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "offerFoodAndRest",
+        "2": "tradeInformation",
+        "3": "trialOfChampions",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "gargoyle",
+      "name": "Gargoyle",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "puzzle",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "carrionCrawler",
+      "name": "Carrion Crawler",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "wraithKing",
+      "name": "Wraith King",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "quest",
+        "2": "magicChallenge",
+        "3": "fight",
+        "4": "fight",
+        "5": "fightToTheDeath",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "manticor",
+      "name": "Manticor",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "puzzle",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "mimicChest",
+      "name": "Mimic Chest",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "caveRats",
+      "name": "Cave Rats",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "flee",
+        "3": "fleeIfOutnumbered",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "giantCentipedes",
+      "name": "Giant Centipedes",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "giantSpiders",
+      "name": "Giant Spiders",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "caveLocusts",
+      "name": "Cave Locusts",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "flee",
+        "3": "ignore",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "piercers",
+      "name": "Piercers",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "stirges",
+      "name": "Stirges",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "giantLizards",
+      "name": "Giant Lizards",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "troglodytes",
+      "name": "Troglodytes",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fleeIfOutnumbered",
+        "2": "bribe",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "caveOrcs",
+      "name": "Cave Orcs",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "fleeIfOutnumbered",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "darkElves",
+      "name": "Dark Elves",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "tradeInformation",
+        "2": "magicChallenge",
+        "3": "capture",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "caveGoblins",
+      "name": "Cave Goblins",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "fleeIfOutnumbered",
+        "3": "bribe",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "deepDwarves",
+      "name": "Deep Dwarves",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "tradeInformation",
+        "2": "bribe",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "caveOgre",
+      "name": "Cave Ogre",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "trialOfChampions",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "basilisk",
+      "name": "Basilisk",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "giantSlug",
+      "name": "Giant Slug",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "umberhulk",
+      "name": "Umber Hulk",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "caveDragon",
+      "name": "Cave Dragon",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "puzzle",
+        "3": "fight",
+        "4": "fight",
+        "5": "fightToTheDeath",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "purpleWorm",
+      "name": "Purple Worm",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "carrionCrawlerCave",
+      "name": "Carrion Crawler",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "rustMonster",
+      "name": "Rust Monster",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "gelatinousCube",
+      "name": "Gelatinous Cube",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "roper",
+      "name": "Roper",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "cloaker",
+      "name": "Cloaker",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "hookHorror",
+      "name": "Hook Horror",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fleeIfOutnumbered",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "giantFireBeetles",
+      "name": "Giant Fire Beetles",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "fungusBats",
+      "name": "Fungus Bats",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "flee",
+        "3": "ignore",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "shrieker",
+      "name": "Shrieker",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "ignore",
+        "3": "ignore",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "yellowMold",
+      "name": "Yellow Mold",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "sporeFolk",
+      "name": "Spore Folk",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "peaceful",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "fungusGnats",
+      "name": "Fungus Gnats",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "myconids",
+      "name": "Myconids",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "peaceful",
+        "2": "tradeInformation",
+        "3": "ignore",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "moldMen",
+      "name": "Mold Men",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "fungusTrolls",
+      "name": "Fungus Trolls",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "sporeZombies",
+      "name": "Spore Zombies",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "fungalGoblins",
+      "name": "Fungal Goblins",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "fleeIfOutnumbered",
+        "3": "bribe",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "giantSlugs",
+      "name": "Giant Slugs",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "giantMushroom",
+      "name": "Giant Mushroom",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "fungalTyrant",
+      "name": "Fungal Tyrant",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "quest",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fightToTheDeath",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "myconidSovereign",
+      "name": "Myconid Sovereign",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "peaceful",
+        "2": "tradeInformation",
+        "3": "quest",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "moldDragon",
+      "name": "Mold Dragon",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "bribe",
+        "2": "puzzle",
+        "3": "fight",
+        "4": "fight",
+        "5": "fightToTheDeath",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "sporeMother",
+      "name": "Spore Mother",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "peaceful",
+        "2": "quest",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "cordycepsHorror",
+      "name": "Cordyceps Horror",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fightToTheDeath",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "gasBag",
+      "name": "Gas Bag",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "flee",
+        "2": "ignore",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "violetFungus",
+      "name": "Violet Fungus",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "phantomFungus",
+      "name": "Phantom Fungus",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fight"
+      }
+    },
+    {
+      "key": "sporeWight",
+      "name": "Spore Wight",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "fight",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "moldElemental",
+      "name": "Mold Elemental",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "magicChallenge",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    },
+    {
+      "key": "myceliumColony",
+      "name": "Mycelium Colony",
+      "hasTable": true,
+      "sameAsDefault": false,
+      "table": {
+        "1": "ignore",
+        "2": "fight",
+        "3": "fight",
+        "4": "fight",
+        "5": "fight",
+        "6": "fightToTheDeath"
+      }
+    }
+  ]
+}

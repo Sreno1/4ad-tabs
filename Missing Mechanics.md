@@ -1,41 +1,76 @@
+  campaign save system broken
+  
   Missing Combat Mechanics
-
-  - ❌ Spell targeting (single vs AoE vs Minor Foe groups)
-  - ❌ Marching Order in combat (corridor restrictions)
-  - ❌ Withdraw vs Flee distinction
-  - ❌ Morale checks (50% triggers d6 roll)
-  - ❌ Major Foe level reduction at half HP
-  - ❌ Surprise system (X-in-6 chance)
-  - ❌ Ranged attacks striking first
-  - ❌ Reaction-based initiative
-  - ❌ Monster treasure tables by type
-  - ❌ Quest table
-  - ❌ Epic rewards table
-  - ❌ Corridor vs Room combat restrictions
-  - ❌ Narrow corridor rules (-1 two-handed, no penalty light)
+   
+    - ❌ ADD CORRECT REACTIONS FOR EACH MONSTER
+    - ❌ Spell targeting (single vs AoE vs Minor Foe groups)
+      Status: Not implemented. Next: Add targeting logic to combat reducer and UI.
+    - ❌ Marching Order in combat (corridor restrictions)
+      Status: Not implemented. Next: Add marching order state and restrict actions in corridor.
+    - Withdraw vs Flee distinction
+      Status: Implemented
+    - Morale checks (50% triggers d6 roll)
+      Status: Implemented.
+    - Major Foe level reduction at half HP
+      Status: Implemented
+    - ❌ Surprise system (X-in-6 chance)
+      Status: Not implemented. Next: Add surprise roll to encounter generator.
+    - ❌ Ranged attacks striking first
+      Status: Not implemented. Next: Add initiative phase for ranged attacks.
+    - ❌ Reaction-based initiative
+      Status: Not implemented. Next: Add reaction stat and initiative order to combat reducer.
+    - ❌ Monster treasure tables by type
+      Status: Not implemented. Next: Add monster type lookup and treasure assignment.
+    - ❌ Quest table
+      Status: Not implemented. Next: Add quest data and random assignment on dungeon entry.
+    - ❌ Epic rewards table
+      Status: Not implemented. Next: Add epic reward data and trigger logic.
+    - ❌ Corridor vs Room combat restrictions
+      Status: Not implemented. Next: Add location context to combat reducer and restrict actions.
+    - ❌ Narrow corridor rules (-1 two-handed, no penalty light)
+      Status: Not implemented. Next: Add weapon penalty logic based on location.
 
   Party Management Gaps
 
-  - ❌ Equipment bonuses applied to rolls
-  - ❌ Character traits application after selected
-  - ❌ Dwarf Gold Sense ability
-  - ❌ Stealth modifiers per class
-  - ❌ Rogue Outnumbered bonus mechanics
+    - ❌ Rogue Outnumbered bonus mechanics
+      Status: Not implemented. Next: Add bonus logic to rogue combat actions.
+    - ❌ XP Rolls
+      Status: Not implemented.
+    - ❌ Equipment bonuses applied to rolls
+      Status: Not implemented. Next: Add equipment stat modifiers to roll logic.
+    - ❌ Character traits application after selected
+      Status: Not implemented. Next: Apply trait effects to character stats and rolls.
+    - ❌ Dwarf Gold Sense ability
+      Status: Not implemented. Next: Add ability trigger and gold detection logic.
+    - ❌ Stealth modifiers per class
+      Status: Not implemented. Next: Add class-based stealth modifiers to encounter rolls.
 
   Dungeon Exploration Gaps
 
-  - ❌ Corridor vs Room distinction affecting combat
-  - ❌ Narrow corridor rules
-  - ❌ Secret door discovery (1-in-6 shortcut out)
-  - ❌ Secret passage to different environment
-  - ❌ Hidden treasure complications (alarm, trap, ghost)
-  - ❌ Retracing steps wandering monster chance (1-in-6)
-  - ❌ Final Boss trigger needs testing (roll 6+ on d6 + major foes)
+    - ❌ Corridor vs Room distinction affecting combat
+      Status: Not implemented. Next: Track location type and apply combat rules.
+    - ❌ Narrow corridor rules
+      Status: Not implemented. Next: Add corridor width state and restrict actions.
+    - ❌ Secret door discovery (1-in-6 shortcut out)
+      Status: Not implemented. Next: Add secret door roll and shortcut logic.
+    - ❌ Secret passage to different environment
+      Status: Not implemented. Next: Add passage event and environment change logic.
+    - ❌ Hidden treasure complications (alarm, trap, ghost)
+      Status: Not implemented. Next: Add complication roll and event triggers.
+    - ❌ Retracing steps wandering monster chance (1-in-6)
+      Status: Not implemented. Next: Add retrace event and monster roll.
+    - ❌ Final Boss trigger needs testing (roll 6+ on d6 + major foes)
+      Status: Not implemented. Next: Add boss trigger logic and test flow.
 
   Resource Tracking Gaps
 
-  - ❌ Food Rations (survival in wilderness)
-  - ❌ Torches/Lanterns (darkness penalties)
-  - ❌ Bandages (1 per PC per adventure)
-  - ❌ Carried treasure weight (200gp max per PC)
-  - ❌ Weapon/shield counts (3 weapons, 2 shields max)
+    - ❌ Food Rations (survival in wilderness)
+      Status: Not implemented. Next: Add ration tracking and survival checks.
+    - Torches/Lanterns
+      Status: Implemented.
+    - ❌ Bandages (1 per PC per adventure)
+      Status: Not implemented. Next: Add bandage item and healing logic.
+    - ❌ Carried treasure weight (200gp max per PC)
+      Status: Not implemented. Next: Add weight tracking and enforce limits.
+    - ❌ Weapon/shield counts (3 weapons, 2 shields max)
+      Status: Not implemented. Next: Add inventory limits and validation.

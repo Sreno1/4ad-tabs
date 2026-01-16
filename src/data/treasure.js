@@ -2,12 +2,14 @@
  * Treasure and equipment tables for Four Against Darkness
  */
 
+import { generateTreasureScroll } from './scrolls.js';
+
 // Treasure Table (d6)
 export const TREASURE_TABLE = [
   '', // 0 - unused
   'Gold (d6)',
   'Gold (2d6)',
-  'Magic Item',
+  'Magic Item or Scroll',
   'Potion',
   'Clue',
   'Trap!'
@@ -76,3 +78,21 @@ export const createEquipment = (name, slot, stats = {}) => ({
   slot,
   ...stats
 });
+
+/**
+ * Generate a random magic item or scroll
+ * 50% chance for magic item, 50% chance for scroll
+ * @returns {string} Item key
+ */
+export const generateMagicItemOrScroll = () => {
+  const roll = Math.floor(Math.random() * 2) + 1; // 1 or 2
+
+  if (roll === 1) {
+    // Return a random magic item
+    const items = ['amulet', 'talisman', 'potion_strength', 'ring_protection'];
+    return items[Math.floor(Math.random() * items.length)];
+  } else {
+    // Return a random scroll
+    return generateTreasureScroll();
+  }
+};

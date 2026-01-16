@@ -1,11 +1,42 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { updateMonster } from '../../state/actionCreators.js';
+import { attemptPartyFlee, attemptWithdraw } from '../../utils/gameActions/index.js';
 
 const ActiveMonsters = memo(function ActiveMonsters({ activeMonsters, state, dispatch, corridor }) {
+  const handleFlee = useCallback(() => {
+    const highestLevel = Math.max(...state.monsters.map(m => m.level), 1);
+    attemptPartyFlee(dispatch, state.party, state.monsters, highestLevel);
+  }, [state.monsters, state.party, dispatch]);
+
+  const handleWithdraw = useCallback(() => {
+    attemptWithdraw(dispatch, state.party, state.monsters, state.doors);
+  }, [state.monsters, state.party, state.doors, dispatch]);
+
   return (
     <div className="bg-slate-800 rounded p-2">
-      <div className="text-sm font-bold text-red-400 mb-2">
+      <div className="flex justify-between items-center mb-2">
+        <div className="text-sm font-bold text-red-400">
   Active Foes {corridor && <span className="text-yellow-400 text-xs ml-1">(Corridor)</span>}
+        </div>
+        {state.monsters && state.monsters.length > 0 && (
+          <div className="flex gap-1">
+            <button
+              onClick={handleWithdraw}
+              className="bg-green-600 hover:bg-green-500 px-2 py-0.5 rounded text-xs"
+              title="Withdraw through a door. Foes strike once (+1 Defense). Monsters remain in tile."
+              disabled={!state.doors || state.doors.length === 0}
+            >
+              Withdraw
+            </button>
+            <button
+              onClick={handleFlee}
+              className="bg-yellow-600 hover:bg-yellow-500 px-2 py-0.5 rounded text-xs"
+              title="Flee combat. Each hero rolls to escape. Foes strike once if escape fails."
+            >
+              Flee
+            </button>
+          </div>
+        )}
       </div>
       <div className="space-y-1">
         {activeMonsters.map((monster) => {
@@ -21,7 +52,6 @@ const ActiveMonsters = memo(function ActiveMonsters({ activeMonsters, state, dis
                     <span className="text-red-400"></span>
                   )}
                   <span className="font-bold text-amber-400">{monster.name}</span>
-                  <span className="text-slate-400">L{monster.level}</span>
                 </div>
                 {isMinor ? (
                   <div className="flex items-center gap-1">

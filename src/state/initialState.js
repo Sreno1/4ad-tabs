@@ -67,7 +67,10 @@ export const createHero = (classKey, classData, name = null) => ({
     hideInShadowsUsed: 0,  // Assassin: unlimited but one at a time
     mountSummoned: false   // Paladin: can summon once per day
   },
-  
+
+  // Learned spells from scrolls (wizards only, persists between adventures in campaign)
+  learnedSpells: [], // Array of spell keys copied from scrolls
+
   // Status effects
   status: {
     poisoned: false,
@@ -172,7 +175,10 @@ export const initialState = {
   currentRoom: null, // {type, subtype, resolved}
   currentTrap: null, // {type, detected}
   currentDoor: null, // {type, opened}
-  
+
+  // Light source tracking
+  hasLightSource: false, // Whether party currently has light (torch, lantern, etc.)
+
   // UI state
   activeTab: 'party',
   // Narrative/story beats stored at top-level for quick access

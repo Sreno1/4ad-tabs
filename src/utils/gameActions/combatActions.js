@@ -8,7 +8,7 @@ import {
   getSaveModifier,
   rollSave,
 } from "../../data/saves.js";
-import { getTier } from "../../data/classes.js";
+import { getTier, hasDarkvision } from "../../data/classes.js";
 import {
   checkMinorFoeMorale,
   checkMajorFoeLevelReduction,
@@ -54,13 +54,19 @@ export const calculateAttack = (hero, foeLevel) => {
  * Calculate enhanced attack with exploding dice (for Major Foes)
  * @param {object} hero - Hero object
  * @param {number} foeLevel - Target foe level
- * @param {object} options - Combat options (dualWielding, blessed, rage, etc.)
+ * @param {object} options - Combat options (dualWielding, blessed, rage, hasLightSource, etc.)
  * @returns {object} Attack result
  */
 export const calculateEnhancedAttack = (hero, foeLevel, options = {}) => {
   const { total, rolls, exploded } = explodingD6();
   let mod = 0;
   const modifiers = [];
+
+  // Darkness penalty (-2 if no light and character lacks darkvision)
+  if (options.hasLightSource === false && !hasDarkvision(hero.key)) {
+    mod -= 2;
+    modifiers.push("-2 (darkness)");
+  }
 
   // Class-specific attack bonuses
   if (["warrior", "barbarian", "paladin", "assassin"].includes(hero.key)) {
@@ -220,13 +226,19 @@ export const calculateMinorFoeKills = (attackTotal, foeLevel, foeCount) => {
  * Attack Minor Foe with multi-kill calculation
  * @param {object} hero - Attacking hero
  * @param {object} foe - Minor foe group
- * @param {object} options - Combat options
+ * @param {object} options - Combat options (hasLightSource, etc.)
  * @returns {object} Attack result
  */
 export const attackMinorFoe = (hero, foe, options = {}) => {
   const { total, rolls, exploded } = explodingD6();
   let mod = 0;
   const modifiers = [];
+
+  // Darkness penalty (-2 if no light and character lacks darkvision)
+  if (options.hasLightSource === false && !hasDarkvision(hero.key)) {
+    mod -= 2;
+    modifiers.push("-2 (darkness)");
+  }
 
   // Class-specific attack bonuses
   if (["warrior", "barbarian", "paladin", "assassin"].includes(hero.key)) {
@@ -361,13 +373,19 @@ export const attackMinorFoe = (hero, foe, options = {}) => {
  * Calculate defense result
  * @param {object} hero - Hero object
  * @param {number} foeLevel - Attacking foe level
- * @param {object} options - Additional options (largeEnemy, parry, etc.)
+ * @param {object} options - Additional options (largeEnemy, parry, hasLightSource, etc.)
  * @returns {object} Defense result
  */
 export const calculateDefense = (hero, foeLevel, options = {}) => {
   const roll = d6();
   let mod = 0;
   const modifiers = [];
+
+  // Darkness penalty (-2 if no light and character lacks darkvision)
+  if (options.hasLightSource === false && !hasDarkvision(hero.key)) {
+    mod -= 2;
+    modifiers.push("-2 (darkness)");
+  }
 
   // Class-specific defense bonuses
   if (hero.key === "rogue") {
@@ -446,6 +464,7 @@ export const calculateDefense = (hero, foeLevel, options = {}) => {
  * @param {object} hero - Hero taking damage
  * @param {number} heroIdx - Hero index in party
  * @param {string} damageSource - Source of damage (trap type, monster type)
+ * @param {object} options - Additional options (hasLightSource, etc.)
  * @returns {object} Save result
  */
 export const performSaveRoll = (
@@ -453,18 +472,25 @@ export const performSaveRoll = (
   hero,
   heroIdx,
   damageSource = "default",
+  options = {},
 ) => {
   const threshold = getSaveThreshold(damageSource);
   const { bonus, reasons } = getSaveModifier(hero);
 
   // Equipment bonuses
   const equipBonus = calculateEquipmentBonuses(hero);
-  const totalBonus = bonus + equipBonus.saveMod;
+  let totalBonus = bonus + equipBonus.saveMod;
   const allReasons = [...reasons];
   if (equipBonus.saveMod !== 0) {
     allReasons.push(
       `${equipBonus.saveMod >= 0 ? "+" : ""}${equipBonus.saveMod} equip`,
     );
+  }
+
+  // Darkness penalty (-2 if no light and character lacks darkvision)
+  if (options.hasLightSource === false && !hasDarkvision(hero.key)) {
+    totalBonus -= 2;
+    allReasons.push("-2 (darkness)");
   }
 
   const result = rollSave(threshold, totalBonus);
@@ -505,6 +531,7 @@ export const performSaveRoll = (
  * @param {object} targetHero - Hero who needs re-roll
  * @param {number} targetIdx - Target hero's index
  * @param {string} damageSource - Original damage source
+ * @param {object} options - Additional options (hasLightSource, etc.)
  * @returns {object} New save result
  */
 export const useBlessingForSave = (
@@ -513,11 +540,12 @@ export const useBlessingForSave = (
   targetHero,
   targetIdx,
   damageSource = "default",
+  options = {},
 ) => {
   dispatch({ type: "USE_BLESS", heroIdx });
   dispatch({ type: "LOG", t: `🙏 Cleric uses Blessing to grant a re-roll!` });
 
-  return performSaveRoll(dispatch, targetHero, targetIdx, damageSource);
+  return performSaveRoll(dispatch, targetHero, targetIdx, damageSource, options);
 };
 
 /**
@@ -526,6 +554,7 @@ export const useBlessingForSave = (
  * @param {number} heroIdx - Halfling's index
  * @param {object} hero - Halfling hero
  * @param {string} damageSource - Original damage source
+ * @param {object} options - Additional options (hasLightSource, etc.)
  * @returns {object} New save result
  */
 export const useLuckForSave = (
@@ -533,11 +562,12 @@ export const useLuckForSave = (
   heroIdx,
   hero,
   damageSource = "default",
+  options = {},
 ) => {
   dispatch({ type: "USE_LUCK", heroIdx });
   dispatch({ type: "LOG", t: `🍀 Halfling uses Luck to re-roll!` });
 
-  return performSaveRoll(dispatch, hero, heroIdx, damageSource);
+  return performSaveRoll(dispatch, hero, heroIdx, damageSource, options);
 };
 
 /**
@@ -577,13 +607,87 @@ export const attemptFlee = (dispatch, hero, heroIdx, monsterLevel) => {
 };
 
 /**
- * Attempt party flee (all must succeed)
+ * Foes strike heroes during escape (Flee or Withdraw)
+ * Each foe gets one attack as party retreats
  * @param {function} dispatch - Reducer dispatch function
  * @param {array} party - Party array
+ * @param {array} monsters - Monster array
+ * @param {boolean} isWithdraw - True if withdrawing (PCs get +1 Defense)
+ * @returns {object} Strike results
+ */
+export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = false) => {
+  if (!monsters || monsters.length === 0) return { totalDamage: 0, hitCount: 0 };
+
+  dispatch({
+    type: "LOG",
+    t: isWithdraw
+      ? `⚔️ Foes strike as party withdraws! (PCs get +1 Defense)`
+      : `⚔️ Foes strike as party flees!`,
+  });
+
+  let totalDamage = 0;
+  let hitCount = 0;
+  const aliveHeroes = party.filter((h) => h.hp > 0);
+
+  if (aliveHeroes.length === 0) return { totalDamage: 0, hitCount: 0 };
+
+  // Each monster gets ONE attack
+  monsters.forEach((monster) => {
+    // Determine target (random alive hero)
+    const targetIdx = Math.floor(Math.random() * aliveHeroes.length);
+    const target = aliveHeroes[targetIdx];
+
+    // Roll d6 for monster attack
+    const roll = d6();
+    const targetDefense = isWithdraw ? target.lvl + 1 : target.lvl; // +1 Defense when withdrawing
+    const defenseMod = isWithdraw ? 1 : 0;
+
+    // Monster hits if roll + monster level > target defense
+    const monsterAttack = roll + monster.level;
+    const hits = monsterAttack > targetDefense;
+
+    if (hits) {
+      totalDamage += 1;
+      hitCount += 1;
+      dispatch({
+        type: "LOG",
+        t: `❌ ${monster.name} hits ${target.name}! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense})`,
+      });
+
+      // Apply damage
+      const partyIdx = party.indexOf(target);
+      if (partyIdx >= 0) {
+        dispatch({
+          type: "UPD_HERO",
+          i: partyIdx,
+          u: { hp: Math.max(0, target.hp - 1) },
+        });
+
+        if (target.hp - 1 <= 0) {
+          dispatch({ type: "LOG", t: `💀 ${target.name} is defeated!` });
+        }
+      }
+    } else {
+      dispatch({
+        type: "LOG",
+        t: `✅ ${target.name} avoids ${monster.name}'s attack! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense}${defenseMod > 0 ? '+1' : ''})`,
+      });
+    }
+  });
+
+  return { totalDamage, hitCount, foeAttacksCount: monsters.length };
+};
+
+/**
+ * Attempt party flee (all must succeed)
+ * During flee, foes also get to strike once
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {array} party - Party array
+ * @param {array} monsters - Monster array
  * @param {number} monsterLevel - Highest monster level
  * @returns {object} Party flee result
  */
-export const attemptPartyFlee = (dispatch, party, monsterLevel) => {
+export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel) => {
   dispatch({ type: "LOG", t: `🏃 Party attempts to flee!` });
 
   const results = party
@@ -594,16 +698,70 @@ export const attemptPartyFlee = (dispatch, party, monsterLevel) => {
   const failedCount = results.filter((r) => !r.success).length;
 
   if (allEscaped) {
+    // Foes strike once during escape
+    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false);
     dispatch({ type: "LOG", t: `✅ Party escapes successfully!` });
     dispatch({ type: "CLEAR_MONSTERS" });
+    return { allEscaped, results, failedCount, strikeResult };
+  } else {
+    // Foes strike once during failed escape attempt
+    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false);
+    dispatch({
+      type: "LOG",
+      t: `❌ ${failedCount} hero(es) failed to escape and combat continues!`,
+    });
+    return { allEscaped, results, failedCount, strikeResult };
+  }
+};
+
+/**
+ * Attempt party withdraw
+ * Requirements: Door must exist to slam shut behind party
+ * Effects: Foes strike once (+1 Defense for PCs), party retreats, 1-in-6 Wandering Monsters
+ * @param {function} dispatch - Reducer dispatch function
+ * @param {array} party - Party array
+ * @param {array} monsters - Monster array
+ * @param {array} doors - Door array (check if any door at current location)
+ * @returns {object} Withdraw result
+ */
+export const attemptWithdraw = (dispatch, party, monsters, doors) => {
+  dispatch({ type: "LOG", t: `🚪 Party attempts to withdraw!` });
+
+  // Check if there's at least one door to slam shut
+  if (!doors || doors.length === 0) {
+    dispatch({
+      type: "LOG",
+      t: `❌ Cannot withdraw! No door to slam shut behind the party.`,
+    });
+    return { success: false, reason: "No door available" };
+  }
+
+  // Foes strike once as party retreats (with +1 Defense)
+  const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, true);
+
+  // Withdrawal succeeds - clear monsters and leave them in the tile
+  dispatch({
+    type: "LOG",
+    t: `✅ Party successfully withdraws and slams the door! Foes remain in this tile.`,
+  });
+
+  // Roll for Wandering Monsters (1-in-6)
+  const wanderingRoll = d6();
+  if (wanderingRoll === 1) {
+    dispatch({
+      type: "LOG",
+      t: `⚠️ Party encounters a Wandering Monster during retreat! (rolled ${wanderingRoll})`,
+    });
+    // Actual wandering monster spawning handled by caller
+    return { success: true, wanderingMonster: true, strikeResult };
   } else {
     dispatch({
       type: "LOG",
-      t: `❌ ${failedCount} hero(es) failed to escape!`,
+      t: `✅ Party retreats safely! (wandering check: ${wanderingRoll}, no encounter)`,
     });
+    dispatch({ type: "CLEAR_MONSTERS" });
+    return { success: true, wanderingMonster: false, strikeResult };
   }
-
-  return { allEscaped, results, failedCount };
 };
 
 /**

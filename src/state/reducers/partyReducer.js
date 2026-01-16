@@ -2,6 +2,7 @@
  * Party Reducer - Handles hero management, stats, and party composition
  */
 import * as A from '../actions.js';
+import { getEquipment } from '../../data/equipment.js';
 
 /**
  * Calculate HCL from party
@@ -37,11 +38,17 @@ export function partyReducer(state, action) {
       // Clean up abilities for removed hero
       const newAbilities = { ...state.abilities };
       delete newAbilities[action.i];
+      // After removing a hero, ensure the global hasLightSource flag reflects any remaining equipped light sources
+      const anyLightEquipped = newParty.some(h => (h.equipment || []).some(k => {
+        const it = getEquipment(k);
+        return it && it.lightSource;
+      }));
       return {
         ...state,
         party: newParty,
         abilities: newAbilities,
-        hcl: calculateHCL(newParty)
+        hcl: calculateHCL(newParty),
+        hasLightSource: !!anyLightEquipped
       };
     }
 
@@ -49,10 +56,18 @@ export function partyReducer(state, action) {
       const newParty = state.party.map((h, i) =>
         i === action.i ? { ...h, ...action.u } : h
       );
+      // After updating a hero (hp/equipment may have changed), recompute whether
+      // any alive hero still has an equipped light source so the global flag
+      // remains accurate (this makes lights disappear if the carrier dies).
+      const anyLightEquipped = newParty.some(h => (h?.hp > 0) && ((h.equipment || []).some(k => {
+        const it = getEquipment(k);
+        return it && it.lightSource;
+      })));
       return {
         ...state,
         party: newParty,
-        hcl: calculateHCL(newParty)
+        hcl: calculateHCL(newParty),
+        hasLightSource: !!anyLightEquipped
       };
     }
 
@@ -116,6 +131,11 @@ export function partyReducer(state, action) {
           equipment: [...equipment, action.itemKey]
         };
       });
+      // If the equipped item is a light source, enable global light flag
+      const equippedItem = getEquipment(action.itemKey);
+      if (equippedItem && equippedItem.lightSource) {
+        return { ...state, party: newParty, hasLightSource: true };
+      }
       return { ...state, party: newParty };
     }
 
@@ -127,7 +147,12 @@ export function partyReducer(state, action) {
           equipment: (h.equipment || []).filter(key => key !== action.itemKey)
         };
       });
-      return { ...state, party: newParty };
+      // After unequipping, if no hero has any equipped light source, clear global flag
+      const anyLightEquipped = newParty.some(h => (h.equipment || []).some(k => {
+        const it = getEquipment(k);
+        return it && it.lightSource;
+      }));
+      return { ...state, party: newParty, hasLightSource: !!anyLightEquipped };
     }
 
     case A.ADD_TO_INVENTORY: {
@@ -147,6 +172,21 @@ export function partyReducer(state, action) {
         return {
           ...h,
           inventory: (h.inventory || []).filter((_, idx) => idx !== action.itemIdx)
+        };
+      });
+      return { ...state, party: newParty };
+    }
+
+    // ========== Scrolls & Learned Spells ==========
+    case A.ADD_LEARNED_SPELL: {
+      const newParty = state.party.map((h, i) => {
+        if (i !== action.heroIdx) return h;
+        // Only add if not already learned
+        const learnedSpells = h.learnedSpells || [];
+        if (learnedSpells.includes(action.spellKey)) return h;
+        return {
+          ...h,
+          learnedSpells: [...learnedSpells, action.spellKey]
         };
       });
       return { ...state, party: newParty };

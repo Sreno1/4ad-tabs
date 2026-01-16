@@ -350,7 +350,7 @@ export const MONSTER_TABLE = {
   orcs: { name: 'Orcs', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
     reactionTable: { 1: 'bribe', 2: 'fleeIfOutnumbered', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
   hobgoblins: { name: 'Hobgoblins', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
-    reactionTable: { 1: 'bribe', 2: 'trialOfChampions', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
+    reactionTable: { 1: 'fleeIfOutnumbered', 2: 'bribe', 3: 'bribe', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
   ghouls: { name: 'Ghouls', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: ['undead', 'paralysis'], xp: 2,
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
   trolls: { name: 'Trolls', category: 'dungeonMinions', tier: 2, levelMod: 1, count: 'd6-2', special: ['regenerate'], xp: 3,
@@ -592,8 +592,8 @@ export const MONSTER_TEMPLATES = {
   boss: { name: 'Boss', level: 0, baseHP: 10, special: 'boss', xp: 10 },
   
   // Wandering monsters by level
-  goblin: { name: 'Goblin', level: 1, baseHP: 2, special: null, xp: 1 },
-  orc: { name: 'Orc', level: 2, baseHP: 4, special: null, xp: 2 },
+  goblin: { name: 'Goblin', level: 1, baseHP: 2, special: null, xp: 1, moraleMod: -1 }, // Cowardly
+  orc: { name: 'Orc', level: 2, baseHP: 4, special: null, xp: 2, moraleMod: +1 }, // Courageous
   troll: { name: 'Troll', level: 3, baseHP: 6, special: 'regenerate', xp: 4 },
   ogre: { name: 'Ogre', level: 4, baseHP: 8, special: null, xp: 5 },
   dragon: { name: 'Dragon', level: 5, baseHP: 12, special: 'breath', xp: 10 },
@@ -666,6 +666,7 @@ export const createMonster = (type, level = null) => {
       type,
       special: template.special,
       xp: template.xp || effectiveLevel,
+      moraleMod: template.moraleMod || 0, // Morale modifier (e.g., -1 for cowardly, +1 for courageous)
       reaction: null, // Set when first encountered
       statuses: [], // Active status effects (sleeping, etc.)
       isMinorFoe: true
@@ -684,6 +685,7 @@ export const createMonster = (type, level = null) => {
     type,
     special: template.special,
     xp: template.xp || effectiveLevel,
+    moraleMod: template.moraleMod || 0, // Morale modifier (e.g., -1 for cowardly, +1 for courageous)
     reaction: null, // Set when first encountered
     statuses: [] // Active status effects (sleeping, etc.)
   };

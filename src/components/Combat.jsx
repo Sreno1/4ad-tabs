@@ -1,7 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { d6 } from '../utils/dice.js';
 import {
-  rollWanderingMonster,
   calculateAttack,
   calculateDefense,
   calculateEnhancedAttack,
@@ -13,6 +12,7 @@ import {
   useBarbarianRage,
   useHalflingLuck,
   attemptPartyFlee,
+  attemptWithdraw,
   awardXP,
   checkLevelUp,
   processMonsterRoundStart,
@@ -36,9 +36,10 @@ import {
 } from "../utils/gameActions/index.js";
 import { isLifeThreatening, getRerollOptions } from '../data/saves.js';
 import { getAvailableSpells, SPELLS, getSpellSlots } from '../data/spells.js';
-import { MONSTER_ABILITIES, getAllMonsters, createMonsterFromTable, MONSTER_CATEGORIES, rollMonsterReaction, REACTION_TYPES } from '../data/monsters.js';
+import { MONSTER_ABILITIES, rollMonsterReaction, REACTION_TYPES } from '../data/monsters.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
-import { getPrayerPoints, getTrickPoints, getMaxPanache, getFlurryAttacks } from '../data/classes.js';
+import { getPrayerPoints, getTrickPoints, getMaxPanache, getFlurryAttacks, hasDarkvision } from '../data/classes.js';
+import { hasEquipment, getEquipment } from '../data/equipment.js';
 import { InitiativePhase, VictoryPhase, MonsterReaction } from './combat/index.js';
 import { selectParty, selectHero } from '../state/selectors.js';
 import {
@@ -50,19 +51,47 @@ import {
   deleteMonster
 } from '../state/actionCreators.js';
 
-export default function Combat({ state, dispatch, selectedHero, setSelectedHero }) {
-  const [foeLevel, setFoeLevel] = useState(4);
+export default function Combat({ state, dispatch, selectedHero, setSelectedHero, handleRollReaction }) {
+  // Per-monster levels are used. Global foeLevel removed in favor of each monster.level.
   const [combatLog, setCombatLog] = useState([]);
   const [pendingSave, setPendingSave] = useState(null); // { heroIdx, damageSource }
   const [showSpells, setShowSpells] = useState(null); // heroIdx or null
   const [showAbilities, setShowAbilities] = useState(null); // heroIdx or null
-  const [selectedMonster, setSelectedMonster] = useState(''); // key for monster table dropdown
   const [combatInitiative, setCombatInitiative] = useState(null); // Initiative info for current combat
+  const [roundStartsWith, setRoundStartsWith] = useState('attack'); // 'attack' | 'defend'
+  const [showCombatModule, setShowCombatModule] = useState(false); // hide both until player/initiative decides
   const [targetMonsterIdx, setTargetMonsterIdx] = useState(null); // Selected target monster
   
   const party = selectParty(state);
   const activeHero = selectHero(state, selectedHero) || null;
-  const monsterList = getAllMonsters(); // Get all monsters for dropdown
+  
+
+  // Compute if any party member is carrying an equipped light source (lantern/torch)
+  const partyHasEquippedLight = party.some((h) => {
+    if (!h) return false;
+    // Quick check for lantern key
+    if (hasEquipment(h, 'lantern')) return true;
+    const eq = h.equipment || [];
+    if (!Array.isArray(eq)) return false;
+    return eq.some((k) => {
+      const item = getEquipment(k);
+      return item && item.lightSource === true;
+    });
+  });
+
+  const effectiveHasLight = state.hasLightSource || partyHasEquippedLight;
+  // Gather names of equipped light items (unique)
+  const partyLightNames = [];
+  party.forEach((h) => {
+    const eq = h?.equipment || [];
+    if (!Array.isArray(eq)) return;
+    eq.forEach((k) => {
+      const it = getEquipment(k);
+      if (it && it.lightSource && !partyLightNames.includes(it.name)) {
+        partyLightNames.push(it.name);
+      }
+    });
+  });
 
   const addToCombatLog = useCallback((message) => {
     setCombatLog(prev => [message, ...prev].slice(0, 20));
@@ -116,23 +145,30 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
   const handleAttack = useCallback((heroIndex) => {
     const hero = state.party[heroIndex];
     if (!hero || hero.hp <= 0) return;
-    
+
+    // If player manually attacks, reveal the attack module and ensure it starts with attack
+    if (!showCombatModule) {
+      setShowCombatModule(true);
+      setRoundStartsWith('attack');
+    }
+
     // Get target monster
     const target = getTargetMonster();
     if (!target) {
       addToCombatLog('No valid target!');
       return;
     }
-    
+
     const { monster, index: monsterIdx } = target;
-    
+
     // Get ability states
     const heroAbilities = state.abilities?.[heroIndex] || {};
     const options = {
       rageActive: heroAbilities.rageActive,
       blessed: hero.status?.blessed,
+      hasLightSource: effectiveHasLight,
       // Rogue bonus: outnumbers Minor Foes if party size > foe count
-      rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(monster) && 
+      rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(monster) &&
         state.party.filter(h => h.hp > 0).length > (monster.count || 1)
     };
     
@@ -154,21 +190,29 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
     if (hero.status?.blessed) {
       dispatch({ type: 'SET_HERO_STATUS', heroIdx: heroIndex, statusKey: 'blessed', value: false });
     }
-  }, [state.party, state.abilities, state.monsters, getTargetMonster, isMinorFoe, dispatch]);
+  }, [state.party, state.abilities, state.monsters, getTargetMonster, isMinorFoe, dispatch, showCombatModule]);
 
   const handleDefense = useCallback((heroIndex) => {
     const hero = state.party[heroIndex];
     if (!hero) return;
-    
+
     const heroAbilities = state.abilities?.[heroIndex] || {};
     let mod = 0;
-    
+
     // Rage penalty to defense
     if (heroAbilities.rageActive && hero.key === 'barbarian') {
       mod -= 1;
     }
-    
-    const result = calculateDefense(hero, foeLevel);
+
+    const options = {
+      hasLightSource: effectiveHasLight
+    };
+
+  const target = getTargetMonster();
+  const targetMonster = target ? target.monster : null;
+  const computedFoeLevel = targetMonster ? (targetMonster.level || 1) : (Math.max(...state.monsters.map(m => m.level || 1), 1));
+
+  const result = calculateDefense(hero, computedFoeLevel, options);
     
     if (!result.blocked) {
       const newHP = Math.max(0, hero.hp - 1);
@@ -184,118 +228,80 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
     }
 
     addToCombatLog(result.message);
-  }, [state.party, state.abilities, foeLevel, dispatch, addToCombatLog]);
+  }, [state.party, state.abilities, state.monsters, dispatch, addToCombatLog, getTargetMonster]);
 
   // Handle save roll
   const handleSaveRoll = useCallback(() => {
     if (!pendingSave) return;
     const hero = state.party[pendingSave.heroIdx];
-    performSaveRoll(dispatch, hero, pendingSave.heroIdx, pendingSave.damageSource);
+  const options = { hasLightSource: effectiveHasLight };
+    performSaveRoll(dispatch, hero, pendingSave.heroIdx, pendingSave.damageSource, options);
     setPendingSave(null);
-  }, [pendingSave, state.party, dispatch]);
+  }, [pendingSave, state.party, state.hasLightSource, dispatch]);
 
   // Handle blessing re-roll for save
   const handleBlessingReroll = useCallback((clericIdx) => {
     if (!pendingSave) return;
     const targetHero = state.party[pendingSave.heroIdx];
-    useBlessingForSave(dispatch, clericIdx, targetHero, pendingSave.heroIdx, pendingSave.damageSource);
+  const options = { hasLightSource: effectiveHasLight };
+    useBlessingForSave(dispatch, clericIdx, targetHero, pendingSave.heroIdx, pendingSave.damageSource, options);
     setPendingSave(null);
-  }, [pendingSave, state.party, dispatch]);
+  }, [pendingSave, state.party, state.hasLightSource, dispatch]);
 
   // Handle luck re-roll for save
   const handleLuckReroll = useCallback(() => {
     if (!pendingSave) return;
     const hero = state.party[pendingSave.heroIdx];
+    const options = { hasLightSource: state.hasLightSource };
     if (hero.key === 'halfling') {
-      useLuckForSave(dispatch, pendingSave.heroIdx, hero, pendingSave.damageSource);
+      useLuckForSave(dispatch, pendingSave.heroIdx, hero, pendingSave.damageSource, options);
     }
     setPendingSave(null);
-  }, [pendingSave, state.party, dispatch]);
+  }, [pendingSave, state.party, state.hasLightSource, dispatch]);
 
   // Process monster round start (regeneration, etc.)
   const handleNewRound = useCallback(() => {
     processMonsterRoundStart(dispatch, state.monsters);
+    // If modules are not yet visible, initialize based on combatInitiative (surprise/attack)
+    if (!showCombatModule) {
+      const start = combatInitiative && typeof combatInitiative.monsterFirst !== 'undefined' ?
+        (combatInitiative.monsterFirst ? 'defend' : 'attack') : 'attack';
+      setRoundStartsWith(start);
+      setShowCombatModule(true);
+    } else {
+      // Alternate attack/defend each new round
+      setRoundStartsWith(prev => (prev === 'attack' ? 'defend' : 'attack'));
+    }
     addToCombatLog('--- New Round ---');
-  }, [state.monsters, dispatch, addToCombatLog]);
+  }, [state.monsters, dispatch, addToCombatLog, combatInitiative, showCombatModule]);
+
+  // If initiative is set externally (InitiativePhase), reveal the appropriate module automatically
+  useEffect(() => {
+    if (combatInitiative && typeof combatInitiative.monsterFirst !== 'undefined') {
+      const start = combatInitiative.monsterFirst ? 'defend' : 'attack';
+      setRoundStartsWith(start);
+      setShowCombatModule(true);
+    }
+  }, [combatInitiative]);
 
   // Flee attempt
   const handleFlee = useCallback(() => {
     const highestLevel = Math.max(...state.monsters.map(m => m.level), 1);
-    attemptPartyFlee(dispatch, state.party, highestLevel);
+    attemptPartyFlee(dispatch, state.party, state.monsters, highestLevel);
   }, [state.monsters, state.party, dispatch]);
 
-  const handleWanderingMonster = useCallback(() => {
-    rollWanderingMonster(dispatch);
-  }, [dispatch]);
+  // Withdraw attempt
+  const handleWithdraw = useCallback(() => {
+    attemptWithdraw(dispatch, state.party, state.monsters, state.doors);
+  }, [state.monsters, state.party, state.doors, dispatch]);
 
-  const handleCustomMonster = useCallback(() => {
-    const name = prompt('Monster Name?', 'Custom Monster') || 'Custom Monster';
-    const level = parseInt(prompt('Monster Level (1-5)?', '2')) || 2;
-    const isMajor = confirm('Is this a Major Foe (single creature with HP)? Cancel for Minor Foe (group with count).');
-    
-    let monster;
-    if (isMajor) {
-      const hp = parseInt(prompt('HP?', '6')) || 6;
-      monster = { 
-        id: Date.now(), 
-        name, 
-        level, 
-        hp, 
-        maxHp: hp, 
-        type: 'custom',
-        isMinorFoe: false
-      };
-      dispatch({ type: 'ADD_MONSTER', m: monster });
-      dispatch({ type: 'LOG', t: `⚔️ ${name} L${level} (${hp}HP) Major Foe added` });
-    } else {
-      const count = parseInt(prompt('How many?', '6')) || 6;
-      monster = { 
-        id: Date.now(), 
-        name, 
-        level, 
-        hp: 1, // Minor foes have 1 HP each
-        maxHp: 1,
-        count: count,
-        initialCount: count,
-        type: 'custom',
-        isMinorFoe: true
-      };
-      dispatch({ type: 'ADD_MONSTER', m: monster });
-      dispatch({ type: 'LOG', t: `👥 ${count}x ${name} L${level} Minor Foes added` });
-    }
-  }, [dispatch]);
+  
 
   const handleSpawnFromTable = useCallback(() => {
-    if (!selectedMonster) return;
-    
-    // Calculate HCL (Highest Character Level) from party
-    const hcl = Math.max(...state.party.filter(h => h.hp > 0).map(h => h.lvl || 1), 1);
-    
-    const monster = createMonsterFromTable(selectedMonster, hcl);
-    if (!monster) return;
-    
-    dispatch({ type: 'ADD_MONSTER', m: monster });
-    
-    // Show abilities if monster has any
-    const abilitiesText = monster.abilities && monster.abilities.length > 0 
-      ? ` [${monster.abilities.join(', ')}]` 
-      : '';
-    dispatch({ type: 'LOG', t: `${monster.name} L${monster.level} (${monster.hp}HP)${abilitiesText} appears!` });
-    setSelectedMonster(''); // Reset selection
-  }, [selectedMonster, state.party, dispatch]);
+    // This function has been removed as selectedMonster state is no longer used.
+  }, [state.party, dispatch]);
 
-  const handleRollReaction = useCallback((index) => {
-    const monster = state.monsters[index];
-    const result = rollMonsterReaction(monster);
-    
-    // Update monster with reaction
-    dispatch({ type: 'UPD_MONSTER', i: index, u: { reaction: result } });
-    
-    // Log the result
-    const logMsg = `🎲 ${monster.name} Reaction (${result.roll}): ${result.name} - ${result.description}`;
-    dispatch({ type: 'LOG', t: logMsg });
-    addToCombatLog(logMsg);
-  }, [state.monsters, dispatch, addToCombatLog]);
+  // Reaction rolls are handled centrally via `handleRollReaction` in the Initiative box.
 
   const adjustMonsterHP = useCallback((index, delta) => {
     const monster = state.monsters[index];
@@ -385,8 +391,13 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
     }
   }, [getAbilityUsage]);
   
+  // Check if any party members lack darkvision
+  const partyHasDarkvision = state.party.some(h => h.hp > 0 && hasDarkvision(h.key));
+  const partyLacksDarkvision = state.party.some(h => h.hp > 0 && !hasDarkvision(h.key));
+
   return (
     <div className="space-y-2">
+
       {/* Save Roll Modal */}
       {pendingSave && (
         <div className="bg-red-900 border-2 border-red-500 rounded p-3 animate-pulse">
@@ -438,33 +449,10 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
 
       {/* Active Monsters */}
       <div className="bg-slate-800 rounded p-2">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-amber-400 font-bold text-sm">
-            Active Monsters ({state.monsters.length})
-          </span>
-          <div className="flex gap-1">
-            {state.monsters.length > 0 && (
-              <>
-                <button 
-                  onClick={handleNewRound}
-                  className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
-                >
-                  New Round
-                </button>
-                <button 
-                  onClick={handleFlee}
-                  className="bg-yellow-600 hover:bg-yellow-500 px-2 py-0.5 rounded text-xs"
-                >
-                  Flee
-                </button>
-                <button 
-                  onClick={handleClearMonsters} 
-                  className="bg-red-600 hover:bg-red-500 px-2 py-0.5 rounded text-xs"
-                >
-                  End
-                </button>
-              </>
-            )}
+        <div className="mb-2">
+          <div className="text-amber-400 font-bold text-sm mb-1">Active Monsters ({state.monsters.length})</div>
+          <div className="flex flex-wrap gap-1">
+            {/* Control buttons moved to ActionPane (bottom); kept empty here to avoid duplication */}
           </div>
         </div>
         
@@ -486,7 +474,27 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                 <div className="flex items-center gap-1">
                   {isMinor && <span className="text-blue-400 text-xs">👥</span>}
                   {!isMinor && <span className="text-red-400 text-xs"></span>}
-                  <span className="text-amber-400 font-bold text-xs">{monster.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-amber-400 font-bold text-xs">{monster.name}</span>
+                    {/* Per-monster level controls: edit monster.level directly */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { level: Math.max(1, (monster.level || 1) - 1) })); }}
+                        className="bg-slate-700 px-1 py-0.5 rounded text-xs"
+                        title="Decrease monster level"
+                      >
+                        −
+                      </button>
+                      <span className="text-slate-400 text-xs px-1">L{monster.level || 1}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { level: (monster.level || 1) + 1 })); }}
+                        className="bg-slate-700 px-1 py-0.5 rounded text-xs"
+                        title="Increase monster level"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                   {monster.special && MONSTER_ABILITIES[monster.special] && (
                     <span className="text-purple-400 text-xs" title={MONSTER_ABILITIES[monster.special].description}>
                       {MONSTER_ABILITIES[monster.special].name}
@@ -505,7 +513,6 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
               </div>
               <div className="flex justify-between items-center mt-0.5 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-400">L{monster.level}</span>
                   {monster.xp && <span className="text-yellow-400">({monster.xp}XP)</span>}
                   {isMinor && <span className="text-blue-300">(Minor Foe)</span>}
                 </div>
@@ -539,7 +546,6 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
               {/* Reaction section */}
               <MonsterReaction
                 monster={monster}
-                onRollReaction={() => handleRollReaction(index)}
               />
               {isDefeated && (
                 <div className="text-green-400 text-xs mt-0.5">
@@ -553,155 +559,153 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
           )}
         </div>
         
-        <div className="grid grid-cols-2 gap-1 mb-2">
-          <button 
-            onClick={handleWanderingMonster} 
-            className="bg-red-700 hover:bg-red-600 px-2 py-1 rounded text-xs"
-          >
-            Wandering (d6)
-          </button>
-          <button 
-            onClick={handleCustomMonster} 
-            className="bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded text-xs"
-          >
-            Custom Monster
-          </button>
-        </div>
         
-        {/* Quick Minor Foe Spawner */}
-        <div className="bg-slate-700 rounded p-1.5 mb-2">
-          <div className="text-xs text-blue-400 mb-1">👥 Quick Minor Foe Group</div>
-          <div className="flex gap-1">
-            {[
-              { name: 'Goblins', level: 1, count: 6 },
-              { name: 'Orcs', level: 2, count: 4 },
-              { name: 'Skeletons', level: 1, count: 8 },
-              { name: 'Rats', level: 1, count: 10 }
-            ].map(foe => (
-              <button
-                key={foe.name}
-                onClick={() => {
-                  const monster = {
-                    id: Date.now(),
-                    name: foe.name,
-                    level: foe.level,
-                    hp: 1,
-                    maxHp: 1,
-                    count: foe.count,
-                    initialCount: foe.count,
-                    isMinorFoe: true,
-                    xp: foe.level * 5
-                  };
-                  dispatch(addMonster(monster));
-                  dispatch(logMessage(`👥 ${foe.count}x ${foe.name} L${foe.level} appear!`));
-                }}
-                className="bg-blue-600 hover:bg-blue-500 px-1.5 py-0.5 rounded text-xs"
-              >
-                {foe.count}x L{foe.level}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Monster Table Dropdown */}
-        <div className="flex gap-1">
-          <select
-            value={selectedMonster}
-            onChange={(e) => setSelectedMonster(e.target.value)}
-            className="flex-1 bg-slate-700 text-white text-xs rounded px-2 py-1 border border-slate-600"
-          >
-            <option value="">-- Select Monster --</option>
-            {Object.entries(MONSTER_CATEGORIES).map(([categoryKey, categoryName]) => {
-              const monstersInCategory = monsterList.filter(m => m.category === categoryKey);
-              if (monstersInCategory.length === 0) return null;
-              return (
-                <optgroup key={categoryKey} label={categoryName}>
-                  {monstersInCategory.map(m => (
-                    <option key={m.key} value={m.key}>
-                      {m.name} (T{m.tier}, {m.xp}XP{m.special ? `, ${Array.isArray(m.special) ? m.special[0] : m.special}` : ''})
-                    </option>
-                  ))}
-                </optgroup>
-              );
-            })}
-          </select>
-          <button
-            onClick={handleSpawnFromTable}
-            disabled={!selectedMonster}
-            className="bg-purple-600 hover:bg-purple-500 disabled:bg-slate-600 px-2 py-1 rounded text-xs"
-          >
-            Spawn
-          </button>
-        </div>
       </div>
       
       {/* Initiative & Combat Order */}
-      <InitiativePhase
-        monsters={state.monsters}
-        party={state.party}
-        combatInitiative={combatInitiative}
-        setCombatInitiative={setCombatInitiative}
-        addToCombatLog={addToCombatLog}
-      />
+      {!showCombatModule && (
+        <InitiativePhase
+          monsters={state.monsters}
+          party={state.party}
+          combatInitiative={combatInitiative}
+          setCombatInitiative={setCombatInitiative}
+          addToCombatLog={addToCombatLog}
+          dispatch={dispatch}
+        />
+      )}
       
-      {/* Foe Level */}
-      <div className="bg-slate-800 rounded p-2">
-        <div className="flex justify-between items-center">
-          <span className="text-amber-400 font-bold text-sm">Foe Level</span>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setFoeLevel(l => Math.max(1, l - 1))} 
-              className="bg-slate-700 px-2 py-1 rounded"
-            >-</button>
-            <span className="text-xl font-bold text-amber-400 w-6 text-center">{foeLevel}</span>
-            <button 
-              onClick={() => setFoeLevel(l => l + 1)} 
-              className="bg-slate-700 px-2 py-1 rounded"
-            >+</button>
-          </div>
-        </div>
-        <div className="text-xs text-slate-400 mt-1">
-          <div>Attack: {foeLevel}+ to hit | Defense: {foeLevel + 1}+ to block</div>
-          <div className="text-blue-300 mt-0.5">
-            👥 Minor Foe Multi-Kill: Roll ÷ L{foeLevel} = kills (e.g., roll 8 vs L2 = 4 kills)
-          </div>
-        </div>
-      </div>
+  {/* Foe Level controls moved inline next to each monster's name */}
       
-      {/* Attack/Defense Buttons */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="bg-slate-800 rounded p-2">
-          <div className="text-orange-400 font-bold text-sm mb-2">⚔️ Attack</div>
-          {state.party.map((hero, index) => {
-            const abilities = getAbilityUsage(index);
-            return (
-              <button 
-                key={hero.id || index} 
-                onClick={() => handleAttack(index)} 
-                disabled={hero.hp <= 0} 
-                className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-slate-600 py-1 rounded text-sm mb-1 truncate relative"
-              >
-                {hero.name}
-                {abilities.rageActive && <span className="ml-1 text-red-300">😤</span>}
-                {hero.status?.blessed && <span className="ml-1 text-yellow-300">✨</span>}
-              </button>
-            );
-          })}
+      {/* Attack or Defend module: show only one at a time once revealed */}
+      {showCombatModule ? (
+        <div className="flex flex-col gap-2">
+          {roundStartsWith === 'attack' ? (
+            <div className="bg-slate-800 rounded p-2">
+              {(() => {
+                const target = getTargetMonster();
+                const targetMonster = target ? target.monster : null;
+                const computedFoeLevel = targetMonster ? (targetMonster.level || 1) : (Math.max(...state.monsters.map(m => m.level || 1), 1));
+                return (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-orange-400 font-bold text-sm">⚔️ Attack (L{computedFoeLevel}+)</div>
+                      <button
+                        onClick={handleNewRound}
+                        className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
+                        title="Start a new round of combat"
+                      >
+                        New Round
+                      </button>
+                    </div>
+                    {state.party.map((hero, index) => {
+                      const abilities = getAbilityUsage(index);
+                      const options = {
+                        rageActive: abilities.rageActive,
+                        blessed: hero.status?.blessed,
+                        hasLightSource: effectiveHasLight,
+                        rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(targetMonster) && state.party.filter(h => h.hp > 0).length > (targetMonster?.count || 1)
+                      };
+                      // Determine equipped weapon name (first weapon in equipment list) or 'Unarmed'
+                      let weaponName = 'Unarmed';
+                      if (Array.isArray(hero.equipment) && hero.equipment.length > 0) {
+                        const w = hero.equipment.find(k => {
+                          const it = getEquipment(k);
+                          return it && it.category === 'weapon';
+                        });
+                        if (w) {
+                          const it = getEquipment(w);
+                          if (it && it.name) weaponName = it.name;
+                        }
+                      }
+                      const atk = calculateEnhancedAttack(hero, computedFoeLevel, options);
+                      const modLabel = atk.mod >= 0 ? `+${atk.mod}` : `${atk.mod}`;
+                      return (
+                        <button 
+                          key={hero.id || index} 
+                          onClick={() => handleAttack(index)} 
+                          disabled={hero.hp <= 0} 
+                          className="w-full bg-orange-600 hover:bg-orange-500 disabled:bg-slate-600 py-1 rounded text-sm mb-1 truncate relative"
+                        >
+                          <span className="font-bold">{hero.name}</span>
+                          <span className="text-xs ml-2 text-slate-300">{weaponName}</span>
+                          <span className="text-xs ml-2">({modLabel})</span>
+                          {abilities.rageActive && <span className="ml-1 text-red-300">😤</span>}
+                          {hero.status?.blessed && <span className="ml-1 text-yellow-300">✨</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="bg-slate-800 rounded p-2">
+              {(() => {
+                const target = getTargetMonster();
+                const targetMonster = target ? target.monster : null;
+                const computedFoeLevel = targetMonster ? (targetMonster.level || 1) : (Math.max(...state.monsters.map(m => m.level || 1), 1));
+                return (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-red-400 font-bold text-sm">🛡️ Defend (L{computedFoeLevel + 1}+)</div>
+                      <button
+                        onClick={handleNewRound}
+                        className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
+                        title="Start a new round of combat"
+                      >
+                        New Round
+                      </button>
+                    </div>
+                    {state.party.map((hero, index) => {
+                      const abilities = getAbilityUsage(index);
+                      const defRes = calculateDefense(hero, computedFoeLevel, { hasLightSource: effectiveHasLight });
+                      const modLabel = defRes.mod >= 0 ? `+${defRes.mod}` : `${defRes.mod}`;
+                      // Determine equipped shield and armor names
+                      let shieldName = 'No Shield';
+                      let armorName = 'No Armor';
+                      if (Array.isArray(hero.equipment) && hero.equipment.length > 0) {
+                        const s = hero.equipment.find(k => {
+                          const it = getEquipment(k);
+                          return it && it.category === 'shield';
+                        });
+                        if (s) {
+                          const it = getEquipment(s);
+                          if (it && it.name) shieldName = it.name;
+                        }
+                        const a = hero.equipment.find(k => {
+                          const it = getEquipment(k);
+                          return it && it.category === 'armor';
+                        });
+                        if (a) {
+                          const it = getEquipment(a);
+                          if (it && it.name) armorName = it.name;
+                        }
+                      }
+                      return (
+                        <button 
+                          key={hero.id || index} 
+                          onClick={() => handleDefense(index)} 
+                          disabled={hero.hp <= 0} 
+                          className="w-full bg-red-700 hover:bg-red-600 disabled:bg-slate-600 py-1 rounded text-sm mb-1 truncate"
+                        >
+                          <span className="font-bold">{hero.name}</span>
+                          {shieldName !== 'No Shield' && (
+                            <span className="text-xs ml-2 text-slate-300">{shieldName}</span>
+                          )}
+                          {armorName !== 'No Armor' && (
+                            <span className="text-xs ml-2 text-slate-300">{armorName}</span>
+                          )}
+                          <span className="text-xs ml-2">({modLabel})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
-        <div className="bg-slate-800 rounded p-2">
-          <div className="text-red-400 font-bold text-sm mb-2">🛡️ Defend</div>
-          {state.party.map((hero, index) => (
-            <button 
-              key={hero.id || index} 
-              onClick={() => handleDefense(index)} 
-              disabled={hero.hp <= 0} 
-              className="w-full bg-red-700 hover:bg-red-600 disabled:bg-slate-600 py-1 rounded text-sm mb-1 truncate"
-            >
-              {hero.name}
-            </button>
-          ))}
-        </div>
-      </div>
+  ) : null}
       
       {/* Class Abilities */}
       <div className="bg-slate-800 rounded p-2">
@@ -922,39 +926,17 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
         </div>
       </div>
       
-      {/* Treasure & Victory */}
-      <VictoryPhase
-        monsters={state.monsters}
-        party={state.party}
-        dispatch={dispatch}
-        clearCombatLog={clearCombatLog}
-        setCombatInitiative={setCombatInitiative}
-        setTargetMonsterIdx={setTargetMonsterIdx}
-      />
-        {/* Combat Log */}
-      <div className="bg-slate-800 rounded p-2 max-h-36 overflow-y-auto">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-slate-400">Combat Log ({combatLog.length})</span>
-          {combatLog.length > 0 && (
-            <button
-              onClick={clearCombatLog}
-              className="text-xs text-slate-500 hover:text-slate-300"
-            >
-              Clear
-            </button>
-          )}
-        </div>        {combatLog.map((message, index) => (
-          <div 
-            key={index} 
-            className={`text-xs py-0.5 ${message.includes('Miss') || message.includes('HIT') ? 'text-red-400' : 'text-green-400'}`}
-          >
-            {message}
-          </div>
-        ))}
-        {combatLog.length === 0 && (
-          <div className="text-slate-500 text-xs">No combat yet</div>
-        )}
-      </div>
+      {/* Treasure & Victory: only show after the encounter is actually won */}
+      {state.monsters.length > 0 && state.monsters.every(m => (m.count !== undefined ? m.count === 0 : m.hp === 0)) && (
+        <VictoryPhase
+          monsters={state.monsters}
+          party={state.party}
+          dispatch={dispatch}
+          clearCombatLog={clearCombatLog}
+          setCombatInitiative={setCombatInitiative}
+          setTargetMonsterIdx={setTargetMonsterIdx}
+        />
+      )}
     </div>
   );
 }

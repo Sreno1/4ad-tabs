@@ -11,6 +11,8 @@ import {
   useConsumable,
   getStartingEquipment
 } from '../data/equipment.js';
+import { SPELLS } from '../data/spells.js';
+import { SCROLLS, getScroll } from '../data/scrolls.js';
 import { selectParty, selectHero } from '../state/selectors.js';
 import {
   removeFromInventory,
@@ -31,6 +33,8 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newItemEquipable, setNewItemEquipable] = useState(false);
   const [newItemError, setNewItemError] = useState('');
+  const [showNewScrollModal, setShowNewScrollModal] = useState(false);
+  const [selectedScrollSpell, setSelectedScrollSpell] = useState('');
 
   if (!isOpen) return null;
 
@@ -195,6 +199,26 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
 
   const cancelNewItem = () => {
     setShowNewItemModal(false);
+  };
+
+  // New scroll modal handlers
+  const openNewScrollModal = () => {
+    setSelectedScrollSpell('');
+    setShowNewScrollModal(true);
+  };
+
+  const submitNewScroll = () => {
+    if (!selectedScrollSpell) return;
+
+    // Get the scroll key from the spell
+    const scrollKey = `scroll_${selectedScrollSpell}`;
+    dispatch(addToInventory(selectedHero, scrollKey));
+    dispatch(logMessage(`${hero.name} received ${SCROLLS[scrollKey]?.name || 'scroll'} (added to inventory)`, 'equipment'));
+    setShowNewScrollModal(false);
+  };
+
+  const cancelNewScroll = () => {
+    setShowNewScrollModal(false);
   };
 
   // Give starting equipment
@@ -371,8 +395,9 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
           <div className="bg-slate-800 rounded p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="text-amber-400 font-bold text-sm">🎁 Inventory ({inventory.length})</div>
-              <div>
+              <div className="flex gap-2">
                 <button onClick={openNewItemModal} className="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs">New Item</button>
+                <button onClick={openNewScrollModal} className="bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded text-xs">New Scroll</button>
               </div>
             </div>
             <div className="space-y-1 max-h-40 overflow-y-auto">
@@ -490,6 +515,49 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
             </div>
           )}
 
+          {/* New Scroll Modal */}
+          {showNewScrollModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-slate-900 rounded-lg w-full max-w-md p-4 border-2 border-purple-500">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="text-xl font-bold text-white">Add Scroll</div>
+                  <button onClick={cancelNewScroll} className="text-white">✕</button>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-slate-300">Select Spell</label>
+                  <select
+                    value={selectedScrollSpell}
+                    onChange={(e) => setSelectedScrollSpell(e.target.value)}
+                    className="w-full p-2 rounded bg-slate-800 text-white text-sm"
+                  >
+                    <option value="">-- Choose a spell --</option>
+                    {Object.entries(SPELLS).map(([spellKey, spell]) => (
+                      <option key={spellKey} value={spellKey}>
+                        {spell.name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedScrollSpell && (
+                    <div className="bg-slate-700 p-2 rounded text-sm">
+                      <div className="text-purple-300 font-bold mb-1">{SPELLS[selectedScrollSpell].name}</div>
+                      <div className="text-slate-300 text-xs">{SPELLS[selectedScrollSpell].description}</div>
+                    </div>
+                  )}
+                  <div className="flex justify-end gap-2 mt-3">
+                    <button onClick={cancelNewScroll} className="px-3 py-1 rounded bg-slate-700 text-sm">Cancel</button>
+                    <button
+                      onClick={submitNewScroll}
+                      disabled={!selectedScrollSpell}
+                      className={`px-3 py-1 rounded text-sm ${selectedScrollSpell ? 'bg-purple-600 hover:bg-purple-500' : 'bg-slate-600 text-slate-400 cursor-not-allowed'}`}
+                    >
+                      Add Scroll
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Shop */}
           <div className="bg-slate-800 rounded p-3">
             <div className="flex justify-between items-center mb-2">
@@ -506,7 +574,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
               <>
                 {/* Category Tabs */}
                 <div className="flex gap-1 mb-2">
-                  {['weapon', 'armor', 'shield', 'consumable', 'magic'].map(cat => (
+                  {['weapon', 'armor', 'shield', 'equipment', 'consumable', 'magic'].map(cat => (
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}

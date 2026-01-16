@@ -64,9 +64,6 @@ Week 6: Testing & Polish (6-8 hours)
 
 ## 📋 Detailed Task Breakdown
 
-- its really hard to add doors right now with the mouse on the main dungeon map, and yet somehow in the room designer, you have to click in the exact middle of a square to avoid placing a door. can you help me figure out how to make the dungeon drawing more when it comes to door placement?
-
-- can you implement the magic scroll system as outlined in /public/magic.txt
 
 - figure out what info needs to go where, ie party should show equiped weappons?
 

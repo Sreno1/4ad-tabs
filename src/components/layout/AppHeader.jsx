@@ -9,6 +9,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Tooltip } from '../RulesReference.jsx';
+import FloatingDice from '../FloatingDice.jsx';
 
 export default function AppHeader({
   state,
@@ -59,6 +60,7 @@ export default function AppHeader({
 
         {/* Header Actions */}
         <div className="flex items-center gap-1">
+          <FloatingDice inline={true} />
           <Tooltip text="Rules">
             <button
               onClick={onShowRules}

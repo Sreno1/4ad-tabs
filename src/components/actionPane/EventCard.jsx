@@ -6,7 +6,7 @@ const EventCard = memo(function EventCard({ event, index }) {
     case 'D66_ROLL':
       return (
         <div key={index} className="bg-blue-900/30 rounded p-2 text-xs border-l-2 border-blue-400">
-          <div className="text-blue-400 font-bold">🎲 d66={event.data.roll}</div>
+          <div className="text-blue-400 font-bold">d66 {event.data.roll}</div>
         </div>
       );
 
@@ -21,7 +21,7 @@ const EventCard = memo(function EventCard({ event, index }) {
     case 'CONTENTS_ROLL':
       return (
         <div key={index} className="bg-amber-900/30 rounded p-2 text-xs border-l-2 border-amber-400">
-          <div className="text-amber-400 font-bold">📦 2d6={event.data.roll}</div>
+          <div className="text-amber-400 font-bold">2d6 {event.data.roll}</div>
           <div className="text-slate-300">{event.data.description}</div>
         </div>
       );

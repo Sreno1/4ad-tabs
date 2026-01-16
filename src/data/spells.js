@@ -5,6 +5,15 @@
 
 // Spell definitions
 export const SPELLS = {
+  // Divine/Utility Spells
+  blessing: {
+    name: 'Blessing',
+    type: 'utility',
+    description: 'Removes a curse or an effect such as being turned to stone. Works automatically. Elves cannot use this spell.',
+    effect: 'remove_curse',
+    target: 'single_ally'
+  },
+
   // Combat Spells
   fireball: {
     name: 'Fireball',
@@ -309,7 +318,7 @@ export const SPELLS = {
 
 // Spells available to Wizards
 export const WIZARD_SPELLS = [
-  'fireball', 'lightning', 'sleep', 'shield', 'mirror_image', 
+  'blessing', 'fireball', 'lightning', 'sleep', 'shield', 'mirror_image',
   'light', 'detect_magic', 'telekinesis', 'protection'
 ];
 

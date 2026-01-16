@@ -2,16 +2,30 @@ import { useState } from 'react';
 import { d66, d6, r2d6 } from '../utils/dice.js';
 import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE, SPECIAL_FEATURE_TABLE, SPECIAL_ROOMS, checkForBoss } from '../data/rooms.js';
 import { spawnMonster, rollTreasure, spawnMajorFoe } from "../utils/gameActions/index.js";
+import { createMonsterFromTable, MONSTER_TABLE } from '../data/monsters.js';
+import { addMonster, logMessage as logMsgAction } from '../state/actionCreators.js';
 import { ACTION_MODES, EVENT_TYPES } from '../constants/gameConstants.js';
 import { logMessage } from '../state/actionCreators.js';
 import roomLibrary from '../utils/roomLibrary.js';
 
 export function useRoomEvents(state, dispatch, setActionMode) {
-  const [roomEvents, setRoomEvents] = useState([]);
-  const [tileResult, setTileResult] = useState(null);
-  const [roomDetails, setRoomDetails] = useState(null);
-  const [bossCheckResult, setBossCheckResult] = useState(null);
-  const [autoPlacedRoom, setAutoPlacedRoom] = useState(null);
+  // Attempt to restore last tile data from localStorage so refresh keeps you in the same room
+  const loadSaved = () => {
+    try {
+      const raw = localStorage.getItem('lastTileData');
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (e) {
+      return null;
+    }
+  };
+  const saved = loadSaved();
+
+  const [roomEvents, setRoomEvents] = useState(() => (saved && saved.roomEvents) ? saved.roomEvents : []);
+  const [tileResult, setTileResult] = useState(() => (saved && saved.tileResult) ? saved.tileResult : null);
+  const [roomDetails, setRoomDetails] = useState(() => (saved && saved.roomDetails) ? saved.roomDetails : null);
+  const [bossCheckResult, setBossCheckResult] = useState(() => (saved && saved.bossCheckResult) ? saved.bossCheckResult : null);
+  const [autoPlacedRoom, setAutoPlacedRoom] = useState(() => (saved && saved.autoPlacedRoom) ? saved.autoPlacedRoom : null);
 
   // Add an event to the room events stack
   const addRoomEvent = (eventType, eventData = {}) => {
@@ -26,6 +40,17 @@ export function useRoomEvents(state, dispatch, setActionMode) {
   const processContents = (contents, events = []) => {
     let newEvents = [...events];
 
+    const rollCountSpec = (spec) => {
+      // spec examples: 'd6+2', 'd6', 'd3', 'd6-2'
+      if (!spec || typeof spec !== 'string') return 1;
+      const m = spec.match(/^d(\d+)([+-]\d+)?$/);
+      if (!m) return 1;
+      const sides = parseInt(m[1], 10);
+      const offset = m[2] ? parseInt(m[2], 10) : 0;
+      const roll = Math.floor(Math.random() * sides) + 1;
+      return Math.max(0, roll + offset);
+    };
+
     switch (contents.type) {
       case 'empty':
         newEvents.push({ type: EVENT_TYPES.EMPTY, data: {}, timestamp: Date.now() });
@@ -33,17 +58,66 @@ export function useRoomEvents(state, dispatch, setActionMode) {
         dispatch(logMessage(`The room is empty.`, 'exploration'));
         break;
 
-      case 'vermin':
-        spawnMonster(dispatch, 'vermin', 1);
-        newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'vermin', level: 1 }, timestamp: Date.now() });
+      case 'vermin': {
+        // Choose a specific vermin from MONSTER_TABLE with category 'dungeonVermin'
+        const candidates = Object.entries(MONSTER_TABLE).filter(([, t]) => t.category === 'dungeonVermin').map(([k]) => k);
+        const key = candidates[Math.floor(Math.random() * candidates.length)];
+        const template = MONSTER_TABLE[key];
+        // Roll group count from template.count (e.g., 'd6+2')
+        const count = rollCountSpec(template.count || 'd6');
+        const level = Math.max(1, 1 + (template.levelMod || 0));
+        const group = {
+          id: Date.now() + Math.random(),
+          name: template.name,
+          level: level,
+          hp: 1,
+          maxHp: 1,
+          count,
+          initialCount: count,
+          type: key,
+          special: template.special,
+          xp: template.xp || level,
+          moraleMod: template.moraleMod || 0,
+          reaction: null,
+          statuses: [],
+          isMinorFoe: true
+        };
+        dispatch(addMonster(group));
+        dispatch(logMsgAction(`${group.count} ${group.name} L${group.level} appear!`));
+        newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'vermin', level: 1, species: key, count }, timestamp: Date.now() });
         setActionMode(ACTION_MODES.COMBAT);
         break;
+      }
 
-      case 'minions':
-        spawnMonster(dispatch, 'minion', 2);
-        newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'minions', level: 2 }, timestamp: Date.now() });
+      case 'minions': {
+        // Choose a specific minion from MONSTER_TABLE with category 'dungeonMinions'
+        const candidates = Object.entries(MONSTER_TABLE).filter(([, t]) => t.category === 'dungeonMinions').map(([k]) => k);
+        const key = candidates[Math.floor(Math.random() * candidates.length)];
+        const template = MONSTER_TABLE[key];
+        const count = rollCountSpec(template.count || 'd6+2');
+        const level = Math.max(1, 2 + (template.levelMod || 0));
+        const group = {
+          id: Date.now() + Math.random(),
+          name: template.name,
+          level: level,
+          hp: 1,
+          maxHp: 1,
+          count,
+          initialCount: count,
+          type: key,
+          special: template.special,
+          xp: template.xp || level,
+          moraleMod: template.moraleMod || 0,
+          reaction: null,
+          statuses: [],
+          isMinorFoe: true
+        };
+        dispatch(addMonster(group));
+        dispatch(logMsgAction(`${group.count} ${group.name} L${group.level} appear!`));
+        newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'minions', level: 2, species: key, count }, timestamp: Date.now() });
         setActionMode(ACTION_MODES.COMBAT);
         break;
+      }
 
       case 'treasure':
         rollTreasure(dispatch);
@@ -170,7 +244,69 @@ export function useRoomEvents(state, dispatch, setActionMode) {
     setRoomEvents([]);
     setAutoPlacedRoom(null);
     setActionMode(ACTION_MODES.IDLE);
+    try { localStorage.removeItem('lastTileData'); } catch (e) { /* ignore */ }
   };
+
+  // Persist relevant room state so refresh restores the current non-combat room
+  // Only persist when there are no active monsters (not in combat)
+  const persist = () => {
+    try {
+  // Avoid saving during combat or when monsters exist in global state
+  if ((state && Array.isArray(state.monsters) && state.monsters.length > 0) || (state && state.actionMode === ACTION_MODES.COMBAT)) {
+        // Remove any saved tile data during combat to avoid restoring a combat state later
+        try { localStorage.removeItem('lastTileData'); } catch (e) {}
+        return;
+      }
+      const data = {
+        adventureId: state?.adventure?.adventureId || null,
+        roomEvents: roomEvents || [],
+        tileResult: tileResult || null,
+        roomDetails: roomDetails || null,
+        bossCheckResult: bossCheckResult || null,
+        autoPlacedRoom: autoPlacedRoom || null
+      };
+      // Only save if there's meaningful data
+      if ((data.roomEvents && data.roomEvents.length > 0) || data.tileResult || data.roomDetails || data.autoPlacedRoom) {
+        localStorage.setItem('lastTileData', JSON.stringify(data));
+      } else {
+        localStorage.removeItem('lastTileData');
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+  };
+
+  // Persist whenever key room state changes
+  try {
+    // use a microtask to avoid calling during render
+    setTimeout(persist, 0);
+  } catch (e) {
+    // ignore
+  }
+
+  // If the global adventure or mode changes (reset/new adventure/etc.), clear persisted tile data
+  try {
+    // run as microtask to avoid during render
+    setTimeout(() => {
+      // If adventure ID changed or mode changed in global state, remove saved tile
+      if (!state || !state.adventure) return;
+      // Listen for external signals: when adventureId differs from saved state, clear storage
+      const savedRaw = localStorage.getItem('lastTileData');
+      if (!savedRaw) return;
+      try {
+        const parsed = JSON.parse(savedRaw);
+        // If the current adventure ID is different than any saved adventure marker, clear
+        if (parsed && parsed.adventureId && parsed.adventureId !== state.adventure.adventureId) {
+          localStorage.removeItem('lastTileData');
+        }
+      } catch (e) {
+        // If saved data isn't JSON or missing fields, remove it to be safe
+        localStorage.removeItem('lastTileData');
+      }
+    }, 0);
+  } catch (e) {
+    // ignore
+  }
 
   // Helper: Check if tile is a corridor
   const isCorridor = () => {

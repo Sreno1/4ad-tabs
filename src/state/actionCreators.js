@@ -269,6 +269,41 @@ export const useTrick = (heroIdx) => ({ type: A.USE_TRICK, heroIdx });
  */
 export const usePrayer = (heroIdx) => ({ type: A.USE_PRAYER, heroIdx });
 
+/**
+ * Use a scroll spell
+ * @param {number} heroIdx - Hero index
+ * @param {string} scrollKey - Scroll key (e.g., 'scroll_fireball')
+ * @param {number} targetIdx - Target index (optional)
+ */
+export const useScroll = (heroIdx, scrollKey, targetIdx = null) => ({
+  type: A.USE_SCROLL,
+  heroIdx,
+  scrollKey,
+  targetIdx
+});
+
+/**
+ * Copy a scroll spell to wizard's spellbook
+ * @param {number} heroIdx - Hero index (must be wizard)
+ * @param {string} scrollKey - Scroll key to copy
+ */
+export const copyScroll = (heroIdx, scrollKey) => ({
+  type: A.COPY_SCROLL,
+  heroIdx,
+  scrollKey
+});
+
+/**
+ * Add a learned spell to wizard's repertoire
+ * @param {number} heroIdx - Hero index
+ * @param {string} spellKey - Spell key to learn
+ */
+export const addLearnedSpell = (heroIdx, spellKey) => ({
+  type: A.ADD_LEARNED_SPELL,
+  heroIdx,
+  spellKey
+});
+
 // ========== Inventory Actions ==========
 
 /**

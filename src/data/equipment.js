@@ -7,7 +7,10 @@
  * - Shields (defense + save bonuses)
  * - Consumables (healing, utility)
  * - Magic items (special bonuses)
+ * - Scrolls (spells that can be cast from inventory)
  */
+
+import { SCROLLS } from './scrolls.js';
 
 // ========== WEAPON TYPES ==========
 
@@ -190,15 +193,7 @@ export const CONSUMABLES = {
     description: 'Provides light for 6 rooms',
     cost: 1
   },
-  lantern: {
-    key: 'lantern',
-    name: 'Lantern',
-    category: 'consumable',
-    effect: 'light',
-    duration: 12,
-    description: 'Provides light for 12 rooms (refillable)',
-    cost: 10
-  },
+
 
   // Utility
   rope: {
@@ -219,6 +214,14 @@ export const CONSUMABLES = {
     description: '+1 to trap detection/disarm',
     cost: 2
   },
+  lantern_hook: {
+    key: 'lantern_hook',
+    name: 'Lantern Hook',
+    category: 'consumable',
+    effect: 'utility',
+    description: 'Allows using a lantern while wielding a shield',
+    cost: 5
+  },
   food_rations: {
     key: 'food_rations',
     name: 'Food Rations',
@@ -226,6 +229,20 @@ export const CONSUMABLES = {
     effect: 'survival',
     description: 'Required for wilderness survival',
     cost: 5
+  }
+};
+
+// ========== EQUIPMENT UTILITY (Equipable non-weapon items) ===========
+export const EQUIPMENT_UTILITY = {
+  lantern: {
+    key: 'lantern',
+    name: 'Lantern',
+    category: 'equipment',
+    type: 'utility',
+    lightSource: true,
+    duration: 12,
+    description: 'Provides light for 12 rooms (refillable)',
+    cost: 10
   }
 };
 
@@ -249,14 +266,6 @@ export const MAGIC_ITEMS = {
     amount: 1,
     description: '+1 to all Save rolls',
     cost: 100
-  },
-  scroll_blessing: {
-    key: 'scroll_blessing',
-    name: 'Scroll of Blessing',
-    category: 'magic',
-    effect: 'blessing',
-    description: 'Cast Blessing once (single use)',
-    cost: 50
   },
   potion_strength: {
     key: 'potion_strength',
@@ -286,7 +295,9 @@ export const ALL_EQUIPMENT = {
   ...ARMOR_TYPES,
   ...SHIELDS,
   ...CONSUMABLES,
-  ...MAGIC_ITEMS
+  ...EQUIPMENT_UTILITY,
+  ...MAGIC_ITEMS,
+  ...SCROLLS
 };
 
 // ========== HELPER FUNCTIONS ==========

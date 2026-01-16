@@ -218,6 +218,10 @@ export function combatReducer(state, action) {
       };
     }
 
+    // ========== Light Source ==========
+    case A.TOGGLE_LIGHT_SOURCE:
+      return { ...state, hasLightSource: !state.hasLightSource };
+
     default:
       return state;
   }

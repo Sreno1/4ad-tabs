@@ -7,6 +7,7 @@ import {
 import { performSearch, rollWanderingMonster } from "../utils/gameActions/index.js";
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
+import { getEquipment, hasEquipment } from '../data/equipment.js';
 import RadialMenu from './RadialMenu.jsx';
 
 export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, sidebarCollapsed = false, placementTemplate = null, onCommitPlacement = null, autoPlacedRoom = null, setAutoPlacedRoom = null, onShowRoomDesigner = null, onToggleShowLog = null, showLogMiddle = false }) {
@@ -300,10 +301,29 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             onPartyMove={movePartyTo}
             partySelected={partySelected}
             onPartySelect={selectParty}
+            partyHasLight={(state.hasLightSource) || ((state.party || []).some(h => (h?.hp > 0) && (hasEquipment(h, 'lantern') || (Array.isArray(h?.equipment) && h.equipment.some(k => getEquipment(k)?.lightSource)))))}
+            partyMembers={state.party}
             placementTemplate={placementTemplate}
             autoPlacedRoom={autoPlacedRoom}
             setAutoPlacedRoom={setAutoPlacedRoom}
             onCommitPlacement={onCommitPlacement}
+            onEditComplete={() => {
+              try {
+                const data = {
+                  adventureId: state?.adventure?.adventureId || null,
+                  roomEvents: [],
+                  tileResult: (externalTileResult) ? externalTileResult : null,
+                  roomDetails: (externalRoomDetails) ? externalRoomDetails : null,
+                  bossCheckResult: effectiveBossCheck || null,
+                  autoPlacedRoom: autoPlacedRoom || null
+                };
+                if ((data.roomEvents && data.roomEvents.length > 0) || data.tileResult || data.roomDetails || data.autoPlacedRoom) {
+                  localStorage.setItem('lastTileData', JSON.stringify(data));
+                } else {
+                  localStorage.removeItem('lastTileData');
+                }
+              } catch (e) { /* ignore */ }
+            }}
           />
           {radialMenu && (
             <RadialMenu

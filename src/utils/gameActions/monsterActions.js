@@ -41,11 +41,12 @@ export const spawnMajorFoe = (dispatch, hcl, isBoss = false) => {
   if (!monster) return;
 
   if (isBoss) {
-    // Boss gets +1 Life, +1 Attack
+    // Boss gets +1 Life, +1 Attack, and fights to the death
     monster.hp += 1;
     monster.maxHp += 1;
     monster.attack = (monster.attack || 0) + 1;
     monster.isBoss = true;
+    monster.neverChecksMorale = true; // Bosses fight to the bitter end
     monster.treasureMultiplier = 3; // 3x treasure
     monster.name = `${monster.name} [BOSS]`;
   }
@@ -174,8 +175,16 @@ export const processMonsterRoundStart = (dispatch, monsters) => {
  * @returns {object} Morale check result
  */
 export const checkMinorFoeMorale = (foe, initialCount, currentCount) => {
-  // Skip if morale never checked (fight to death) or not at 50%
-  if (foe.neverChecksMorale || currentCount >= Math.ceil(initialCount / 2)) {
+  // Check if morale should never be checked:
+  // 1. Foe has neverChecksMorale property (e.g., boss), OR
+  // 2. Foe rolled "Fight to the Death" reaction (checksMorale: false)
+  const hasNoMoraleReaction = foe.reaction && foe.reaction.checksMorale === false;
+  const neverChecksMorale = foe.neverChecksMorale || hasNoMoraleReaction;
+
+  // Skip if morale never checked or not below 50% remaining
+  const halfPoint = Math.ceil(initialCount / 2);
+
+  if (neverChecksMorale || currentCount >= halfPoint) {
     return { checked: false, fled: false };
   }
 
@@ -186,6 +195,8 @@ export const checkMinorFoeMorale = (foe, initialCount, currentCount) => {
   // 1-3 = flee, 4+ = keep fighting
   const fled = adjustedRoll <= 3;
 
+  const modStr = moraleMod !== 0 ? ` ${moraleMod > 0 ? '+' : ''}${moraleMod}=${adjustedRoll}` : '';
+
   return {
     checked: true,
     roll,
@@ -193,8 +204,8 @@ export const checkMinorFoeMorale = (foe, initialCount, currentCount) => {
     adjustedRoll,
     fled,
     message: fled
-      ? `🏃 Morale check: ${roll}${moraleMod ? '+'+moraleMod+'='+adjustedRoll : ''} - ${foe.name} flee!`
-      : `⚔️ Morale check: ${roll}${moraleMod ? '+'+moraleMod+'='+adjustedRoll : ''} - ${foe.name} keep fighting!`
+      ? `🏃 Morale check: d6=${roll}${modStr} → ${foe.name} FLEE!`
+      : `⚔️ Morale check: d6=${roll}${modStr} → ${foe.name} keep fighting!`
   };
 };
 
@@ -205,7 +216,8 @@ export const checkMinorFoeMorale = (foe, initialCount, currentCount) => {
  * @returns {object} { shouldReduce, newLevel, message }
  */
 export const checkMajorFoeLevelReduction = (foe) => {
-  const halfHP = Math.ceil(foe.maxHp / 2);
+  // "More than half Life lost" = remaining HP is half or less (using floor for correct threshold)
+  const halfHP = Math.floor(foe.maxHp / 2);
   const shouldReduce = foe.hp <= halfHP && foe.hp > 0 && !foe.levelReduced;
 
   return {

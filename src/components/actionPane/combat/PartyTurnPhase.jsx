@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Button } from '../../ui/Button';
 
 import { d6 } from '../../../utils/dice.js';
+import { checkMinorFoeMorale } from '../../../utils/gameActions/monsterActions.js';
 
 const PartyTurnPhase = memo(function PartyTurnPhase({
   state,
@@ -39,8 +40,34 @@ const PartyTurnPhase = memo(function PartyTurnPhase({
       const kills = Math.floor(total / monster.level);
       const originalIdx = state.monsters.findIndex(m => m.id === monster.id);
       const remaining = Math.max(0, monster.count - kills);
+      const initialCount = monster.initialCount || monster.count;
+
       dispatch({ type: 'UPD_MONSTER', i: originalIdx, u: { count: remaining } });
-  dispatch({ type: 'LOG', t: `${kills} ${monster.name} slain! (${remaining} remain)` });
+      dispatch({ type: 'LOG', t: `${kills} ${monster.name} slain! (${remaining} remain)` });
+
+      // Check morale if foes are below half and haven't been checked yet
+      if (remaining > 0 && !monster.moraleChecked) {
+        const moraleResult = checkMinorFoeMorale(monster, initialCount, remaining);
+
+        if (moraleResult.checked) {
+          dispatch({ type: 'LOG', t: moraleResult.message });
+          dispatch({
+            type: 'UPD_MONSTER',
+            i: originalIdx,
+            u: { moraleChecked: true },
+          });
+
+          if (moraleResult.fled) {
+            // Foes flee - mark as defeated but no treasure
+            dispatch({
+              type: 'UPD_MONSTER',
+              i: originalIdx,
+              u: { count: 0, fled: true },
+            });
+            dispatch({ type: 'LOG', t: `🏃 The remaining ${monster.name} flee!` });
+          }
+        }
+      }
     } else if (hit) {
       // Major foe - 1 damage
       const originalIdx = state.monsters.findIndex(m => m.id === monster.id);
