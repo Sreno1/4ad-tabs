@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { determineInitiative, rollSurprise } from "../../../utils/gameActions/index.js";
 
 const PHASE_LABELS = {
@@ -9,7 +9,7 @@ const PHASE_LABELS = {
   'monster_melee': 'Monster Melee'
 };
 
-export default function InitiativePhase({
+const InitiativePhase = memo(function InitiativePhase({
   monsters,
   party,
   combatInitiative,
@@ -95,4 +95,6 @@ export default function InitiativePhase({
       )}
     </div>
   );
-}
+});
+
+export default InitiativePhase;

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 
 /**
  * DoorEdge component renders a clickable door edge on the dungeon grid
@@ -12,7 +12,7 @@ import React from 'react'
  * @param {number} props.cellSize - Size of the grid cell in pixels
  * @param {Function} props.onClick - Callback when door edge is clicked
  */
-export default function DoorEdge({
+const DoorEdge = memo(function DoorEdge({
   x,
   y,
   edge,
@@ -93,4 +93,6 @@ export default function DoorEdge({
       />
     </button>
   )
-}
+});
+
+export default DoorEdge;

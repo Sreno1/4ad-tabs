@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Sparkles, AlertTriangle, DoorOpen, Puzzle, Skull, Coins, HelpCircle } from 'lucide-react';
 import { d66, d6, r2d6 } from '../utils/dice.js';
 import {
@@ -10,7 +10,7 @@ import {
 } from '../data/rooms.js';
 import { spawnMonster, rollTreasure, performSearch, rollWanderingMonster, spawnMajorFoe } from "../utils/gameActions/index.js";
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
-import DoorEdge from './DoorEdge.jsx';
+import DungeonGridCanvas from './DungeonGridCanvas.jsx';
 
 export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, hideGenerationUI = false, sidebarCollapsed = false }) {
   const [lastShapeRoll, setLastShapeRoll] = useState(null);
@@ -29,54 +29,41 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   const effectiveTileResult = externalTileResult || (lastShapeRoll && lastContentsRoll ? { shape: lastShapeRoll, contents: lastContentsRoll } : null);
   const effectiveBossCheck = externalBossCheck || bossCheckResult;
   const effectiveRoomDetails = externalRoomDetails || roomDetails;
-  
+
   // Add marker to a cell
-  const addMarker = (x, y, type, label, tooltip) => {
+  const addMarker = useCallback((x, y, type, label, tooltip) => {
     const key = `${x},${y}`;
     setRoomMarkers(prev => ({
       ...prev,
       [key]: { type, label, tooltip }
     }));
-  };
-  
+  }, []);
+
   // Remove marker from a cell
-  const removeMarker = (x, y) => {
+  const removeMarker = useCallback((x, y) => {
     const key = `${x},${y}`;
     setRoomMarkers(prev => {
       const newMarkers = { ...prev };
       delete newMarkers[key];
       return newMarkers;
     });
-  };
-  
+  }, []);
+
   // Get marker for a cell
-  const getMarker = (x, y) => {
+  const getMarker = useCallback((x, y) => {
     const key = `${x},${y}`;
     return roomMarkers[key];
-  };
-    // Marker type icons and colors - using DungeonMode font chars for roguelike theme
-  // Font mapping: ♠ spade, ♣ club, ♦ diamond, ♥ heart, ☠ skull, ★ star, † cross, ⛨ shield
-  // ⚉ circle, ⬚ empty box, ⊙ dot-circle, ⛑ helmet, ☥ ankh, 🕱 skeleton, ⧇ key
-  const MARKER_STYLES = {
-    monster: { icon: '♠', color: 'bg-red-500', label: '♠', rogueChar: '♠' },
-    boss: { icon: '☠', color: 'bg-purple-500', label: '☠', rogueChar: '☠' },
-    treasure: { icon: '★', color: 'bg-yellow-500', label: '★', rogueChar: '★' },
-    trap: { icon: '†', color: 'bg-orange-500', label: '†', rogueChar: '†' },
-    special: { icon: '♦', color: 'bg-blue-500', label: '♦', rogueChar: '♦' },
-    cleared: { icon: '⊙', color: 'bg-green-500', label: '⊙', rogueChar: '⊙' },
-    entrance: { icon: '⌂', color: 'bg-cyan-500', label: '⌂', rogueChar: '⌂' },
-    exit: { icon: '⛨', color: 'bg-emerald-500', label: '⛨', rogueChar: '⛨' }
-  };
+  }, [roomMarkers]);
 
-  const handleCellClick = (x, y) => {
+  const handleCellClick = useCallback((x, y) => {
     dispatch({ type: 'TOGGLE_CELL', x, y });
-  };
-  
+  }, [dispatch]);
+
   // Right-click to add/cycle markers
-  const handleCellRightClick = (x, y, e) => {
+  const handleCellRightClick = useCallback((x, y, e) => {
     e.preventDefault();
     const marker = getMarker(x, y);
-    const markerTypes = Object.keys(MARKER_STYLES);
+    const markerTypes = ['monster', 'boss', 'treasure', 'trap', 'special', 'cleared', 'entrance', 'exit'];
     
     if (!marker) {
       // No marker, add monster marker
@@ -89,19 +76,15 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
       } else {
         // Cycle to next type
         const nextType = markerTypes[currentIdx + 1];
-        const style = MARKER_STYLES[nextType];
-        addMarker(x, y, nextType, style.label, `${nextType} marker`);
+        addMarker(x, y, nextType, nextType, `${nextType} marker`);
       }
     }
-  };
-  
-  const handleDoorClick = (x, y, edge, e) => {
-    e.stopPropagation();
+  }, [getMarker, addMarker, removeMarker]);
+
+  const handleDoorToggle = useCallback((x, y, edge) => {
     dispatch({ type: 'TOGGLE_DOOR', x, y, edge });
-  };
-    const hasDoor = (x, y, edge) => {
-    return state.doors.some(d => d.x === x && d.y === y && d.edge === edge);
-  };
+  }, [dispatch]);
+
   // Calculate optimal cell size based on container dimensions
   React.useEffect(() => {
     const calculateCellSize = () => {
@@ -412,52 +395,17 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
               height: 'fit-content',
             }}
           >
-          {state.grid.map((row, y) => (
-            <div key={y} className="flex leading-[0]">
-              {row.map((cell, x) => {
-                const cellColor = cell === 0 ? 'bg-slate-900' : cell === 1 ? 'bg-amber-700' : 'bg-blue-700';
-                const marker = getMarker(x, y);
-                const markerStyle = marker ? MARKER_STYLES[marker.type] : null;                  return (
-                  <div key={x} className="relative inline-block group/cell">
-                    <button
-                      onClick={() => handleCellClick(x, y)}
-                      onContextMenu={(e) => handleCellRightClick(x, y, e)}
-                      className={`${cellColor} border border-slate-700 hover:opacity-80 block relative dungeon-cell`}
-                      data-dungeon-cell="true"
-                      style={{
-                        width: `${cellSize}px`,
-                        height: `${cellSize}px`,
-                      }}
-                    >                      {/* Marker indicator */}
-                      {showMarkers && marker && (
-                        <span 
-                          className={`absolute inset-0 flex items-center justify-center font-bold text-white ${markerStyle.color} bg-opacity-80 dungeon-marker`}
-                          style={{
-                            fontSize: `${Math.max(8, cellSize * 0.6)}px`,
-                            transform: shouldRotate ? 'rotate(-90deg)' : 'none'
-                          }}
-                          title={marker.tooltip}
-                        >
-                          {markerStyle.rogueChar || markerStyle.label}
-                        </span>
-                      )}                    </button>
-                      {/* Door edges - only show for room/corridor cells when hovered or door placed */}
-                      {cell > 0 && ['N', 'S', 'E', 'W'].map(edge => (
-                        <DoorEdge
-                          key={edge}
-                          x={x}
-                          y={y}
-                          edge={edge}
-                          isDoorPlaced={hasDoor(x, y, edge)}
-                          cellSize={cellSize}
-                          onClick={(e) => handleDoorClick(x, y, edge, e)}
-                        />
-                      ))}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+          <DungeonGridCanvas
+            grid={state.grid}
+            doors={state.doors}
+            roomMarkers={roomMarkers}
+            showMarkers={showMarkers}
+            cellSize={cellSize}
+            shouldRotate={shouldRotate}
+            onCellClick={handleCellClick}
+            onCellRightClick={handleCellRightClick}
+            onDoorToggle={handleDoorToggle}
+          />
           </div>
         </div>
       </div>

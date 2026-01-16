@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Button } from '../../ui/Button';
 
 import { d6 } from '../../../utils/dice.js';
 
-export default function PartyTurnPhase({
+const PartyTurnPhase = memo(function PartyTurnPhase({
   state,
   dispatch,
   activeMonsters,
@@ -101,4 +101,6 @@ export default function PartyTurnPhase({
       </Button>
     </div>
   );
-}
+});
+
+export default PartyTurnPhase;

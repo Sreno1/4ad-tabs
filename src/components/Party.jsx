@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Plus, X, Heart, Star, Target } from 'lucide-react';
 import { CLASSES, getMaxHP, getSpellSlots, getLuckPoints } from '../data/classes.js';
 import { d6 } from '../utils/dice.js';
@@ -25,7 +25,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
   const party = selectParty(state);
   const isPartyFull = selectIsPartyFull(state);
 
-  const addHeroToParty = (classKey) => {
+  const addHeroToParty = useCallback((classKey) => {
     const classData = CLASSES[classKey];
     const hero = {
       id: Date.now(),
@@ -43,9 +43,9 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
     };
     dispatch(createAddHeroAction(hero));
     setShowClassPicker(false);
-  };
+  }, [dispatch]);
 
-  const adjustLevel = (index, delta) => {
+  const adjustLevel = useCallback((index, delta) => {
     const hero = party[index];
     const newLevel = Math.max(1, Math.min(5, hero.lvl + delta));
     const newMaxHp = getMaxHP(hero.key, newLevel);
@@ -54,9 +54,9 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
       maxHp: newMaxHp,
       hp: Math.min(hero.hp, newMaxHp)
     }));
-  };
+  }, [party, dispatch]);
 
-  const handleLevelUp = (index) => {
+  const handleLevelUp = useCallback((index) => {
     const hero = party[index];
     if (!canLevelUp(hero)) return;
 
@@ -68,19 +68,19 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
       hp: hero.hp + 1 // Gain 1 HP on level up
     }));
     dispatch(logMessage(`🎉 ${hero.name} leveled up to L${newLevel}!`));
-  };
+  }, [party, dispatch]);
 
-  const adjustHP = (index, delta) => {
+  const adjustHP = useCallback((index, delta) => {
     const hero = party[index];
     const newHP = Math.max(0, Math.min(hero.maxHp, hero.hp + delta));
     dispatch(updateHero(index, { hp: newHP }));
-  };
+  }, [party, dispatch]);
 
-  const toggleAbility = (heroIndex, abilityKey) => {
+  const toggleAbility = useCallback((heroIndex, abilityKey) => {
     const heroAbilities = selectHeroAbilities(state, heroIndex);
     const currentValue = heroAbilities[abilityKey] || false;
     dispatch(setAbility(heroIndex, abilityKey, !currentValue));
-  };
+  }, [state, dispatch]);
 
   const renderAbilities = (hero, index) => {
     // Cleric: Heals and Blessings

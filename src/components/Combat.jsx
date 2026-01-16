@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { d6 } from '../utils/dice.js';
 import {
   rollWanderingMonster,
@@ -63,17 +63,17 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
   const party = selectParty(state);
   const activeHero = selectHero(state, selectedHero) || null;
   const monsterList = getAllMonsters(); // Get all monsters for dropdown
-  
-  const addToCombatLog = (message) => {
+
+  const addToCombatLog = useCallback((message) => {
     setCombatLog(prev => [message, ...prev].slice(0, 20));
     dispatch({ type: 'LOG', t: message });
-  };
-  
-  const clearCombatLog = () => {
+  }, [dispatch]);
+
+  const clearCombatLog = useCallback(() => {
     setCombatLog([]);
-  };
-  
-  const handleClearMonsters = () => {
+  }, []);
+
+  const handleClearMonsters = useCallback(() => {
     // Award XP for all defeated monsters before clearing
     state.monsters.forEach(monster => {
       if (monster.hp <= 0 || monster.count === 0) {
@@ -93,10 +93,10 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
     setCombatInitiative(null);
     setTargetMonsterIdx(null);
     dispatch({ type: 'LOG', t: '--- Encounter ended ---' });
-  };
-  
+  }, [state.monsters, state.party, dispatch, clearCombatLog]);
+
   // Get the current target monster (first alive if none selected)
-  const getTargetMonster = () => {
+  const getTargetMonster = useCallback(() => {
     if (targetMonsterIdx !== null && state.monsters[targetMonsterIdx]) {
       const target = state.monsters[targetMonsterIdx];
       if (target.hp > 0 && (target.count === undefined || target.count > 0)) {
@@ -106,14 +106,14 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
     // Default to first alive monster
     const idx = state.monsters.findIndex(m => m.hp > 0 && (m.count === undefined || m.count > 0));
     return idx >= 0 ? { monster: state.monsters[idx], index: idx } : null;
-  };
-  
+  }, [targetMonsterIdx, state.monsters]);
+
   // Check if a monster is a Minor Foe (has count property)
-  const isMinorFoe = (monster) => {
+  const isMinorFoe = useCallback((monster) => {
     return monster && (monster.count !== undefined || monster.isMinorFoe);
-  };
-  
-  const handleAttack = (heroIndex) => {
+  }, []);
+
+  const handleAttack = useCallback((heroIndex) => {
     const hero = state.party[heroIndex];
     if (!hero || hero.hp <= 0) return;
     
@@ -154,9 +154,9 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
     if (hero.status?.blessed) {
       dispatch({ type: 'SET_HERO_STATUS', heroIdx: heroIndex, statusKey: 'blessed', value: false });
     }
-  };
-  
-  const handleDefense = (heroIndex) => {
+  }, [state.party, state.abilities, state.monsters, getTargetMonster, isMinorFoe, dispatch]);
+
+  const handleDefense = useCallback((heroIndex) => {
     const hero = state.party[heroIndex];
     if (!hero) return;
     
@@ -182,53 +182,53 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
         dispatch({ type: 'UPD_HERO', i: heroIndex, u: { hp: newHP } });
       }
     }
-    
+
     addToCombatLog(result.message);
-  };
-  
+  }, [state.party, state.abilities, foeLevel, dispatch, addToCombatLog]);
+
   // Handle save roll
-  const handleSaveRoll = () => {
+  const handleSaveRoll = useCallback(() => {
     if (!pendingSave) return;
     const hero = state.party[pendingSave.heroIdx];
     performSaveRoll(dispatch, hero, pendingSave.heroIdx, pendingSave.damageSource);
     setPendingSave(null);
-  };
-  
+  }, [pendingSave, state.party, dispatch]);
+
   // Handle blessing re-roll for save
-  const handleBlessingReroll = (clericIdx) => {
+  const handleBlessingReroll = useCallback((clericIdx) => {
     if (!pendingSave) return;
     const targetHero = state.party[pendingSave.heroIdx];
     useBlessingForSave(dispatch, clericIdx, targetHero, pendingSave.heroIdx, pendingSave.damageSource);
     setPendingSave(null);
-  };
-  
-  // Handle luck re-roll for save  
-  const handleLuckReroll = () => {
+  }, [pendingSave, state.party, dispatch]);
+
+  // Handle luck re-roll for save
+  const handleLuckReroll = useCallback(() => {
     if (!pendingSave) return;
     const hero = state.party[pendingSave.heroIdx];
     if (hero.key === 'halfling') {
       useLuckForSave(dispatch, pendingSave.heroIdx, hero, pendingSave.damageSource);
     }
     setPendingSave(null);
-  };
-  
+  }, [pendingSave, state.party, dispatch]);
+
   // Process monster round start (regeneration, etc.)
-  const handleNewRound = () => {
+  const handleNewRound = useCallback(() => {
     processMonsterRoundStart(dispatch, state.monsters);
     addToCombatLog('--- New Round ---');
-  };
-  
+  }, [state.monsters, dispatch, addToCombatLog]);
+
   // Flee attempt
-  const handleFlee = () => {
+  const handleFlee = useCallback(() => {
     const highestLevel = Math.max(...state.monsters.map(m => m.level), 1);
     attemptPartyFlee(dispatch, state.party, highestLevel);
-  };
-  
-  const handleWanderingMonster = () => {
+  }, [state.monsters, state.party, dispatch]);
+
+  const handleWanderingMonster = useCallback(() => {
     rollWanderingMonster(dispatch);
-  };
-  
-  const handleCustomMonster = () => {
+  }, [dispatch]);
+
+  const handleCustomMonster = useCallback(() => {
     const name = prompt('Monster Name?', 'Custom Monster') || 'Custom Monster';
     const level = parseInt(prompt('Monster Level (1-5)?', '2')) || 2;
     const isMajor = confirm('Is this a Major Foe (single creature with HP)? Cancel for Minor Foe (group with count).');
@@ -263,9 +263,9 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
       dispatch({ type: 'ADD_MONSTER', m: monster });
       dispatch({ type: 'LOG', t: `👥 ${count}x ${name} L${level} Minor Foes added` });
     }
-  };
-  
-  const handleSpawnFromTable = () => {
+  }, [dispatch]);
+
+  const handleSpawnFromTable = useCallback(() => {
     if (!selectedMonster) return;
     
     // Calculate HCL (Highest Character Level) from party
@@ -282,9 +282,9 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
       : '';
     dispatch({ type: 'LOG', t: `${monster.name} L${monster.level} (${monster.hp}HP)${abilitiesText} appears!` });
     setSelectedMonster(''); // Reset selection
-  };
-  
-  const handleRollReaction = (index) => {
+  }, [selectedMonster, state.party, dispatch]);
+
+  const handleRollReaction = useCallback((index) => {
     const monster = state.monsters[index];
     const result = rollMonsterReaction(monster);
     
@@ -295,9 +295,9 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
     const logMsg = `🎲 ${monster.name} Reaction (${result.roll}): ${result.name} - ${result.description}`;
     dispatch({ type: 'LOG', t: logMsg });
     addToCombatLog(logMsg);
-  };
-  
-  const adjustMonsterHP = (index, delta) => {
+  }, [state.monsters, dispatch, addToCombatLog]);
+
+  const adjustMonsterHP = useCallback((index, delta) => {
     const monster = state.monsters[index];
     const newHP = Math.max(0, Math.min(monster.maxHp, monster.hp + delta));
     dispatch({ type: 'UPD_MONSTER', i: index, u: { hp: newHP } });
@@ -306,33 +306,33 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
     if (newHP === 0 && monster.hp > 0) {
       addToCombatLog(`💀 ${monster.name} defeated!`);
     }
-  };
-  
+  }, [state.monsters, dispatch, addToCombatLog]);
+
   // Class ability handlers
-  const handleClericHeal = (clericIdx, targetIdx) => {
+  const handleClericHeal = useCallback((clericIdx, targetIdx) => {
     const targetHero = state.party[targetIdx];
     useClericHeal(dispatch, clericIdx, targetIdx, targetHero);
     setShowAbilities(null);
-  };
-  
-  const handleClericBless = (clericIdx, targetIdx) => {
+  }, [state.party, dispatch]);
+
+  const handleClericBless = useCallback((clericIdx, targetIdx) => {
     const targetHero = state.party[targetIdx];
     useClericBless(dispatch, clericIdx, targetIdx, targetHero);
     setShowAbilities(null);
-  };
-  
-  const handleToggleRage = (barbarianIdx) => {
+  }, [state.party, dispatch]);
+
+  const handleToggleRage = useCallback((barbarianIdx) => {
     const heroAbilities = state.abilities?.[barbarianIdx] || {};
     useBarbarianRage(dispatch, barbarianIdx, !heroAbilities.rageActive);
     setShowAbilities(null);
-  };
-  
-  const handleUseLuck = (halflingIdx) => {
+  }, [state.abilities, dispatch]);
+
+  const handleUseLuck = useCallback((halflingIdx) => {
     useHalflingLuck(dispatch, halflingIdx);
     setShowAbilities(null);
-  };
-  
-  const handleCastSpell = (casterIdx, spellKey) => {
+  }, [dispatch]);
+
+  const handleCastSpell = useCallback((casterIdx, spellKey) => {
     const caster = state.party[casterIdx];
     const context = {};
     
@@ -355,18 +355,18 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
         context.targetHero = state.party[lowestHP];
       }
     }
-    
+
     performCastSpell(dispatch, caster, casterIdx, spellKey, context);
     setShowSpells(null);
-  };
-  
+  }, [state.party, state.monsters, dispatch]);
+
   // Get ability usage for a hero
-  const getAbilityUsage = (heroIdx) => {
+  const getAbilityUsage = useCallback((heroIdx) => {
     return state.abilities?.[heroIdx] || {};
-  };
-  
+  }, [state.abilities]);
+
   // Check if hero can use abilities
-  const canUseAbility = (hero, heroIdx, ability) => {
+  const canUseAbility = useCallback((hero, heroIdx, ability) => {
     const usage = getAbilityUsage(heroIdx);
     switch (ability) {
       case 'heal':
@@ -383,7 +383,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
       default:
         return false;
     }
-  };
+  }, [getAbilityUsage]);
   
   return (
     <div className="space-y-2">

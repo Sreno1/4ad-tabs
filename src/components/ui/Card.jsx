@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 const variants = {
   default: 'bg-slate-700 rounded p-2 text-sm',
@@ -41,7 +41,7 @@ export function Card({
 /**
  * Specialized HeroCard with semantic data attributes
  */
-export function HeroCard({ hero, children, className = '', ...props }) {
+export const HeroCard = memo(function HeroCard({ hero, children, className = '', ...props }) {
   return (
     <Card
       variant="hero"
@@ -53,12 +53,12 @@ export function HeroCard({ hero, children, className = '', ...props }) {
       {children}
     </Card>
   );
-}
+});
 
 /**
  * Specialized MonsterCard with semantic data attributes
  */
-export function MonsterCard({ monster, children, className = '', ...props }) {
+export const MonsterCard = memo(function MonsterCard({ monster, children, className = '', ...props }) {
   return (
     <Card
       variant="monster"
@@ -70,6 +70,6 @@ export function MonsterCard({ monster, children, className = '', ...props }) {
       {children}
     </Card>
   );
-}
+});
 
 export default Card;

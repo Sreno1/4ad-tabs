@@ -64,46 +64,6 @@ Week 6: Testing & Polish (6-8 hours)
 
 ## 📋 Detailed Task Breakdown
 
-#### Task 4.4: Create Action Creators (1 hour)
-**Priority:** 🟡 MEDIUM
-
-Create `src/actions/actionCreators.js`:
-
-```javascript
-// Party actions
-export const addHero = (hero) => ({ type: 'ADD_HERO', h: hero });
-export const deleteHero = (index) => ({ type: 'DEL_HERO', i: index });
-export const updateHero = (index, updates) => ({ type: 'UPD_HERO', i: index, u: updates });
-
-// Monster actions
-export const addMonster = (monster) => ({ type: 'ADD_MONSTER', m: monster });
-export const updateMonster = (index, updates) => ({ type: 'UPD_MONSTER', i: index, u: updates });
-export const clearMonsters = () => ({ type: 'CLEAR_MONSTERS' });
-
-// Log actions
-export const logMessage = (message) => ({ type: 'LOG', t: message });
-
-// Hero status
-export const setHeroStatus = (heroIdx, statusKey, value) => ({
-  type: 'SET_HERO_STATUS',
-  heroIdx,
-  statusKey,
-  value
-});
-```
-
-Update 3-5 components to use action creators.
-
-
-**Week 4 Completion Checklist:**
-- [ ] gameActions.js deleted
-- [ ] Reducer composed into domains
-- [ ] Selectors created
-- [ ] Action creators created
-- [ ] No functionality broken
-
----
-
 ## WEEK 5: Performance & Accessibility
 **Focus:** Optimize renders, add a11y
 **Effort:** 6-8 hours

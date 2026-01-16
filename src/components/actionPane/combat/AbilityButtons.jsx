@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 // TODO: Import Button and any other needed UI components
 
 /**
  * AbilityButtons - Handles all class ability buttons and popups (heal, bless, spell, etc)
  * Extracted from ActionPane.jsx (lines 881-1144)
  */
-export default function AbilityButtons({
+const AbilityButtons = memo(function AbilityButtons({
   state,
   dispatch,
   showSpells,
@@ -286,4 +286,6 @@ export default function AbilityButtons({
       )}
     </div>
   );
-}
+});
+
+export default AbilityButtons;

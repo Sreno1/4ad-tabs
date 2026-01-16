@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-export default function MonsterReaction({ monster, onRollReaction }) {
+const MonsterReaction = memo(function MonsterReaction({ monster, onRollReaction }) {
   const getReactionStyle = (reaction) => {
     if (reaction.hostile === true) {
       return 'bg-red-900/50 text-red-300';
@@ -31,4 +31,6 @@ export default function MonsterReaction({ monster, onRollReaction }) {
       )}
     </div>
   );
-}
+});
+
+export default MonsterReaction;

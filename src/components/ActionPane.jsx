@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { selectParty, selectMonsters } from '../state/selectors.js';
 import { setAbility } from '../state/actionCreators.js';
 import { Dices } from "lucide-react";
@@ -49,7 +49,7 @@ export default function ActionPane({
   const corridor = isCorridor();
 
   // Handle spell casting
-  const handleCastSpell = (casterIdx, spellKey) => {
+  const handleCastSpell = useCallback((casterIdx, spellKey) => {
     const caster = party[casterIdx];
     const spell = SPELLS[spellKey];
     const context = {};
@@ -101,7 +101,7 @@ export default function ActionPane({
 
     // Close spell selection
     setShowSpells(null);
-  };
+  }, [party, monsters, getActiveMonsters, state.party, state.abilities, dispatch]);
 
   // If no tile generated yet, show idle state with Generate Tile button
   if (!tileResult && roomEvents.length === 0) {

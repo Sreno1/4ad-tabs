@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   rollTreasure,
   awardXP,
   checkLevelUp
 } from "../../../utils/gameActions/index.js";
 
-export default function VictoryPhase({
+const VictoryPhase = memo(function VictoryPhase({
   monsters,
   party,
   dispatch,
@@ -79,4 +79,6 @@ export default function VictoryPhase({
       )}
     </div>
   );
-}
+});
+
+export default VictoryPhase;

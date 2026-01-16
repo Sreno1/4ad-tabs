@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { updateMonster } from '../../state/actionCreators.js';
 
-export default function ActiveMonsters({ activeMonsters, state, dispatch, corridor }) {
+const ActiveMonsters = memo(function ActiveMonsters({ activeMonsters, state, dispatch, corridor }) {
   return (
     <div className="bg-slate-800 rounded p-2">
       <div className="text-sm font-bold text-red-400 mb-2">
@@ -69,4 +69,6 @@ export default function ActiveMonsters({ activeMonsters, state, dispatch, corrid
       </div>
     </div>
   );
-}
+});
+
+export default ActiveMonsters;

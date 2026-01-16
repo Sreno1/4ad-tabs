@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { COMBAT_PHASES } from '../../constants/gameConstants.js';
 
-export default function CombatInitiative({
+const CombatInitiative = memo(function CombatInitiative({
   combatPhase,
   monsterReaction,
   handleRollReaction,
@@ -78,4 +78,6 @@ export default function CombatInitiative({
       )}
     </div>
   );
-}
+});
+
+export default CombatInitiative;

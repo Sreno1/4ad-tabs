@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Button } from '../../ui/Button';
 
 import { d6 } from '../../../utils/dice.js';
 
-export default function MonsterTurnPhase({
+const MonsterTurnPhase = memo(function MonsterTurnPhase({
   state,
   dispatch,
   activeMonsters,
@@ -92,4 +92,6 @@ export default function MonsterTurnPhase({
       </Button>
     </div>
   );
-}
+});
+
+export default MonsterTurnPhase;

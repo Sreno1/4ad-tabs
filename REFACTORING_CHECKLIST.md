@@ -248,20 +248,22 @@ Use this checklist to track your progress week-by-week. Check off tasks as you c
 ## WEEK 5: Performance & A11y ⏱️ 6-8 hours
 
 ### Day 1: Performance (3 hours)
-- [ ] Task 5.1: React.memo (1.5 hours)
-  - [ ] Memo EventCard
-  - [ ] Memo ActiveMonsters
-  - [ ] Memo CombatInitiative
-  - [ ] Memo HeroCard, MonsterCard
-  - [ ] Memo DoorEdge
-  - [ ] Memo all combat phases
+- [x] Task 5.1: React.memo (1.5 hours) ✅ COMPLETE
+  - [x] Memo EventCard
+  - [x] Memo ActiveMonsters
+  - [x] Memo CombatInitiative
+  - [x] Memo HeroCard, MonsterCard
+  - [x] Memo DoorEdge
+  - [x] Memo all combat phases (PartyTurnPhase, MonsterTurnPhase, InitiativePhase, VictoryPhase)
+  - [x] Memo bonus components (AbilityButtons, MonsterReaction)
   - [ ] Check re-render count in DevTools
 
-- [ ] Task 5.2: useCallback (1.5 hours)
-  - [ ] ActionPane handlers
-  - [ ] Combat.jsx handlers
-  - [ ] Party.jsx handlers
-  - [ ] Dungeon.jsx handlers
+- [x] Task 5.2: useCallback (1.5 hours) ✅ COMPLETE
+  - [x] ActionPane handlers (handleCastSpell)
+  - [x] Combat.jsx handlers (15+ handlers wrapped)
+  - [x] Party.jsx handlers (addHeroToParty, adjustLevel, handleLevelUp, adjustHP, toggleAbility)
+  - [x] Dungeon.jsx handlers (handleCellClick, handleCellRightClick, handleDoorClick, hasDoor, marker handlers)
+  - [x] Build passes successfully
   - [ ] Test performance improvement
 
 ### Day 2: Accessibility (2-3 hours)

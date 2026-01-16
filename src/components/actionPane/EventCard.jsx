@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { EVENT_TYPES } from '../../constants/gameConstants.js';
 
-export default function EventCard({ event, index }) {
+const EventCard = memo(function EventCard({ event, index }) {
   switch (event.type) {
     case EVENT_TYPES.TILE_GENERATED:
       return (
@@ -117,4 +117,6 @@ export default function EventCard({ event, index }) {
     default:
       return null;
   }
-}
+});
+
+export default EventCard;
