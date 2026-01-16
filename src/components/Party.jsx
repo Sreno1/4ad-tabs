@@ -135,7 +135,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
             const heroAbilities = selectHeroAbilities(state, index);
             return (
               <button
-                key={n}
+                key={`spell-${index}-${n}`}
                 onClick={() => toggleAbility(index, `spell${n}`)}
                 className={`w-4 h-4 rounded ${heroAbilities[`spell${n}`] ? 'bg-slate-600' : 'bg-purple-600'}`}
                 aria-label={`${hero.name} spell slot ${n + 1}: ${heroAbilities[`spell${n}`] ? 'used' : 'available'}`}
@@ -159,7 +159,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
             const heroAbilities = selectHeroAbilities(state, index);
             return (
               <button
-                key={n}
+                key={`luck-${index}-${n}`}
                 onClick={() => toggleAbility(index, `luck${n}`)}
                 className={`w-4 h-4 rounded ${heroAbilities[`luck${n}`] ? 'bg-slate-600' : 'bg-cyan-600'}`}
                 aria-label={`${hero.name} luck point ${n + 1}: ${heroAbilities[`luck${n}`] ? 'used' : 'available'}`}

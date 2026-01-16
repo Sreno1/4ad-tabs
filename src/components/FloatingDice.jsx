@@ -188,6 +188,22 @@ export default function FloatingDice() {
 
       {/* Floating button - desktop only */}
       <div className="hidden md:block fixed bottom-8 right-8 z-40">
+        {/* Hidden 2d6 roll button for double-spacebar shortcut */}
+        <button
+          data-dice-roll="2d6"
+          style={{ position: 'absolute', left: '-9999px', width: 0, height: 0, opacity: 0 }}
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={() => handleRoll(DICE_OPTIONS[1])}
+        />
+        {/* Hidden d6 roll button for keyboard shortcut */}
+        <button
+          data-dice-roll="d6"
+          style={{ position: 'absolute', left: '-9999px', width: 0, height: 0, opacity: 0 }}
+          tabIndex={-1}
+          aria-hidden="true"
+          onClick={() => handleRoll(DICE_OPTIONS[0])}
+        />
         {/* Radial options */}
         {isOpen && (
           <div className="absolute bottom-0 right-0">
@@ -207,6 +223,7 @@ export default function FloatingDice() {
                     transform: `translate(${pos.x - 28}px, ${pos.y - 28}px)`,
                     animation: `fadeIn 0.2s ease-out ${index * 0.05}s both`,
                   }}
+                  {...(option.type === 'd6' ? { 'data-dice-roll': 'd6' } : {})}
                 >
                   {option.label}
                 </button>

@@ -313,6 +313,26 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                 </span>
               </div>
             </div>
+            {/* Keyboard Shortcuts Legend */}
+            <div className="mt-6 p-3 border-t border-slate-700 text-xs text-slate-400">
+              <div className="font-bold text-amber-300 mb-2">Keyboard Shortcuts</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="font-mono">Esc</span>: Close modals</div>
+                <div><span className="font-mono">Ctrl/Cmd+D</span>: Dice roller</div>
+                <div><span className="font-mono">p</span>: Party tab</div>
+                <div><span className="font-mono">`</span>: Log tab</div>
+                <div><span className="font-mono">o</span>: Stats tab</div>
+                <div><span className="font-mono">r</span>: Rules modal (toggle)</div>
+                <div><span className="font-mono">c</span>: Campaign modal (toggle)</div>
+                <div><span className="font-mono">u</span>: Abilities modal (toggle)</div>
+                <div><span className="font-mono">i</span>: Equipment modal (toggle)</div>
+                <div><span className="font-mono">f</span>: Features modal (toggle)</div>
+                <div><span className="font-mono">w/a/s/d</span>: Place door (hover tile)</div>
+                <div><span className="font-mono">Tab</span>: Cycle combat actions</div>
+                <div><span className="font-mono">Space</span>: Roll <span className="font-bold text-amber-400">d6</span> (single tap), <span className="font-bold text-amber-400">2d6</span> (double tap)</div>
+                <div><span className="font-mono">Enter</span>: Confirm/activate</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

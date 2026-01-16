@@ -477,7 +477,6 @@ All character classes from core 4AD rules added to `src/data/classes.js`:
 
 ### Phase 7e: Spell Expansion
 
-1. can you implement the scroll system as outlined in /public/magic.txt
 
 FIX ALL INCOMPLETE/GAPS LISTED ABOVE IN NUMBERED ITEMS 1 - 11
 

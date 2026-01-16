@@ -60,6 +60,122 @@ export default function App() {
   // Layout state
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [leftPanelTab, setLeftPanelTab] = useState("party"); // 'party', 'stats', 'log', or 'rules'
+  // ...existing code...
+
+    // Keyboard shortcuts and focus management
+    React.useEffect(() => {
+      const handleKeyboard = (e) => {
+        // Escape closes all modals
+        if (e.key === "Escape") {
+          setShowSettings(false);
+          setShowRules(false);
+          setShowDungeonFeatures(false);
+          setShowCampaign(false);
+          setShowEquipment(false);
+          setShowAbilities(false);
+          // Add more modal closes as needed
+        }
+
+        // Ctrl/Cmd + D for dice roller
+        if ((e.ctrlKey || e.metaKey) && e.key === "d") {
+          e.preventDefault();
+          // Focus dice roller (FloatingDice)
+          const dice = document.querySelector('[data-focus="dice"]');
+          dice?.focus();
+        }
+
+        // Tab through combat actions (ActionPane)
+        if (e.key === "Tab") {
+          // Custom tab navigation for combat actions
+          // Could set focus to next action button
+          // Implement as needed in ActionPane
+        }
+
+
+        // Spacebar: wait up to 0.5s for double-tap before rolling
+        if (e.key === " " && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          if (!window._spacebarState) window._spacebarState = { count: 0, timer: null };
+          window._spacebarState.count++;
+          if (window._spacebarState.count === 1) {
+            window._spacebarState.timer = setTimeout(() => {
+              // Single tap: roll d6
+              const diceButton = document.querySelector('[data-dice-roll="d6"]');
+              if (diceButton) diceButton.click();
+              window._spacebarState.count = 0;
+              window._spacebarState.timer = null;
+            }, 500);
+          } else if (window._spacebarState.count === 2) {
+            // Double tap: roll 2d6
+            if (window._spacebarState.timer) clearTimeout(window._spacebarState.timer);
+            const diceButton = document.querySelector('[data-dice-roll="2d6"]');
+            if (diceButton) diceButton.click();
+            window._spacebarState.count = 0;
+            window._spacebarState.timer = null;
+          }
+        }
+
+        // Enter to confirm (optional: keep if you want modal/dialog confirm)
+        if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+          const active = document.activeElement;
+          if (active?.tagName === "BUTTON" && !active.disabled) {
+            active.click();
+          }
+        }
+
+        // p for party tab (mobile/desktop)
+        if (e.key === "p" && !e.ctrlKey && !e.metaKey) {
+          setTab("party");
+          setLeftPanelTab("party");
+          if (showSettings) setShowSettings(false);
+        }
+        // ` for log tab
+        if (e.key === "`" && !e.ctrlKey && !e.metaKey) {
+          setTab("log");
+          setLeftPanelTab("log");
+          if (showSettings) setShowSettings(false);
+        }
+        // o for stats tab
+        if (e.key === "o" && !e.ctrlKey && !e.metaKey) {
+          setTab("stats");
+          setLeftPanelTab("stats");
+          if (showSettings) setShowSettings(false);
+        }
+        // r for rules modal
+        if (e.key === "r" && !e.ctrlKey && !e.metaKey) {
+          setShowRules((prev) => !prev);
+        }
+        // esc for settings modal (when nothing else open)
+        if (e.key === "Escape" && !showSettings && !showRules && !showDungeonFeatures && !showCampaign && !showEquipment && !showAbilities) {
+          setShowSettings(true);
+        }
+        // c for campaign modal
+        if (e.key === "c" && !e.ctrlKey && !e.metaKey) {
+          setShowCampaign((prev) => !prev);
+        }
+        // u for abilities modal
+        if (e.key === "u" && !e.ctrlKey && !e.metaKey) {
+          setShowAbilities((prev) => !prev);
+        }
+        // i for equipment modal
+        if (e.key === "i" && !e.ctrlKey && !e.metaKey) {
+          setShowEquipment((prev) => !prev);
+        }
+        // f for features modal
+        if (e.key === "f" && !e.ctrlKey && !e.metaKey) {
+          setShowDungeonFeatures((prev) => !prev);
+        }
+        // w, s, a, d for door placement (while hovering dungeon tile)
+        // This requires Dungeon component to expose a handler for door placement
+        // Could dispatch a custom event or call a prop if available
+        // Example:
+        // if (["w","a","s","d"].includes(e.key) && document.activeElement?.dataset?.tileHover) {
+        //   // Call dungeon door placement logic
+        // }
+      };
+      window.addEventListener("keydown", handleKeyboard);
+      return () => window.removeEventListener("keydown", handleKeyboard);
+    }, [setShowSettings, setShowRules, setShowDungeonFeatures, setShowCampaign, setShowEquipment, setShowAbilities, setTab, setLeftPanelTab, showSettings, showRules, showDungeonFeatures, showCampaign, showEquipment, showAbilities]);
   const [actionMode, setActionMode] = useState(ACTION_MODES.IDLE);
 
   // Custom hooks for game logic

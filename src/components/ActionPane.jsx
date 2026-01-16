@@ -128,7 +128,7 @@ export default function ActionPane({
       {/* Room Events Stack - shows all events that happened in this room */}
       <div className="space-y-1">
         {roomEvents.map((event, index) => (
-          <EventCard key={index} event={event} index={index} />
+          <EventCard key={`event-${event.type}-${event.timestamp || index}`} event={event} index={index} />
         ))}
       </div>
 

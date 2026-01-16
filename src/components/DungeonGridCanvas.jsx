@@ -314,13 +314,27 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
   // Add keyboard listeners
   useEffect(() => {
+    const handleGridKeyDown = (e) => {
+      if (!hoveredCell) return;
+      let edge = null;
+      if (e.key === 'w' || e.key === 'W') edge = 'N';
+      if (e.key === 's' || e.key === 'S') edge = 'S';
+      if (e.key === 'a' || e.key === 'A') edge = 'W';
+      if (e.key === 'd' || e.key === 'D') edge = 'E';
+      if (edge) {
+        e.preventDefault();
+        onDoorToggle(hoveredCell.x, hoveredCell.y, edge);
+      }
+    };
+    window.addEventListener('keydown', handleGridKeyDown);
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     return () => {
+      window.removeEventListener('keydown', handleGridKeyDown);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [handleKeyDown, handleKeyUp]);
+  }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle]);
 
   // Add global mouseup listener to handle drag ending outside canvas
   useEffect(() => {

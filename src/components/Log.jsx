@@ -42,7 +42,7 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
             aria-label="Adventure log"
           >
             {log.map((entry, index) => (
-              <div key={index} className="text-slate-400 border-b border-slate-800 pb-1 font-mono log-entry">
+              <div key={`log-${index}-${entry.substring(0, 20)}`} className="text-slate-400 border-b border-slate-800 pb-1 font-mono log-entry">
                 {entry}
               </div>
             ))}
@@ -81,7 +81,7 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
             aria-label="Adventure log"
           >
           {state.log.map((entry, index) => (
-            <div key={index} className="text-slate-400 border-b border-slate-700 pb-1 log-entry">
+            <div key={`log-${index}-${entry.substring(0, 20)}`} className="text-slate-400 border-b border-slate-700 pb-1 log-entry">
               {entry}
             </div>
           ))}
