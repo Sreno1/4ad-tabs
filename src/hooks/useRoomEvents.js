@@ -4,12 +4,14 @@ import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE, SPECIAL_FEATURE_TABLE, SPECIAL_R
 import { spawnMonster, rollTreasure, spawnMajorFoe } from "../utils/gameActions/index.js";
 import { ACTION_MODES, EVENT_TYPES } from '../constants/gameConstants.js';
 import { logMessage } from '../state/actionCreators.js';
+import roomLibrary from '../utils/roomLibrary.js';
 
 export function useRoomEvents(state, dispatch, setActionMode) {
   const [roomEvents, setRoomEvents] = useState([]);
   const [tileResult, setTileResult] = useState(null);
   const [roomDetails, setRoomDetails] = useState(null);
   const [bossCheckResult, setBossCheckResult] = useState(null);
+  const [autoPlacedRoom, setAutoPlacedRoom] = useState(null);
 
   // Add an event to the room events stack
   const addRoomEvent = (eventType, eventData = {}) => {
@@ -119,33 +121,44 @@ export function useRoomEvents(state, dispatch, setActionMode) {
   // Combined tile generation - rolls both shape and contents at once
   const generateTile = () => {
     const shapeRoll = d66();
-    const shapeResult = TILE_SHAPE_TABLE[shapeRoll];
-    const contentsRoll = r2d6();
-    const contentsResult = TILE_CONTENTS_TABLE[contentsRoll];
-
-    dispatch(logMessage(`🎲 NEW TILE: Shape d66=${shapeRoll}, Contents 2d6=${contentsRoll}`, 'exploration'));
-  dispatch(logMessage(`${shapeResult.description} | Doors: ${shapeResult.doors}`, 'exploration'));
-    dispatch(logMessage(`📦 ${contentsResult.description}`, 'exploration'));
-
-    const result = {
-      shape: { roll: shapeRoll, ...shapeResult },
-      contents: { roll: contentsRoll, ...contentsResult }
-    };
-
-    // Reset room state for new tile
-    setTileResult(result);
-    setRoomDetails(null);
-    setBossCheckResult(null);
-    setRoomEvents([]); // Clear events for new room
-
-    // Add tile generated event
     const newEvents = [{
-      type: EVENT_TYPES.TILE_GENERATED,
-      data: result,
+      type: 'D66_ROLL',
+      data: { roll: shapeRoll },
       timestamp: Date.now()
     }];
 
-    // Process contents and add events
+    // Check if this d66 roll matches any saved room template
+    const matchedRoom = roomLibrary.getByD66(shapeRoll);
+    if (matchedRoom) {
+      newEvents.push({
+        type: 'LIBRARY_MATCH',
+        data: { room: matchedRoom },
+        timestamp: Date.now()
+      });
+      setAutoPlacedRoom(matchedRoom);
+      setRoomEvents(newEvents);
+      setTileResult(null);
+      setRoomDetails(null);
+      setBossCheckResult(null);
+      return;
+    }
+
+    // No match - still roll 2d6 for contents
+    const contentsRoll = r2d6();
+    const contentsResult = TILE_CONTENTS_TABLE[contentsRoll];
+
+    newEvents.push({
+      type: 'CONTENTS_ROLL',
+      data: { roll: contentsRoll, description: contentsResult.description },
+      timestamp: Date.now()
+    });
+
+    setRoomEvents(newEvents);
+    setTileResult(null);
+    setRoomDetails(null);
+    setBossCheckResult(null);
+
+    // Process contents (spawn monsters, treasure, etc)
     processContents(contentsResult, newEvents);
   };
 
@@ -155,6 +168,7 @@ export function useRoomEvents(state, dispatch, setActionMode) {
     setRoomDetails(null);
     setBossCheckResult(null);
     setRoomEvents([]);
+    setAutoPlacedRoom(null);
     setActionMode(ACTION_MODES.IDLE);
   };
 
@@ -172,6 +186,8 @@ export function useRoomEvents(state, dispatch, setActionMode) {
     setRoomDetails,
     bossCheckResult,
     setBossCheckResult,
+    autoPlacedRoom,
+    setAutoPlacedRoom,
     addRoomEvent,
     generateTile,
     clearTile,

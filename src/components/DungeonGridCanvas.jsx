@@ -20,9 +20,17 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   partyPos,
   onPartyMove,
   partySelected,
-  onPartySelect
+  onPartySelect,
+  showPawnHint = true,
+  placementTemplate = null,
+  autoPlacedRoom = null,
+  setAutoPlacedRoom = null,
+  onCommitPlacement = null,
 }) {
   const canvasRef = useRef(null);
+  const pressedKeysRef = useRef(new Set()); // Track currently pressed arrow keys for continuous movement
+  const gameLoopRef = useRef(null); // Track the animation frame ID for pawn movement
+  const currentStateRef = useRef(null); // Keep current state accessible
   const [hoveredCell, setHoveredCell] = useState(null);
   const [hoveredDoor, setHoveredDoor] = useState(null);
   const [showDoorMode, setShowDoorMode] = useState(false);
@@ -33,10 +41,20 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
   const cols = grid[0]?.length || 0;
   const rows = grid.length;
+
+  // Initialize currentStateRef on first render
+  if (!currentStateRef.current) {
+    currentStateRef.current = { partyPos, onPartyMove, cols, rows };
+  }
   const width = cols * cellSize;
   const height = rows * cellSize;
   const canvasWidth = shouldRotate ? height : width;
   const canvasHeight = shouldRotate ? width : height;
+
+  // Update current state ref whenever props change
+  useEffect(() => {
+    currentStateRef.current = { partyPos, onPartyMove, cols, rows };
+  }, [partyPos, onPartyMove, cols, rows]);
 
   // Draw the entire grid
   const drawGrid = useCallback(() => {
@@ -184,6 +202,51 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('P', cx, cy + 1);
+    }
+
+    // Draw placement preview centered on hoveredCell when placementTemplate or autoPlacedRoom present
+    const activeTemplate = placementTemplate || autoPlacedRoom;
+    if (activeTemplate && hoveredCell) {
+      const tpl = activeTemplate.grid || activeTemplate;
+      const tplDoors = activeTemplate.doors || [];
+      // Center template at hoveredCell
+      const startX = hoveredCell.x - Math.floor(tpl[0].length / 2);
+      const startY = hoveredCell.y - Math.floor(tpl.length / 2);
+
+      for (let ry = 0; ry < tpl.length; ry++) {
+        for (let rx = 0; rx < tpl[ry].length; rx++) {
+          const val = tpl[ry][rx];
+          if (!val || val === 0) continue; // do not preview empty cells
+          const gx = startX + rx;
+          const gy = startY + ry;
+          // Draw only if inside canvas bounds
+          if (gx >= 0 && gx < cols && gy >= 0 && gy < rows) {
+            const px = gx * cellSize;
+            const py = gy * cellSize;
+            ctx.fillStyle = val === 1 ? 'rgba(180,83,9,0.6)' : 'rgba(29,78,216,0.6)';
+            ctx.fillRect(px, py, cellSize, cellSize);
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
+          }
+        }
+      }
+
+      // Draw doors preview
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = Math.max(2, Math.floor(cellSize * 0.12));
+      tplDoors.forEach(d => {
+        const gx = startX + (d.x || 0);
+        const gy = startY + (d.y || 0);
+        if (gx >= 0 && gx < cols && gy >= 0 && gy < rows) {
+          const px = gx * cellSize;
+          const py = gy * cellSize;
+          if (d.edge === 'N') ctx.fillRect(px, py - 1, cellSize, 3);
+          if (d.edge === 'S') ctx.fillRect(px, py + cellSize - 2, cellSize, 3);
+          if (d.edge === 'E') ctx.fillRect(px + cellSize - 2, py, 3, cellSize);
+          if (d.edge === 'W') ctx.fillRect(px - 1, py, 3, cellSize);
+        }
+      });
     }
 
         if (shouldRotate) {
@@ -353,6 +416,19 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     if (!hoveredCell) return;
     const cell = grid[hoveredCell.y]?.[hoveredCell.x];
 
+    // If placementTemplate or autoPlacedRoom active: commit placement centered on hoveredCell
+    if ((placementTemplate || autoPlacedRoom) && onCommitPlacement && hoveredCell) {
+      const activeTemplate = placementTemplate || autoPlacedRoom;
+      const tpl = activeTemplate.grid || activeTemplate;
+      const startX = hoveredCell.x - Math.floor(tpl[0].length / 2);
+      const startY = hoveredCell.y - Math.floor(tpl.length / 2);
+      onCommitPlacement(startX, startY, activeTemplate);
+      if (autoPlacedRoom && setAutoPlacedRoom) {
+        setAutoPlacedRoom(null);
+      }
+      return;
+    }
+
     // Shift+Click: place pawn here
     if (e.shiftKey) {
       // If there is a pawn on this cell, remove it (signal with onPartyMove null)
@@ -413,32 +489,85 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         onDoorToggle(hoveredCell.x, hoveredCell.y, edge);
       }
     };
-    const handleArrow = (e) => {
-      if (!partySelected || !partyPos) return;
-      let dx = 0; let dy = 0;
-      if (e.key === 'ArrowUp') dy = -1;
-      if (e.key === 'ArrowDown') dy = 1;
-      if (e.key === 'ArrowLeft') dx = -1;
-      if (e.key === 'ArrowRight') dx = 1;
-      if (dx !== 0 || dy !== 0) {
+    const handleArrowKeyDown = (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
-        const nx = Math.min(Math.max(0, partyPos.x + dx), cols - 1);
-        const ny = Math.min(Math.max(0, partyPos.y + dy), rows - 1);
-        if (onPartyMove) onPartyMove(nx, ny);
+        pressedKeysRef.current.add(e.key);
+      }
+    };
+
+    const handleArrowKeyUp = (e) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        pressedKeysRef.current.delete(e.key);
+      }
+    };
+
+    // Game loop for continuous pawn movement
+    const updatePawnPosition = () => {
+      const { partyPos: pp, onPartyMove: opm, cols: c, rows: r } = currentStateRef.current;
+
+      if (!pp || pressedKeysRef.current.size === 0) {
+        gameLoopRef.current = null;
+        return;
+      }
+
+      let dx = 0;
+      let dy = 0;
+
+      if (pressedKeysRef.current.has('ArrowUp')) dy -= 1;
+      if (pressedKeysRef.current.has('ArrowDown')) dy += 1;
+      if (pressedKeysRef.current.has('ArrowLeft')) dx -= 1;
+      if (pressedKeysRef.current.has('ArrowRight')) dx += 1;
+
+      if (dx !== 0 || dy !== 0) {
+        const nx = Math.min(Math.max(0, pp.x + dx), c - 1);
+        const ny = Math.min(Math.max(0, pp.y + dy), r - 1);
+        if (opm) opm(nx, ny);
+      }
+
+      gameLoopRef.current = requestAnimationFrame(updatePawnPosition);
+    };
+
+    const startGameLoop = () => {
+      const { partyPos: pp } = currentStateRef.current;
+      if (!gameLoopRef.current && pp && pressedKeysRef.current.size > 0) {
+        gameLoopRef.current = requestAnimationFrame(updatePawnPosition);
+      }
+    };
+
+    const stopGameLoop = () => {
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+        gameLoopRef.current = null;
+      }
+    };
+
+    const handleArrowDown = (e) => {
+      handleArrowKeyDown(e);
+      startGameLoop();
+    };
+
+    const handleArrowUp = (e) => {
+      handleArrowKeyUp(e);
+      if (pressedKeysRef.current.size === 0) {
+        stopGameLoop();
       }
     };
 
     window.addEventListener('keydown', handleGridKeyDown);
     window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keydown', handleArrow);
-    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('keydown', handleArrowDown);
+    window.addEventListener('keyup', handleArrowUp);
     return () => {
       window.removeEventListener('keydown', handleGridKeyDown);
       window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keydown', handleArrow);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('keydown', handleArrowDown);
+      window.removeEventListener('keyup', handleArrowUp);
+      stopGameLoop();
+      pressedKeysRef.current.clear();
     };
-  }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle]);
+  }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle, partyPos, onPartyMove, cols, rows]);
 
   // Add global mouseup listener to handle drag ending outside canvas
   useEffect(() => {
@@ -477,7 +606,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           Click to place door on {hoveredDoor.edge} edge
         </div>
       )}
-      {!partyPos && (
+      {!partyPos && showPawnHint && (
         <div
           className="absolute top-2 left-2 bg-black/70 text-white px-3 py-1 rounded text-xs font-semibold"
           style={{ zIndex: 9999, pointerEvents: 'none' }}

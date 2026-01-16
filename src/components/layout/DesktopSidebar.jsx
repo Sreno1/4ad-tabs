@@ -24,11 +24,12 @@ export default function DesktopSidebar({
   onSelectHero,
 }) {
   if (!isOpen) {
-    const collapsedWidth = contracted ? 'w-12' : 'w-48';
+  // When collapsed, render a narrow column that fits the parent width
+  const collapsedWidth = 'w-12';
     return (
       <div
-        className={`${collapsedWidth} flex-shrink-0 border-r border-slate-700 flex flex-col items-center py-2 gap-2`}
-        data-panel="sidebar" style={{ height: '-webkit-fill-available' }}
+        className={`${collapsedWidth} flex-shrink-0 border-r border-slate-700 flex flex-col items-center py-2 gap-2 z-20 bg-slate-850`}
+        data-panel="sidebar" style={{ height: '-webkit-fill-available', minWidth: '3rem' }}
       >
         <button
           onClick={() => {

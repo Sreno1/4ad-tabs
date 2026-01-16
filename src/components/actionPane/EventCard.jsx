@@ -3,6 +3,29 @@ import { EVENT_TYPES } from '../../constants/gameConstants.js';
 
 const EventCard = memo(function EventCard({ event, index }) {
   switch (event.type) {
+    case 'D66_ROLL':
+      return (
+        <div key={index} className="bg-blue-900/30 rounded p-2 text-xs border-l-2 border-blue-400">
+          <div className="text-blue-400 font-bold">🎲 d66={event.data.roll}</div>
+        </div>
+      );
+
+    case 'LIBRARY_MATCH':
+      return (
+        <div key={index} className="bg-green-900/30 rounded p-2 text-xs border-l-2 border-green-400">
+          <div className="text-green-400 font-bold">✓ {event.data.room.name}</div>
+          <div className="text-slate-300">Ready to drag onto the map</div>
+        </div>
+      );
+
+    case 'CONTENTS_ROLL':
+      return (
+        <div key={index} className="bg-amber-900/30 rounded p-2 text-xs border-l-2 border-amber-400">
+          <div className="text-amber-400 font-bold">📦 2d6={event.data.roll}</div>
+          <div className="text-slate-300">{event.data.description}</div>
+        </div>
+      );
+
     case EVENT_TYPES.TILE_GENERATED:
       return (
         <div key={index} className="bg-slate-700/50 rounded p-2 text-xs border-l-2 border-blue-400">

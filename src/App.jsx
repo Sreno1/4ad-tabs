@@ -18,6 +18,7 @@ import Equipment from "./components/Equipment.jsx";
 import Abilities from "./components/Abilities.jsx";
 import ActionPane from "./components/ActionPane.jsx";
 import FloatingDice from "./components/FloatingDice.jsx";
+import RoomDesigner from "./components/RoomDesigner.jsx";
 
 // Layout Components
 import AppHeader from "./components/layout/AppHeader.jsx";
@@ -53,6 +54,8 @@ export default function App() {
 
   const [showDungeonFeatures, setShowDungeonFeatures] = useState(false);
   const [showCampaign, setShowCampaign] = useState(false);
+  const [showRoomDesigner, setShowRoomDesigner] = useState(false);
+  const [placementTemplate, setPlacementTemplate] = useState(null);
   const [showEquipment, setShowEquipment] = useState(false);
   const [showAbilities, setShowAbilities] = useState(false);
   const [selectedHero, setSelectedHero] = useState(0);
@@ -283,7 +286,7 @@ export default function App() {
         onShowEquipment={() => setShowEquipment(true)}
         onShowAbilities={() => setShowAbilities(true)}
         onShowCampaign={() => setShowCampaign(true)}
-        onShowSettings={() => setShowSettings(true)}
+  onShowSettings={() => setShowSettings(true)}
         onBackToCampaigns={handleBackToCampaigns}
       />
 
@@ -309,6 +312,9 @@ export default function App() {
                 clearTile={clearTileAndCombat}
                 bossCheckResult={roomEvents.bossCheckResult}
                 roomDetails={roomEvents.roomDetails}
+                autoPlacedRoom={roomEvents.autoPlacedRoom}
+                setAutoPlacedRoom={roomEvents.setAutoPlacedRoom}
+                onShowRoomDesigner={() => setShowRoomDesigner(true)}
               />
             )}
             {tab === "combat" && (
@@ -377,24 +383,59 @@ export default function App() {
                     clearTile={clearTileAndCombat}
                     bossCheckResult={roomEvents.bossCheckResult}
                     roomDetails={roomEvents.roomDetails}
-                    hideGenerationUI={true}
+                    placementTemplate={placementTemplate}
+                    autoPlacedRoom={roomEvents.autoPlacedRoom}
+                    setAutoPlacedRoom={roomEvents.setAutoPlacedRoom}
+                    onCommitPlacement={(startX, startY, tpl) => {
+                      // tpl may be {grid, doors}
+                      const templateGrid = tpl.grid || tpl;
+                      const templateDoors = tpl.doors || [];
+                      templateGrid.forEach((row, ry) => {
+                        row.forEach((val, rx) => {
+                          if (val && val !== 0) {
+                            const x = startX + rx;
+                            const y = startY + ry;
+                            if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
+                              dispatch({ type: 'SET_CELL', x, y, value: val });
+                            }
+                          }
+                        });
+                      });
+                      templateDoors.forEach(d => {
+                        const x = startX + (d.x || 0);
+                        const y = startY + (d.y || 0);
+                        if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
+                          dispatch({ type: 'TOGGLE_DOOR', x, y, edge: d.edge });
+                        }
+                      });
+                      setPlacementTemplate(null);
+                      roomEvents.setAutoPlacedRoom(null);
+                    }}
                     sidebarCollapsed={!leftPanelOpen}
                     onToggleShowLog={() => setShowLogMiddle((s) => !s)}
                     showLogMiddle={showLogMiddle}
+                    onShowRoomDesigner={() => setShowRoomDesigner(true)}
                   />
                 ) : (
                   <div className="flex-1 flex flex-col min-h-0">
                     <div className="flex items-center justify-between p-2 border-b border-slate-700 bg-slate-800">
                       <div className="text-sm font-semibold text-amber-400">Adventure Log</div>
-                      <div>
-                        <button
-                          onClick={() => setShowLogMiddle(false)}
-                          className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
-                          title="Show dungeon"
-                        >
-                          Map
-                        </button>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setShowLogMiddle(false)}
+                        className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
+                        title="Show dungeon"
+                      >
+                        Map
+                      </button>
+                      <button
+                        onClick={() => setShowRoomDesigner(true)}
+                        className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
+                        title="Open Room Designer"
+                      >
+                        Room Designer
+                      </button>
+                    </div>
                     </div>
                     <div className="flex-1 overflow-hidden min-h-0">
                       <Log state={state} dispatch={dispatch} isBottomPanel={true} />
@@ -468,6 +509,16 @@ export default function App() {
             </div>
           </div>
         </div>
+      {showRoomDesigner && (
+        <RoomDesigner
+          onClose={() => setShowRoomDesigner(false)}
+          onPlaceTemplate={(tpl) => {
+            // Enter placement mode: let user click a map cell to place the template
+            setPlacementTemplate(tpl);
+            setShowRoomDesigner(false);
+          }}
+        />
+      )}
       </main>
 
       {/* Mobile Navigation */}
@@ -509,7 +560,7 @@ export default function App() {
       />
 
       {/* Floating Dice Roller (Desktop) */}
-      <FloatingDice />
+  <FloatingDice onLogRoll={(text) => dispatch({ type: 'LOG', t: text })} />
     </div>
   );
 }

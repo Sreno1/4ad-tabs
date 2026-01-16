@@ -107,6 +107,7 @@ export default function AppHeader({
               <Settings size={18} />
             </button>
           </Tooltip>
+          {/* Room Designer button moved to the dungeon pane header */}
         </div>
       </div>
     </header>

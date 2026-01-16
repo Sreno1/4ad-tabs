@@ -64,9 +64,7 @@ Week 6: Testing & Polish (6-8 hours)
 
 ## 📋 Detailed Task Breakdown
 
-- its really hard to add doors right now with the mouse
-
-- can you add a button that brings up a modal with a 7x7 version of the dungeon grid, where rooms can be drafted and saved to a library so they can be placed again later, imported and exported? do this efficiently using all the optimized coding standards we've been implementing in the refactor.
+- its really hard to add doors right now with the mouse on the main dungeon map, and yet somehow in the room designer, you have to click in the exact middle of a square to avoid placing a door. can you help me figure out how to make the dungeon drawing more when it comes to door placement?
 
 - can you implement the magic scroll system as outlined in /public/magic.txt
 

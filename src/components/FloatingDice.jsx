@@ -12,7 +12,7 @@ const DICE_OPTIONS = [
   { type: 'd10', label: 'D10', notation: '1d10' },
 ];
 
-export default function FloatingDice() {
+export default function FloatingDice({ onLogRoll = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [diceBox, setDiceBox] = useState(null);
   const [result, setResult] = useState(null);
@@ -89,7 +89,7 @@ export default function FloatingDice() {
     setIsOpen(false);
 
     try {
-      if (diceBox) {
+  if (diceBox) {
         // Use 3D dice
         const results = await diceBox.roll(option.notation);
         let total;
@@ -105,6 +105,13 @@ export default function FloatingDice() {
         }
         
         setResult({ total, type: option.type, dice: results });
+        if (onLogRoll) {
+          const values = results.map(r => r.value).join(',');
+          const desc = option.special === 'd66'
+            ? `Rolled d66=${total}`
+            : `Rolled ${option.notation} = ${total} (${values})`;
+          try { onLogRoll(desc); } catch (e) {}
+        }
       } else {
         // Fallback to simple random
         let total;
@@ -124,6 +131,12 @@ export default function FloatingDice() {
           }
         }
         setResult({ total, type: option.type, dice: [] });
+        if (onLogRoll) {
+          const desc = option.special === 'd66'
+            ? `Rolled d66=${total}`
+            : `Rolled ${option.notation} = ${total}`;
+          try { onLogRoll(desc); } catch (e) {}
+        }
       }
     } catch (err) {
       console.error('Dice roll error:', err);
