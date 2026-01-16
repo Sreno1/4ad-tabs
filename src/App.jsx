@@ -62,6 +62,14 @@ export default function App() {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [leftPanelTab, setLeftPanelTab] = useState("party"); // 'party', 'stats', 'story', or 'rules'
   const [showLogMiddle, setShowLogMiddle] = useState(false);
+  // When the bottom log expands we want the sidebar to visually contract
+  // (like the dungeon pane) but not change the logical `leftPanelOpen` state.
+  const [leftPanelContracted, setLeftPanelContracted] = useState(false);
+  // Do not auto-contract the left panel when the log expands.
+  // Contracting is controlled only by the user's explicit close action.
+  React.useEffect(() => {
+    setLeftPanelContracted(false);
+  }, []);
   // ...existing code...
 
     // Keyboard shortcuts and focus management
@@ -320,23 +328,45 @@ export default function App() {
           </div>
         </div>
 
-        {/* Desktop: Flexible equal-width columns layout with LogBar in-flow */}
-        <div className="hidden md:flex flex-1 flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden flex">
-            {/* Left Column - Party/Stats (Collapsible) */}
-            <DesktopSidebar
-              state={state}
-              dispatch={dispatch}
-              isOpen={leftPanelOpen}
-              activeTab={leftPanelTab}
-              onToggle={setLeftPanelOpen}
-              onTabChange={setLeftPanelTab}
-              selectedHero={selectedHero}
-              onSelectHero={setSelectedHero}
-            />
+        {/* Desktop: Grid layout so the bottom LogBar spans only the left + middle columns */}
+        <div className="hidden md:block flex-1 overflow-hidden" style={{ height: '100%' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'auto 1fr 340px',
+              /* Use minmax(0, 1fr) so flex children can shrink/grow inside the grid cell */
+              gridTemplateRows: 'minmax(0, 1fr) auto',
+              height: '100%',
+            }}
+          >
+            {/* Left Column - Sidebar (col 1) */}
+            <div
+              style={{
+                gridColumn: '1 / 2',
+                gridRow: '1 / 2',
+                // shrink when user explicitly closes sidebar OR when log forces visual contraction
+                width: (!leftPanelOpen || leftPanelContracted) ? '3rem' : '35rem',
+                minWidth: '3rem',
+                overflow: 'hidden',
+                transition: 'width 200ms ease',
+              }}
+              className="min-w-0"
+            >
+              <DesktopSidebar
+                state={state}
+                dispatch={dispatch}
+                isOpen={leftPanelOpen}
+                contracted={leftPanelContracted}
+                activeTab={leftPanelTab}
+                onToggle={setLeftPanelOpen}
+                onTabChange={setLeftPanelTab}
+                selectedHero={selectedHero}
+                onSelectHero={setSelectedHero}
+              />
+            </div>
 
-            {/* Middle Column - Dungeon Map or Full Log (toggleable) */}
-            <div className="flex-1 overflow-hidden flex flex-col min-w-0 border-r border-slate-700">
+            {/* Middle Column - Dungeon Map or Full Log (col 2) */}
+            <div style={{ gridColumn: '2 / 3', gridRow: '1 / 2' }} className="flex flex-col min-w-0 border-l border-slate-700">
               <div className="flex-1 overflow-y-auto p-2">
                 {!showLogMiddle ? (
                   <Dungeon
@@ -353,7 +383,7 @@ export default function App() {
                     showLogMiddle={showLogMiddle}
                   />
                 ) : (
-                  <div className="h-full flex flex-col">
+                  <div className="flex-1 flex flex-col min-h-0">
                     <div className="flex items-center justify-between p-2 border-b border-slate-700 bg-slate-800">
                       <div className="text-sm font-semibold text-amber-400">Adventure Log</div>
                       <div>
@@ -366,7 +396,7 @@ export default function App() {
                         </button>
                       </div>
                     </div>
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-hidden min-h-0">
                       <Log state={state} dispatch={dispatch} isBottomPanel={true} />
                     </div>
                   </div>
@@ -374,8 +404,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* Right Column - Action Pane (slightly narrower) */}
-            <div className="flex-[0.8] overflow-y-auto p-3 bg-slate-850 min-w-0">
+            {/* Right Column - Action Pane (col 3) - span both rows so its background remains visible under the LogBar */}
+            <div style={{ gridColumn: '3 / 4', gridRow: '1 / 3' }} className="overflow-y-auto p-3 bg-slate-850 min-w-0">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-bold text-slate-400">
                   {actionMode === ACTION_MODES.COMBAT
@@ -402,6 +432,8 @@ export default function App() {
                 state={state}
                 dispatch={dispatch}
                 actionMode={actionMode}
+                selectedHero={selectedHero}
+                onSelectHero={setSelectedHero}
                 roomEvents={roomEvents.roomEvents}
                 tileResult={roomEvents.tileResult}
                 roomDetails={roomEvents.roomDetails}
@@ -422,17 +454,19 @@ export default function App() {
               />
               {/* StoryLog moved into the sidebar log tab */}
             </div>
-          </div>
 
-          {/* Log Bar - now in-flow so it reduces space above when expanded */}
-          <LogBar
-            state={state}
-            dispatch={dispatch}
-            collapsed={logCollapsed}
-            onToggle={() => setLogCollapsed(!logCollapsed)}
-            selectedHero={selectedHero}
-            onSelectHero={setSelectedHero}
-          />
+            {/* Log Bar - span left + middle columns only */}
+            <div style={{ gridColumn: '1 / 3', gridRow: '2 / 3' }}>
+              <LogBar
+                state={state}
+                dispatch={dispatch}
+                collapsed={logCollapsed}
+                onToggle={() => setLogCollapsed(!logCollapsed)}
+                selectedHero={selectedHero}
+                onSelectHero={setSelectedHero}
+              />
+            </div>
+          </div>
         </div>
       </main>
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { selectParty, selectMonsters } from '../state/selectors.js';
 import { setAbility } from '../state/actionCreators.js';
 import { Dices } from "lucide-react";
@@ -11,11 +11,14 @@ import ActiveMonsters from "./actionPane/ActiveMonsters.jsx";
 import CombatInitiative from "./actionPane/CombatInitiative.jsx";
 import { PartyTurnPhase, MonsterTurnPhase } from "./actionPane/combat";
 import AbilityButtons from "./actionPane/combat/AbilityButtons.jsx";
+import MarchingOrder from './MarchingOrder.jsx';
 
 export default function ActionPane({
   state,
   dispatch,
   actionMode,
+  selectedHero,
+  onSelectHero,
   roomEvents,
   tileResult,
   roomDetails,
@@ -107,6 +110,9 @@ export default function ActionPane({
   if (!tileResult && roomEvents.length === 0) {
     return (
       <div className="space-y-3">
+        <div className="mb-2">
+          <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} dispatch={dispatch} />
+        </div>
         <div className="bg-slate-800 rounded p-4 text-center">
           <div className="text-slate-400 text-sm mb-3">Ready to explore</div>
           <button
@@ -125,6 +131,10 @@ export default function ActionPane({
 
   return (
     <div className="space-y-2">
+      {/* Marching Order at top of action pane */}
+      <div className="mb-2" data-testid="marching-order-container">
+        <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} dispatch={dispatch} />
+      </div>
       {/* Room Events Stack - shows all events that happened in this room */}
       <div className="space-y-1">
         {roomEvents.map((event, index) => (

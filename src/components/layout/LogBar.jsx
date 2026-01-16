@@ -6,10 +6,8 @@ import MarchingOrder from '../MarchingOrder.jsx';
 export default function LogBar({ state, dispatch, collapsed, onToggle, selectedHero, onSelectHero }) {
   return (
     <div
-      className={`border-t border-slate-700 bg-slate-800 transition-all duration-200 flex-shrink-0 ${
-        collapsed ? 'h-8' : 'h-[35vh]'
-      }`}
-      style={{ boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.3)' }}
+      className={`border-t border-slate-700 bg-slate-800 transition-all duration-200 flex-shrink-0`}
+      style={{ boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.3)', height: collapsed ? '2rem' : '60vh' }}
     >
       <div
         className="flex items-center justify-between px-3 py-1.5 bg-slate-800 cursor-pointer hover:bg-slate-700 h-8"
@@ -33,13 +31,9 @@ export default function LogBar({ state, dispatch, collapsed, onToggle, selectedH
       </div>
 
       {!collapsed && (
-        <div className="h-[calc(100%-2rem)] overflow-hidden flex">
-          <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden flex">
+          <div className="flex-1 max-w-full overflow-hidden">
             <Log state={state} dispatch={dispatch} isBottomPanel={true} />
-          </div>
-
-          <div className="w-96 border-l border-slate-700 bg-slate-850 p-3 flex-shrink-0">
-            <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} />
           </div>
         </div>
       )}

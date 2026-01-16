@@ -4,7 +4,6 @@ import { CLASSES, getMaxHP, getSpellSlots, getLuckPoints } from '../data/classes
 import { d6 } from '../utils/dice.js';
 import { getXPForNextLevel, canLevelUp } from '../data/monsters.js';
 import { hasTraits, getTrait } from '../data/traits.js';
-import MarchingOrder from './MarchingOrder.jsx';
 import TraitSelector from './TraitSelector.jsx';
 import { selectParty, selectIsPartyFull, selectHeroAbilities } from '../state/selectors.js';
 import {
@@ -12,7 +11,6 @@ import {
   updateHero,
   logMessage,
   setAbility,
-  setMarchingOrder,
   deleteHero,
   adjustGold
 } from '../state/actionCreators.js';
@@ -195,10 +193,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
 
   return (
     <div className="p-3 space-y-2">
-      {/* Marching Order UI */}
-      <div className="mb-3">
-        <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} />
-      </div>
+  {/* Marching Order UI moved to Action Pane */}
       {/* Active Hero Info */}
       {state.party[selectedHero] && (
         <div className="text-xs text-slate-400 mb-2">
@@ -257,25 +252,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 className="bg-transparent text-amber-400 font-bold w-24 outline-none"
                 aria-label={`Hero ${i + 1} name`}
               />
-              {/* Marching Order Selector */}
-              <select
-                value={state.marchingOrder?.indexOf(i) ?? ''}
-                onChange={(e) => {
-                  const position = e.target.value === '' ? null : parseInt(e.target.value);
-                  if (position !== null) {
-                    dispatch(setMarchingOrder(i, position));
-                  }
-                }}
-                className="bg-slate-600 text-slate-300 text-xs px-1 py-0.5 rounded"
-                title="Marching Order Position"
-                aria-label={`${hero.name} marching order position`}
-              >
-                <option value="">-</option>
-                <option value="0">Pos 1</option>
-                <option value="1">Pos 2</option>
-                <option value="2">Pos 3</option>
-                <option value="3">Pos 4</option>
-              </select>
+              {/* (drag handle removed - tiles are draggable directly in MarchingOrder) */}
             </div>
             <button
               onClick={() => dispatch(deleteHero(i))}

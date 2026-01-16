@@ -155,13 +155,22 @@ export function partyReducer(state, action) {
     // ========== Marching Order ==========
     case A.SET_MARCHING_ORDER: {
       const newOrder = [...state.marchingOrder];
-      // If this hero was already in another position, clear that position
       const existingPos = newOrder.indexOf(action.heroIdx);
-      if (existingPos >= 0) {
-        newOrder[existingPos] = null;
+      const targetHero = newOrder[action.position];
+
+      // No-op if dropped onto same position
+      if (existingPos === action.position) return state;
+
+      if (targetHero != null && existingPos >= 0) {
+        // Swap positions: place targetHero where this hero came from
+        newOrder[existingPos] = targetHero;
+        newOrder[action.position] = action.heroIdx;
+      } else {
+        // Move: clear previous pos and set target
+        if (existingPos >= 0) newOrder[existingPos] = null;
+        newOrder[action.position] = action.heroIdx;
       }
-      // Set the new position
-      newOrder[action.position] = action.heroIdx;
+
       return { ...state, marchingOrder: newOrder };
     }
 

@@ -23,6 +23,21 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   const [radialMenu, setRadialMenu] = useState(null); // {xPx,yPx,cellX,cellY}
   const [cellSize, setCellSize] = useState(20); // Dynamic cell size
   const [shouldRotate, setShouldRotate] = useState(false); // Whether to rotate based on aspect ratio
+  const [partyPos, setPartyPos] = useState(() => {
+    try {
+      const raw = localStorage.getItem('partyPos');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          return parsed;
+        }
+        // Invalid stored value - remove it
+        try { localStorage.removeItem('partyPos'); } catch (e) {}
+      }
+    } catch (e) {}
+    return null;
+  });
+  const [partySelected, setPartySelected] = useState(false);
   const gridContainerRef = React.useRef(null);
   const isCalculatingRef = React.useRef(false); // Persistent flag across renders
   const lastCalculatedSizeRef = React.useRef({ width: 0, height: 0 }); // Track container size to prevent loops
@@ -106,6 +121,22 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     }
     setRadialMenu(null);
   }, [radialMenu, getMarker, addMarker, removeMarker]);
+
+  // Party pawn handlers
+  const movePartyTo = useCallback((x, y) => {
+    if (x == null && y == null) {
+      try { localStorage.removeItem('partyPos'); } catch (e) {}
+      setPartyPos(null);
+      return;
+    }
+    const next = { x, y };
+    try { localStorage.setItem('partyPos', JSON.stringify(next)); } catch (e) {}
+    setPartyPos(next);
+  }, []);
+
+  const selectParty = useCallback((sel) => {
+    setPartySelected(Boolean(sel));
+  }, []);
 
   const handleDoorToggle = useCallback((x, y, edge) => {
     dispatch({ type: 'TOGGLE_DOOR', x, y, edge });
@@ -421,8 +452,10 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
           ref={gridContainerRef}
           className="flex-1 w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden"
           data-dungeon-grid="true"
-          style={{ padding: 0, minHeight: 0, minWidth: 0 }}
+          style={{ padding: 0, minHeight: 0, minWidth: 0, position: 'relative' }}
         >
+          {/* Helper text moved into DungeonGridCanvas to ensure it renders inside the grid stacking context */}
+
           {/* Grid container - only this rotates */}
           <div
             className="inline-block"
@@ -442,6 +475,10 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             onCellSet={handleCellSet}
             onCellRightClick={handleCellRightClick}
             onDoorToggle={handleDoorToggle}
+            partyPos={partyPos}
+            onPartyMove={movePartyTo}
+            partySelected={partySelected}
+            onPartySelect={selectParty}
           />
           {radialMenu && (
             <RadialMenu

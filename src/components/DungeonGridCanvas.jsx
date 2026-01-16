@@ -16,7 +16,11 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   onCellClick,
   onCellSet,
   onCellRightClick,
-  onDoorToggle
+  onDoorToggle,
+  partyPos,
+  onPartyMove,
+  partySelected,
+  onPartySelect
 }) {
   const canvasRef = useRef(null);
   const [hoveredCell, setHoveredCell] = useState(null);
@@ -24,6 +28,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const [showDoorMode, setShowDoorMode] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragFillValue, setDragFillValue] = useState(null); // 0, 1, or 2
+  const [isPawnDragging, setIsPawnDragging] = useState(false);
   const draggedCellsRef = useRef(new Set()); // Track which cells we've already filled during this drag
 
   const cols = grid[0]?.length || 0;
@@ -153,11 +158,39 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
     }
 
-    if (shouldRotate) {
-      ctx.restore();
+    // Draw party pawn on top (inside same rotated context so it aligns)
+    if (partyPos && typeof partyPos.x === 'number' && typeof partyPos.y === 'number') {
+      const px = partyPos.x * cellSize;
+      const py = partyPos.y * cellSize;
+      const cx = px + cellSize / 2;
+      const cy = py + cellSize / 2;
+      const radius = Math.max(4, cellSize * 0.32);
+
+      // Outer ring (selected -> brighter)
+      ctx.beginPath();
+      ctx.fillStyle = partySelected ? '#fbbf24' : '#f59e0b';
+      ctx.arc(cx, cy, radius + 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner pawn body
+      ctx.beginPath();
+      ctx.fillStyle = '#0f172a';
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Letter P
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = `bold ${Math.max(8, Math.floor(cellSize * 0.45))}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('P', cx, cy + 1);
     }
 
-  }, [grid, doors, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height]);
+        if (shouldRotate) {
+          ctx.restore();
+        }
+
+  }, [grid, doors, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected]);
 
   // Redraw when dependencies change
   useEffect(() => {
@@ -194,7 +227,12 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (!hoveredCell || hoveredCell.x !== x || hoveredCell.y !== y) {
         setHoveredCell({ x, y });
 
-        // If we're dragging, fill this cell
+        // If pawn is being dragged, move it to this cell
+        if (isPawnDragging && onPartyMove) {
+          onPartyMove(x, y);
+        }
+
+        // If we're dragging to paint, fill this cell
         if (isDragging && dragFillValue !== null && onCellSet) {
           const cellKey = `${x},${y}`;
           // Only fill if we haven't already filled this cell in this drag session
@@ -243,7 +281,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (hoveredCell) setHoveredCell(null);
       if (hoveredDoor) setHoveredDoor(null);
     }
-  }, [cellSize, cols, rows, grid, hoveredCell, hoveredDoor, showDoorMode, isDragging, dragFillValue, onCellSet]);
+  }, [cellSize, cols, rows, grid, hoveredCell, hoveredDoor, showDoorMode, isDragging, dragFillValue, onCellSet, isPawnDragging, onPartyMove]);
   
 
   const handleMouseLeave = useCallback(() => {
@@ -256,12 +294,24 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const handleMouseDown = useCallback((e) => {
     // Don't start drag on right click
     if (e.button !== 0) return;
-    if (!hoveredCell) return;
+  if (!hoveredCell) return;
+
+  // If Shift is held, don't start normal mousedown-driven actions (painting or pawn-drag).
+  // Shift+Click is handled in the click handler for placing/removing the pawn.
+  if (e.shiftKey) return;
 
     const cell = grid[hoveredCell.y]?.[hoveredCell.x];
 
     // Don't drag when placing doors
     if (hoveredDoor && cell > 0) {
+      return;
+    }
+
+    // If user clicked the pawn, start pawn-drag instead of grid-drag
+    if (partyPos && hoveredCell.x === partyPos.x && hoveredCell.y === partyPos.y) {
+      setIsPawnDragging(true);
+      if (onPartySelect) onPartySelect(true);
+      if (onPartyMove) onPartyMove(hoveredCell.x, hoveredCell.y);
       return;
     }
 
@@ -282,11 +332,12 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     } else {
       onCellClick(hoveredCell.x, hoveredCell.y);
     }
-  }, [hoveredCell, hoveredDoor, grid, onCellClick, onCellSet]);
+  }, [hoveredCell, hoveredDoor, grid, onCellClick, onCellSet, partyPos, onPartyMove, onPartySelect]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     setDragFillValue(null);
+    setIsPawnDragging(false);
     // Don't clear draggedCellsRef yet - we need it for the click check
     // It will be cleared in the next mousedown or mouseup via ref reset
   }, []);
@@ -300,17 +351,35 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     draggedCellsRef.current.clear();
 
     if (!hoveredCell) return;
-
     const cell = grid[hoveredCell.y]?.[hoveredCell.x];
+
+    // Shift+Click: place pawn here
+    if (e.shiftKey) {
+      // If there is a pawn on this cell, remove it (signal with onPartyMove null)
+      if (partyPos && hoveredCell.x === partyPos.x && hoveredCell.y === partyPos.y) {
+        if (onPartyMove) onPartyMove(null, null);
+        if (onPartySelect) onPartySelect(false);
+        return;
+      }
+      // Otherwise place pawn here
+      if (onPartyMove) onPartyMove(hoveredCell.x, hoveredCell.y);
+      if (onPartySelect) onPartySelect(true);
+      return;
+    }
+
+    // If clicking the pawn, toggle selection
+    if (partyPos && hoveredCell.x === partyPos.x && hoveredCell.y === partyPos.y) {
+      if (onPartySelect) onPartySelect(!partySelected);
+      return;
+    }
 
     // If hovering a door edge on a room cell, toggle door (always, no shift needed!)
     if (hoveredDoor && cell > 0) {
       onDoorToggle(hoveredCell.x, hoveredCell.y, hoveredDoor.edge);
     } else {
       // Regular cell click (now handled by mousedown/mouseup for drag support)
-      // This only fires for pure clicks without drag
     }
-  }, [hoveredCell, hoveredDoor, grid, onDoorToggle]);
+  }, [hoveredCell, hoveredDoor, grid, onDoorToggle, onPartyMove, onPartySelect, partyPos, partySelected]);
 
   const handleContextMenu = useCallback((e) => {
     e.preventDefault();
@@ -344,12 +413,29 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         onDoorToggle(hoveredCell.x, hoveredCell.y, edge);
       }
     };
+    const handleArrow = (e) => {
+      if (!partySelected || !partyPos) return;
+      let dx = 0; let dy = 0;
+      if (e.key === 'ArrowUp') dy = -1;
+      if (e.key === 'ArrowDown') dy = 1;
+      if (e.key === 'ArrowLeft') dx = -1;
+      if (e.key === 'ArrowRight') dx = 1;
+      if (dx !== 0 || dy !== 0) {
+        e.preventDefault();
+        const nx = Math.min(Math.max(0, partyPos.x + dx), cols - 1);
+        const ny = Math.min(Math.max(0, partyPos.y + dy), rows - 1);
+        if (onPartyMove) onPartyMove(nx, ny);
+      }
+    };
+
     window.addEventListener('keydown', handleGridKeyDown);
     window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleArrow);
     window.addEventListener('keyup', handleKeyUp);
     return () => {
       window.removeEventListener('keydown', handleGridKeyDown);
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleArrow);
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle]);
@@ -389,6 +475,14 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       {hoveredDoor && (
         <div className="absolute top-2 left-2 bg-amber-900/90 text-amber-100 px-2 py-1 rounded text-xs font-bold border border-amber-500">
           Click to place door on {hoveredDoor.edge} edge
+        </div>
+      )}
+      {!partyPos && (
+        <div
+          className="absolute top-2 left-2 bg-black/70 text-white px-3 py-1 rounded text-xs font-semibold"
+          style={{ zIndex: 9999, pointerEvents: 'none' }}
+        >
+          Shift+Click to add the party pawn
         </div>
       )}
     </div>

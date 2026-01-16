@@ -66,13 +66,11 @@ Week 6: Testing & Polish (6-8 hours)
 
 - its really hard to add doors right now with the mouse
 
-- can you add a button that brings up a modal with a 7x7 version of the dungeon grid, where rooms can be drafted and saved so they can be placed again later, imported and exported? do this efficiently using all the optimized coding standards we've been implementing in the refactor.
+- can you add a button that brings up a modal with a 7x7 version of the dungeon grid, where rooms can be drafted and saved to a library so they can be placed again later, imported and exported? do this efficiently using all the optimized coding standards we've been implementing in the refactor.
 
-- i need to implement a party tracker that can be dragged around the dungeon
+- can you implement the magic scroll system as outlined in /public/magic.txt
 
-- can you implement the scroll system as outlined in /public/magic.txt
-
-- figure out what info needs to go where, ie party should show equiped wweappons?
+- figure out what info needs to go where, ie party should show equiped weappons?
 
 ## WEEK 6: Testing & Polish
 **Focus:** Set up tests, documentation, final cleanup

@@ -16,6 +16,7 @@ export default function DesktopSidebar({
   state,
   dispatch,
   isOpen,
+  contracted = false,
   activeTab,
   onToggle,
   onTabChange,
@@ -23,10 +24,11 @@ export default function DesktopSidebar({
   onSelectHero,
 }) {
   if (!isOpen) {
+    const collapsedWidth = contracted ? 'w-12' : 'w-48';
     return (
       <div
-        className="w-12 flex-shrink-0 border-r border-slate-700 flex flex-col items-center py-2 gap-2"
-        data-panel="sidebar"
+        className={`${collapsedWidth} flex-shrink-0 border-r border-slate-700 flex flex-col items-center py-2 gap-2`}
+        data-panel="sidebar" style={{ height: '-webkit-fill-available' }}
       >
         <button
           onClick={() => {
@@ -83,7 +85,7 @@ export default function DesktopSidebar({
   return (
     <div
       className="flex-1 border-r border-slate-700 bg-slate-850 flex flex-col min-w-0"
-      data-panel="sidebar"
+      data-panel="sidebar"  style={{ height: '-webkit-fill-available' }}
     >
       {/* Sidebar Tabs */}
       <div className="flex border-b border-slate-700 flex-shrink-0">
