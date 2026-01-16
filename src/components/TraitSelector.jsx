@@ -39,13 +39,27 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
       return;
     }
 
-    // Update hero with trait
+    // Update hero with trait and apply any immediate persistent effects
+    const traitKey = selectedTrait.key;
+    // Compute immediate updates (e.g., +1 maxHp)
+    let immediateUpdates = {};
+    try {
+      // Dynamically import helper to avoid circular dependency at module load
+      // (utils/traitEffects is safe to import here)
+      // eslint-disable-next-line global-require
+      const { applyImmediateTraitEffects } = require('../utils/traitEffects.js');
+      immediateUpdates = applyImmediateTraitEffects(hero, traitKey) || {};
+    } catch (e) {
+      // noop - if helper unavailable, still set trait
+    }
+
     dispatch({
       type: 'UPD_HERO',
       i: heroIdx,
       u: {
-        trait: selectedTrait.key,
-        traitChoice: traitChoice
+        trait: traitKey,
+        traitChoice: traitChoice,
+        ...immediateUpdates
       }
     });
 

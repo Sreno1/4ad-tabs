@@ -1,27 +1,5 @@
 import { hasEquipment } from '../data/equipment.js';
-
-// Lantern animation component
-function LanternAnimation({ size = 24, className = '' }) {
-  const [frame, setFrame] = React.useState(0);
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setFrame(f => (f + 1) % 38);
-    }, 60);
-    return () => clearInterval(interval);
-  }, []);
-  const pad = n => n.toString().padStart(3, '0');
-  const src = `/assets/lantern/Lantern 6 - Bronze and Orange_${pad(frame)}.png`;
-  return (
-    <img
-      src={src}
-      alt="Lantern"
-      width={size}
-      height={size}
-      className={className + ' inline-block align-middle'}
-      style={{ imageRendering: 'pixelated' }}
-    />
-  );
-}
+import LanternAnimation from './LanternAnimation.jsx';
 import React, { useState, useCallback } from 'react';
 import { Plus, X, Heart, Star, Target } from 'lucide-react';
 import { CLASSES, getMaxHP, getSpellSlots, getLuckPoints } from '../data/classes.js';

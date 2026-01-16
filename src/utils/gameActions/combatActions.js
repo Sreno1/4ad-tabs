@@ -8,6 +8,7 @@ import {
   getSaveModifier,
   rollSave,
 } from "../../data/saves.js";
+import { getTraitRollModifiers } from "../traitEffects.js";
 import { getTier, hasDarkvision } from "../../data/classes.js";
 import {
   checkMinorFoeMorale,
@@ -20,7 +21,7 @@ import {
  * @param {number} foeLevel - Target foe level
  * @returns {object} Attack result
  */
-export const calculateAttack = (hero, foeLevel) => {
+export const calculateAttack = (hero, foeLevel, options = {}) => {
   const roll = d6();
   let mod = 0;
 
@@ -30,7 +31,10 @@ export const calculateAttack = (hero, foeLevel) => {
   } else if (hero.key === "cleric") {
     mod = Math.floor(hero.lvl / 2);
   }
-  // Rogue gets +L when outnumbered (handled separately)
+  // Rogue gets +L when outnumbered
+  if (hero.key === 'rogue' && options.rogueOutnumbers) {
+    mod += hero.lvl;
+  }
 
   // Equipment bonuses
   const equipBonus = calculateEquipmentBonuses(hero);
@@ -61,6 +65,13 @@ export const calculateEnhancedAttack = (hero, foeLevel, options = {}) => {
   const { total, rolls, exploded } = explodingD6();
   let mod = 0;
   const modifiers = [];
+
+  // Trait modifiers
+  const traitMods = getTraitRollModifiers(hero, { ranged: !!options.ranged, usingSling: !!options.usingSling, weaponType: options.weaponType });
+  if (traitMods.attackMod) {
+    mod += traitMods.attackMod;
+    modifiers.push(`+${traitMods.attackMod} (trait)`);
+  }
 
   // Darkness penalty (-2 if no light and character lacks darkvision)
   if (options.hasLightSource === false && !hasDarkvision(hero.key)) {
@@ -380,6 +391,18 @@ export const calculateDefense = (hero, foeLevel, options = {}) => {
   const roll = d6();
   let mod = 0;
   const modifiers = [];
+
+  // Trait modifiers for defense
+  try {
+    const { getTraitRollModifiers } = require('../traitEffects.js');
+    const traitMods = getTraitRollModifiers(hero, { firstAttackTarget: !!options.firstAttackTarget, rangedDefense: !!options.rangedDefense });
+    if (traitMods.defenseMod) {
+      mod += traitMods.defenseMod;
+      modifiers.push(`+${traitMods.defenseMod} (trait)`);
+    }
+  } catch (e) {
+    // ignore if require resolution fails
+  }
 
   // Darkness penalty (-2 if no light and character lacks darkvision)
   if (options.hasLightSource === false && !hasDarkvision(hero.key)) {

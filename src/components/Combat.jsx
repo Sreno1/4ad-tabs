@@ -58,6 +58,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   const [showSpells, setShowSpells] = useState(null); // heroIdx or null
   const [showAbilities, setShowAbilities] = useState(null); // heroIdx or null
   const [combatInitiative, setCombatInitiative] = useState(null); // Initiative info for current combat
+  const [showRangedVolley, setShowRangedVolley] = useState(false);
   const [roundStartsWith, setRoundStartsWith] = useState('attack'); // 'attack' | 'defend'
   const [showCombatModule, setShowCombatModule] = useState(false); // hide both until player/initiative decides
   const [targetMonsterIdx, setTargetMonsterIdx] = useState(null); // Selected target monster
@@ -284,6 +285,27 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     }
   }, [combatInitiative]);
 
+  // When initiative is set to Party attacks first, if any alive hero has a ranged weapon
+  // show the ranged-volley modal so they can fire before regular combat starts.
+  useEffect(() => {
+    if (!combatInitiative) return;
+    // Only trigger when party attacks first
+    if (combatInitiative.monsterFirst === false) {
+      const rangedHeroes = state.party
+        .map((h, idx) => ({ h, idx }))
+        .filter(({ h }) => h && h.hp > 0 && Array.isArray(h.equipment) && h.equipment.some(k => {
+          const it = getEquipment(k);
+          return it && it.type === 'ranged';
+        }));
+
+      if (rangedHeroes.length > 0) {
+        setShowRangedVolley(true);
+        // Defer showing regular combat module until after volley resolved
+        setShowCombatModule(false);
+      }
+    }
+  }, [combatInitiative, state.party]);
+
   // Flee attempt
   const handleFlee = useCallback(() => {
     const highestLevel = Math.max(...state.monsters.map(m => m.level), 1);
@@ -302,6 +324,34 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   }, [state.party, dispatch]);
 
   // Reaction rolls are handled centrally via `handleRollReaction` in the Initiative box.
+
+  // Perform a pre-initiative ranged attack for a single hero (used in ranged volley)
+  const handleRangedVolleyAttack = useCallback((heroIndex) => {
+    const hero = state.party[heroIndex];
+    if (!hero || hero.hp <= 0) return;
+
+    const target = getTargetMonster();
+    if (!target) {
+      addToCombatLog('No valid target for ranged volley!');
+      return;
+    }
+
+    const { monster, index: monsterIdx } = target;
+
+    const options = {
+      preInitiativeRanged: true,
+      hasLightSource: effectiveHasLight,
+      rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(monster) &&
+        state.party.filter(h => h.hp > 0).length > (monster.count || 1)
+    };
+
+    if (isMinorFoe(monster)) {
+      const foe = { ...monster, count: monster.count || 1, initialCount: monster.initialCount || monster.count || 1 };
+      processMinorFoeAttack(dispatch, hero, heroIndex, foe, monsterIdx, options);
+    } else {
+      processMajorFoeAttack(dispatch, hero, heroIndex, monster, monsterIdx, options);
+    }
+  }, [state.party, state.monsters, dispatch, getTargetMonster, isMinorFoe, effectiveHasLight]);
 
   const adjustMonsterHP = useCallback((index, delta) => {
     const monster = state.monsters[index];
@@ -572,6 +622,47 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
           addToCombatLog={addToCombatLog}
           dispatch={dispatch}
         />
+      )}
+
+      {/* Ranged Volley Modal - appears before combat module when party attacks first and ranged heroes exist */}
+      {showRangedVolley && (
+        <div className="bg-slate-900 border-2 border-slate-700 rounded p-3">
+          <div className="text-amber-300 font-bold text-center mb-2">🏹 Pre-Initiative Ranged Volley</div>
+          <div className="text-white text-sm mb-2">Select each hero with a ranged weapon to fire one free attack before normal combat begins. Close when finished.</div>
+          <div className="flex flex-col gap-2">
+            {state.party.map((h, idx) => {
+              const hasRanged = h && h.hp > 0 && Array.isArray(h.equipment) && h.equipment.some(k => {
+                const it = getEquipment(k);
+                return it && it.type === 'ranged';
+              });
+
+              if (!hasRanged) return null;
+
+              return (
+                <div key={idx} className="flex items-center justify-between">
+                  <div className="text-sm text-slate-200">{h.name} {h.lvl ? `L${h.lvl}` : ''}</div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleRangedVolleyAttack(idx)}
+                      className="bg-green-600 hover:bg-green-500 px-2 py-0.5 rounded text-xs"
+                    >
+                      Fire
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setShowRangedVolley(false); setShowCombatModule(true); }}
+                className="bg-slate-600 hover:bg-slate-500 px-3 py-1 rounded text-sm"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       
   {/* Foe Level controls moved inline next to each monster's name */}

@@ -232,12 +232,16 @@ export const checkMajorFoeLevelReduction = (foe) => {
 /**
  * Roll for surprise
  * @param {object} monster - Monster with surpriseChance property
+ * @param {number} [surpriseChanceOverride] - Optional X for X-in-6 surprise override
  * @returns {object} Surprise result
  */
-export const rollSurprise = (monster) => {
-  const surpriseChance = monster?.surpriseChance || 0; // e.g., 2 for 2-in-6
+export const rollSurprise = (monster, surpriseChanceOverride = null) => {
+  // Allow caller (UI or encounter generator) to provide an X-in-6 override.
+  const surpriseChance = (typeof surpriseChanceOverride === 'number')
+    ? surpriseChanceOverride
+    : (monster?.surpriseChance || 0); // e.g., 2 for 2-in-6
 
-  if (surpriseChance <= 0) {
+  if (!surpriseChance || surpriseChance <= 0) {
     return { surprised: false, roll: null, chance: 0 };
   }
 

@@ -13,14 +13,14 @@
       Status: Implemented.
     - Major Foe level reduction at half HP
       Status: Implemented
-    - ❌ Surprise system (X-in-6 chance)
-      Status: Not implemented. Next: Add surprise roll to encounter generator.
-    - ❌ Ranged attacks striking first
-      Status: Not implemented. Next: Add initiative phase for ranged attacks.
+    - Surprise system (X-in-6 chance)
+      Status: Implemented.
+    - Ranged attacks striking first
+      Status: Implemented
     - ❌ Reaction-based initiative
       Status: Not implemented. Next: Add reaction stat and initiative order to combat reducer.
-    - ❌ Monster treasure tables by type
-      Status: Not implemented. Next: Add monster type lookup and treasure assignment.
+    - ❌ environment based treasure tables by type
+      Status: Not implemented. Next: Add environment type lookup and treasure assignment.
     - ❌ Quest table
       Status: Not implemented. Next: Add quest data and random assignment on dungeon entry.
     - ❌ Epic rewards table
@@ -32,16 +32,17 @@
 
   Party Management Gaps
 
-    - ❌ Rogue Outnumbered bonus mechanics
-      Status: Not implemented. Next: Add bonus logic to rogue combat actions.
+    - Rogue Outnumbered bonus mechanics
+      Status: implemented.
+    - ❌ Implement Clues system
     - ❌ XP Rolls
       Status: Not implemented.
     - ❌ Equipment bonuses applied to rolls
       Status: Not implemented. Next: Add equipment stat modifiers to roll logic.
     - ❌ Character traits application after selected
-      Status: Not implemented. Next: Apply trait effects to character stats and rolls.
-    - ❌ Dwarf Gold Sense ability
-      Status: Not implemented. Next: Add ability trigger and gold detection logic.
+      Status: partially implemented. Next: Add more effects and test
+  -   Dwarf Gold Sense ability
+      Status: implemented. test that gold matches if won.
     - ❌ Stealth modifiers per class
       Status: Not implemented. Next: Add class-based stealth modifiers to encounter rolls.
 

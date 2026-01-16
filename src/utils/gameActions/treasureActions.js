@@ -38,6 +38,32 @@ export const rollTreasure = (dispatch) => {
 };
 
 /**
+ * Preview a treasure roll without dispatching state changes.
+ * Useful for abilities that reveal potential treasure (e.g., Dwarf Gold Sense)
+ * @returns {object} preview result similar to rollTreasure but without dispatch
+ */
+export const previewTreasureRoll = () => {
+  const roll = d6();
+  const result = TREASURE_TABLE[roll];
+
+  if (result.includes('Gold (d6)')) {
+    const gold = d6();
+    return { roll, type: 'gold', amount: gold };
+  }
+
+  if (result.includes('Gold (2d6)')) {
+    const gold = r2d6();
+    return { roll, type: 'gold', amount: gold };
+  }
+
+  if (result.includes('Clue')) {
+    return { roll, type: 'clue' };
+  }
+
+  return { roll, type: 'other', description: result };
+};
+
+/**
  * Perform a search action
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Search result info

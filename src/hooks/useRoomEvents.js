@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { d66, d6, r2d6 } from '../utils/dice.js';
 import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE, SPECIAL_FEATURE_TABLE, SPECIAL_ROOMS, checkForBoss } from '../data/rooms.js';
 import { spawnMonster, rollTreasure, spawnMajorFoe } from "../utils/gameActions/index.js";
+import { previewTreasureRoll } from '../utils/gameActions/treasureActions.js';
+import { getTrait } from '../data/traits.js';
 import { createMonsterFromTable, MONSTER_TABLE } from '../data/monsters.js';
 import { addMonster, logMessage as logMsgAction } from '../state/actionCreators.js';
 import { ACTION_MODES, EVENT_TYPES } from '../constants/gameConstants.js';
 import { logMessage } from '../state/actionCreators.js';
 import roomLibrary from '../utils/roomLibrary.js';
 
-export function useRoomEvents(state, dispatch, setActionMode) {
+export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview) {
   // Attempt to restore last tile data from localStorage so refresh keeps you in the same room
   const loadSaved = () => {
     try {
@@ -84,6 +86,24 @@ export function useRoomEvents(state, dispatch, setActionMode) {
         };
         dispatch(addMonster(group));
         dispatch(logMsgAction(`${group.count} ${group.name} L${group.level} appear!`));
+
+        // Dwarf Gold Sense: if any alive dwarf has the trait, offer a preview
+        const dwarfIdx = (state.party || []).findIndex(h => h && h.hp > 0 && getTrait(h.key, h.trait)?.key === 'goldSense');
+    if (dwarfIdx !== -1) {
+          // Save vs L6 + L
+          const dwarf = state.party[dwarfIdx];
+          const saveRoll = d6();
+          const total = saveRoll + dwarf.lvl;
+          dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
+          if (total >= 6) {
+            const preview = previewTreasureRoll();
+      dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+      // Notify UI via callback if provided so we can show a modal preview
+      try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
+          } else {
+            dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
+          }
+        }
         newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'vermin', level: 1, species: key, count }, timestamp: Date.now() });
         setActionMode(ACTION_MODES.COMBAT);
         break;
@@ -114,6 +134,22 @@ export function useRoomEvents(state, dispatch, setActionMode) {
         };
         dispatch(addMonster(group));
         dispatch(logMsgAction(`${group.count} ${group.name} L${group.level} appear!`));
+
+        // Dwarf Gold Sense preview
+        const dwarfIdx2 = (state.party || []).findIndex(h => h && h.hp > 0 && getTrait(h.key, h.trait)?.key === 'goldSense');
+    if (dwarfIdx2 !== -1) {
+          const dwarf = state.party[dwarfIdx2];
+          const saveRoll = d6();
+          const total = saveRoll + dwarf.lvl;
+          dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
+          if (total >= 6) {
+            const preview = previewTreasureRoll();
+      dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+      try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
+          } else {
+            dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
+          }
+        }
         newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'minions', level: 2, species: key, count }, timestamp: Date.now() });
         setActionMode(ACTION_MODES.COMBAT);
         break;
@@ -151,6 +187,21 @@ export function useRoomEvents(state, dispatch, setActionMode) {
         dispatch({ type: 'MINOR' });
   dispatch(logMessage(`Minor Boss appears! (Level 3)`, 'exploration'));
         newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'boss', level: 3, isBoss: false }, timestamp: Date.now() });
+        // Dwarf Gold Sense preview for boss
+        const dwarfIdx3 = (state.party || []).findIndex(h => h && h.hp > 0 && getTrait(h.key, h.trait)?.key === 'goldSense');
+    if (dwarfIdx3 !== -1) {
+          const dwarf = state.party[dwarfIdx3];
+          const saveRoll = d6();
+          const total = saveRoll + dwarf.lvl;
+          dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
+          if (total >= 6) {
+            const preview = previewTreasureRoll();
+      dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+      try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
+          } else {
+            dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
+          }
+        }
         setActionMode(ACTION_MODES.COMBAT);
         break;
 
@@ -166,11 +217,41 @@ export function useRoomEvents(state, dispatch, setActionMode) {
           dispatch({ type: 'BOSS' });
           dispatch(logMessage(`👑 THE BOSS APPEARS! (+1 Life, +1 Attack, 3x Treasure)`, 'exploration'));
           newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'boss', level: state.hcl, isBoss: true }, timestamp: Date.now() });
+          // Dwarf Gold Sense preview for boss
+          const dwarfIdx4 = (state.party || []).findIndex(h => h && h.hp > 0 && getTrait(h.key, h.trait)?.key === 'goldSense');
+      if (dwarfIdx4 !== -1) {
+            const dwarf = state.party[dwarfIdx4];
+            const saveRoll = d6();
+            const total = saveRoll + dwarf.lvl;
+            dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
+            if (total >= 6) {
+              const preview = previewTreasureRoll();
+        dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+        try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
+            } else {
+              dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
+            }
+          }
         } else {
           spawnMajorFoe(dispatch, state.hcl, false);
           dispatch({ type: 'MAJOR' });
           dispatch(logMessage(`Major Foe appears! (Level ${state.hcl})`, 'exploration'));
           newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'major', level: state.hcl, isBoss: false }, timestamp: Date.now() });
+          // Dwarf Gold Sense preview for major foe
+          const dwarfIdx5 = (state.party || []).findIndex(h => h && h.hp > 0 && getTrait(h.key, h.trait)?.key === 'goldSense');
+      if (dwarfIdx5 !== -1) {
+            const dwarf = state.party[dwarfIdx5];
+            const saveRoll = d6();
+            const total = saveRoll + dwarf.lvl;
+            dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
+            if (total >= 6) {
+              const preview = previewTreasureRoll();
+        dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+        try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
+            } else {
+              dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
+            }
+          }
         }
         setActionMode(ACTION_MODES.COMBAT);
         break;

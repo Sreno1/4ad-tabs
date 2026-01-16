@@ -8,6 +8,7 @@ import {
   Zap,
   ArrowLeft,
 } from "lucide-react";
+import LanternAnimation from '../LanternAnimation.jsx';
 import { Tooltip } from '../RulesReference.jsx';
 import FloatingDice from '../FloatingDice.jsx';
 
@@ -22,6 +23,8 @@ export default function AppHeader({
   onShowCampaign,
   onShowSettings,
   onBackToCampaigns,
+  hasLightSource,
+  partyLightNames = [],
 }) {
   return (
     <header className="bg-slate-800 p-1 border-b border-slate-700 flex-shrink-0">
@@ -60,6 +63,17 @@ export default function AppHeader({
 
         {/* Header Actions */}
         <div className="flex items-center gap-1">
+          {/* Light source indicator */}
+          <div className="flex items-center gap-2">
+            {!hasLightSource && (
+              <div className="text-red-400 text-xs font-semibold" aria-live="polite">-2 No Light Source</div>
+            )}
+            <Tooltip text={hasLightSource ? `Light: ${partyLightNames.join(', ')}` : 'No light source'}>
+              <div className="px-2">
+                <LanternAnimation size={18} className={hasLightSource ? 'opacity-100' : 'opacity-30'} />
+              </div>
+            </Tooltip>
+          </div>
           <FloatingDice inline={true} />
           <Tooltip text="Rules">
             <button

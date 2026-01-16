@@ -19,6 +19,7 @@ import Abilities from "./components/Abilities.jsx";
 import ActionPane from "./components/ActionPane.jsx";
 import FloatingDice from "./components/FloatingDice.jsx";
 import RoomDesigner from "./components/RoomDesigner.jsx";
+import GoldSenseModal from "./components/GoldSenseModal.jsx";
 
 // Layout Components
 import AppHeader from "./components/layout/AppHeader.jsx";
@@ -235,10 +236,16 @@ export default function App() {
       return () => window.removeEventListener("keydown", handleKeyboard);
     }, [setShowSettings, setShowRules, setShowDungeonFeatures, setShowCampaign, setShowEquipment, setShowAbilities, setTab, setLeftPanelTab, showSettings, showRules, showDungeonFeatures, showCampaign, showEquipment, showAbilities]);
   const [actionMode, setActionMode] = useState(ACTION_MODES.IDLE);
+  const [goldSenseModalData, setGoldSenseModalData] = useState(null);
+  const [showGoldSenseModal, setShowGoldSenseModal] = useState(false);
 
   // Custom hooks for game logic
   const combatFlow = useCombatFlow(state, dispatch);
-  const roomEvents = useRoomEvents(state, dispatch, setActionMode);
+  const roomEvents = useRoomEvents(state, dispatch, setActionMode, (data) => {
+    // Show modal with preview data
+    setGoldSenseModalData(data);
+    setShowGoldSenseModal(true);
+  });
 
   // Helper to clear tile and reset combat
   const clearTileAndCombat = () => {
@@ -318,6 +325,8 @@ export default function App() {
         onShowCampaign={() => setShowCampaign(true)}
   onShowSettings={() => setShowSettings(true)}
         onBackToCampaigns={handleBackToCampaigns}
+  hasLightSource={effectiveHasLight}
+  partyLightNames={partyLightNames}
       />
 
       {/* Main Content */}
@@ -568,6 +577,16 @@ export default function App() {
         state={state}
         dispatch={dispatch}
         onClose={() => setShowAbilities(false)}
+      />
+
+      {/* Gold Sense Modal (visible when a dwarf successfully previews treasure) */}
+      <GoldSenseModal
+        isOpen={showGoldSenseModal}
+        data={goldSenseModalData}
+        onClose={() => {
+          setShowGoldSenseModal(false);
+          setGoldSenseModalData(null);
+        }}
       />
 
   {/* Floating Dice Roller moved into header */}
