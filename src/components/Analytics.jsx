@@ -1,8 +1,10 @@
 import React from 'react';
 import { TrendingUp, Trophy, Skull, Crown, Coins, Users, Map, Sword } from 'lucide-react';
+import { selectParty, selectCampaign } from '../state/selectors.js';
 
 export default function Analytics({ state }) {
-  const { campaign, party, mode } = state;
+  const party = selectParty(state);
+  const campaign = selectCampaign(state);
 
   // Calculate party-wide stats
   const partyStats = party.reduce((acc, hero) => ({

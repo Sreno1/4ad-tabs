@@ -40,6 +40,15 @@ import { MONSTER_ABILITIES, getAllMonsters, createMonsterFromTable, MONSTER_CATE
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import { getPrayerPoints, getTrickPoints, getMaxPanache, getFlurryAttacks } from '../data/classes.js';
 import { InitiativePhase, VictoryPhase, MonsterReaction } from './combat/index.js';
+import { selectParty, selectHero } from '../state/selectors.js';
+import {
+  logMessage,
+  clearMonsters,
+  updateHero,
+  addMonster,
+  updateMonster,
+  deleteMonster
+} from '../state/actionCreators.js';
 
 export default function Combat({ state, dispatch, selectedHero, setSelectedHero }) {
   const [foeLevel, setFoeLevel] = useState(4);
@@ -51,7 +60,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
   const [combatInitiative, setCombatInitiative] = useState(null); // Initiative info for current combat
   const [targetMonsterIdx, setTargetMonsterIdx] = useState(null); // Selected target monster
   
-  const activeHero = state.party[selectedHero] || null;
+  const party = selectParty(state);
+  const activeHero = selectHero(state, selectedHero) || null;
   const monsterList = getAllMonsters(); // Get all monsters for dropdown
   
   const addToCombatLog = (message) => {
@@ -487,7 +497,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                   )}
                 </div>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); dispatch({ type: 'DEL_MONSTER', i: index }); }} 
+                  onClick={(e) => { e.stopPropagation(); dispatch(deleteMonster(index)); }} 
                   className="text-red-400 hover:text-red-300 text-xs"
                 >
                   ✕
@@ -503,12 +513,12 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                 {isMinor ? (
                   <div className="flex items-center gap-1 text-blue-400">
                     <button 
-                      onClick={(e) => { e.stopPropagation(); dispatch({ type: 'UPD_MONSTER', i: index, u: { count: Math.max(0, (monster.count || 1) - 1) } }); }} 
+                      onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { count: Math.max(0, (monster.count || 1) - 1) })); }} 
                       className="bg-slate-600 px-1 rounded hover:bg-slate-500"
                     >-</button>
                     <span className={monster.count === 0 ? 'text-green-400' : ''}>{monster.count || 0}/{monster.initialCount || monster.count}</span>
                     <button 
-                      onClick={(e) => { e.stopPropagation(); dispatch({ type: 'UPD_MONSTER', i: index, u: { count: (monster.count || 0) + 1 } }); }} 
+                      onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { count: (monster.count || 0) + 1 })); }} 
                       className="bg-slate-600 px-1 rounded hover:bg-slate-500"
                     >+</button>
                   </div>
@@ -582,8 +592,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero 
                     isMinorFoe: true,
                     xp: foe.level * 5
                   };
-                  dispatch({ type: 'ADD_MONSTER', m: monster });
-                  dispatch({ type: 'LOG', t: `👥 ${foe.count}x ${foe.name} L${foe.level} appear!` });
+                  dispatch(addMonster(monster));
+                  dispatch(logMessage(`👥 ${foe.count}x ${foe.name} L${foe.level} appear!`));
                 }}
                 className="bg-blue-600 hover:bg-blue-500 px-1.5 py-0.5 rounded text-xs"
               >

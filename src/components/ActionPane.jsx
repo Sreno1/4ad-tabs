@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { selectParty, selectMonsters } from '../state/selectors.js';
+import { setAbility } from '../state/actionCreators.js';
 import { Dices } from "lucide-react";
 import { d6 } from "../utils/dice.js";
 import { rollTreasure, performCastSpell } from "../utils/gameActions/index.js";
@@ -39,6 +41,8 @@ export default function ActionPane({
   const [showBlessTarget, setShowBlessTarget] = useState(null);
   const [showProtectionTarget, setShowProtectionTarget] = useState(null);
 
+  const party = selectParty(state);
+  const monsters = selectMonsters(state);
   const activeMonsters = getActiveMonsters();
   const hasActiveMonsters = activeMonsters.length > 0;
   const combatWon = isCombatWon();
@@ -46,7 +50,7 @@ export default function ActionPane({
 
   // Handle spell casting
   const handleCastSpell = (casterIdx, spellKey) => {
-    const caster = state.party[casterIdx];
+    const caster = party[casterIdx];
     const spell = SPELLS[spellKey];
     const context = {};
 
@@ -61,7 +65,7 @@ export default function ActionPane({
       const activeMonsters = getActiveMonsters();
       if (activeMonsters.length > 0) {
         const targetMonster = activeMonsters[0];
-        const targetIdx = state.monsters.findIndex(
+        const targetIdx = monsters.findIndex(
           (m) => m.id === targetMonster.id,
         );
         context.targetMonsterIdx = targetIdx;
@@ -72,11 +76,11 @@ export default function ActionPane({
 
     // For healing spells, find lowest HP ally
     if (spell.type === "healing") {
-      const lowestHP = state.party.reduce(
+      const lowestHP = party.reduce(
         (min, h, idx) =>
           h.hp > 0 &&
           h.hp < h.maxHp &&
-          (min === null || h.hp < state.party[min].hp)
+          (min === null || h.hp < party[min].hp)
             ? idx
             : min,
         null,
@@ -93,12 +97,7 @@ export default function ActionPane({
 
     // Track spell usage
     const abilities = state.abilities?.[casterIdx] || {};
-    dispatch({
-      type: "SET_ABILITY",
-      heroIdx: casterIdx,
-      ability: "spellsUsed",
-      value: (abilities.spellsUsed || 0) + 1,
-    });
+  dispatch(setAbility(casterIdx, "spellsUsed", (abilities.spellsUsed || 0) + 1));
 
     // Close spell selection
     setShowSpells(null);

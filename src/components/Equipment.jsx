@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   ALL_EQUIPMENT,
@@ -9,6 +10,16 @@ import {
   useConsumable,
   getStartingEquipment
 } from '../data/equipment.js';
+import { selectParty, selectHero } from '../state/selectors.js';
+import {
+  removeFromInventory,
+  equipItem,
+  logMessage,
+  unequipItem,
+  addToInventory,
+  updateHero,
+  adjustGold
+} from '../state/actionCreators.js';
 
 export default function Equipment({ isOpen, state, dispatch, onClose }) {
   const [selectedHero, setSelectedHero] = useState(0);
@@ -18,7 +29,8 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
   if (!isOpen) return null;
 
   // Early return for empty party - show modal with message
-  if (!state.party || state.party.length === 0) {
+  const party = selectParty(state);
+  if (!party || party.length === 0) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div className="bg-slate-900 rounded-lg max-w-md w-full p-6 border-2 border-amber-500">
@@ -37,7 +49,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
     );
   }
 
-  const hero = state.party[selectedHero];
+  const hero = selectHero(state, selectedHero);
   if (!hero) return null;
 
   // Handle old equipment format (migration support)
@@ -59,18 +71,18 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
     // Remove from inventory if it's there
     const invIdx = inventory.indexOf(itemKey);
     if (invIdx >= 0) {
-      dispatch({ type: 'REMOVE_FROM_INVENTORY', heroIdx: selectedHero, itemIdx: invIdx });
+  dispatch(removeFromInventory(selectedHero, invIdx));
     }
 
-    dispatch({ type: 'EQUIP_ITEM', heroIdx: selectedHero, itemKey });
-    dispatch({ type: 'LOG', t: `${hero.name} equipped ${getEquipment(itemKey).name}` });
+  dispatch(equipItem(selectedHero, itemKey));
+  dispatch(logMessage(`${hero.name} equipped ${getEquipment(itemKey).name}`));
   };
 
   // Handle unequipping an item
   const handleUnequip = (itemKey) => {
-    dispatch({ type: 'UNEQUIP_ITEM', heroIdx: selectedHero, itemKey });
-    dispatch({ type: 'ADD_TO_INVENTORY', heroIdx: selectedHero, itemKey });
-    dispatch({ type: 'LOG', t: `${hero.name} unequipped ${getEquipment(itemKey).name}` });
+  dispatch(unequipItem(selectedHero, itemKey));
+  dispatch(addToInventory(selectedHero, itemKey));
+  dispatch(logMessage(`${hero.name} unequipped ${getEquipment(itemKey).name}`));
   };
 
   // Handle using a consumable
@@ -84,12 +96,12 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
       // Apply effect
       if (result.effect === 'heal') {
         const newHP = Math.min(hero.maxHp, hero.hp + result.amount);
-        dispatch({ type: 'UPD_HERO', i: selectedHero, u: { hp: newHP } });
+    dispatch(updateHero(selectedHero, { hp: newHP }));
       }
 
       // Remove from inventory
-      dispatch({ type: 'REMOVE_FROM_INVENTORY', heroIdx: selectedHero, itemIdx });
-      dispatch({ type: 'LOG', t: result.message });
+  dispatch(removeFromInventory(selectedHero, itemIdx));
+  dispatch(logMessage(result.message));
     }
   };
 
@@ -103,25 +115,25 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
       return;
     }
 
-    dispatch({ type: 'GOLD', n: -item.cost });
-    dispatch({ type: 'ADD_TO_INVENTORY', heroIdx: selectedHero, itemKey });
-    dispatch({ type: 'LOG', t: `${hero.name} bought ${item.name} for ${item.cost}gp` });
+  dispatch(adjustGold(-item.cost));
+  dispatch(addToInventory(selectedHero, itemKey));
+  dispatch(logMessage(`${hero.name} bought ${item.name} for ${item.cost}gp`));
   };
 
   // Give starting equipment
   const handleStartingEquipment = () => {
     const startingGear = getStartingEquipment(hero.key);
     startingGear.forEach(itemKey => {
-      dispatch({ type: 'EQUIP_ITEM', heroIdx: selectedHero, itemKey });
+  dispatch(equipItem(selectedHero, itemKey));
     });
-    dispatch({ type: 'LOG', t: `${hero.name} received starting equipment` });
+  dispatch(logMessage(`${hero.name} received starting equipment`));
   };
 
   // Migrate from old equipment format to new array format
   const handleMigrateEquipment = () => {
     // Convert old object format to new array format
-    dispatch({ type: 'UPD_HERO', i: selectedHero, u: { equipment: [], inventory: [] } });
-    dispatch({ type: 'LOG', t: `${hero.name} equipment migrated to new format` });
+  dispatch(updateHero(selectedHero, { equipment: [], inventory: [] }));
+  dispatch(logMessage(`${hero.name} equipment migrated to new format`));
   };
 
   return (

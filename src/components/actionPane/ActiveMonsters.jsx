@@ -1,4 +1,5 @@
 import React from 'react';
+import { updateMonster } from '../../state/actionCreators.js';
 
 export default function ActiveMonsters({ activeMonsters, state, dispatch, corridor }) {
   return (
@@ -25,28 +26,28 @@ export default function ActiveMonsters({ activeMonsters, state, dispatch, corrid
                 {isMinor ? (
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => dispatch({ type: 'UPD_MONSTER', i: originalIdx, u: { count: Math.max(0, (monster.count || 1) - 1) } })}
+                      onClick={() => dispatch(updateMonster(originalIdx, { count: Math.max(0, (monster.count || 1) - 1) }))}
                       className="bg-slate-600 px-1.5 rounded hover:bg-slate-500"
                     >-</button>
                     <span className="text-blue-300 font-bold min-w-[3rem] text-center">
                       {monster.count}/{monster.initialCount || monster.count}
                     </span>
                     <button
-                      onClick={() => dispatch({ type: 'UPD_MONSTER', i: originalIdx, u: { count: (monster.count || 0) + 1 } })}
+                      onClick={() => dispatch(updateMonster(originalIdx, { count: (monster.count || 0) + 1 }))}
                       className="bg-slate-600 px-1.5 rounded hover:bg-slate-500"
                     >+</button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => dispatch({ type: 'UPD_MONSTER', i: originalIdx, u: { hp: Math.max(0, monster.hp - 1) } })}
+                      onClick={() => dispatch(updateMonster(originalIdx, { hp: Math.max(0, monster.hp - 1) }))}
                       className="bg-slate-600 px-1.5 rounded hover:bg-slate-500"
                     >-</button>
                     <span className="text-red-300 font-bold min-w-[3rem] text-center">
                       ❤️ {monster.hp}/{monster.maxHp}
                     </span>
                     <button
-                      onClick={() => dispatch({ type: 'UPD_MONSTER', i: originalIdx, u: { hp: Math.min(monster.maxHp, monster.hp + 1) } })}
+                      onClick={() => dispatch(updateMonster(originalIdx, { hp: Math.min(monster.maxHp, monster.hp + 1) }))}
                       className="bg-slate-600 px-1.5 rounded hover:bg-slate-500"
                     >+</button>
                   </div>

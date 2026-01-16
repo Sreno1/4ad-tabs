@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { selectHero } from '../state/selectors.js';
+import { logMessage, updateHero } from '../state/actionCreators.js';
 import { X, DoorOpen, AlertTriangle, Sparkles, Puzzle, Lock } from 'lucide-react';
 import { 
   rollDoorType, attemptOpenDoor,
@@ -13,7 +15,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
   const [currentSpecial, setCurrentSpecial] = useState(null);
   const [currentPuzzle, setCurrentPuzzle] = useState(null);
 
-  const activeHero = state?.party?.[selectedHero] || null;
+  const activeHero = selectHero(state, selectedHero) || null;
 
   if (!isOpen) return null;
 
@@ -80,14 +82,14 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
     switch (currentSpecial.typeKey) {
       case 'shrine':
         if (state.gold < 1) {
-          dispatch({ type: 'LOG', t: 'Not enough gold for shrine offering!' });
+          dispatch(logMessage('Not enough gold for shrine offering!'));
           return;
         }
         result = interactShrine(dispatch, heroWithIndex, 1);
         if (result.result === 'curse') {
-          dispatch({ type: 'UPD_HERO', i: selectedHero, u: { hp: Math.max(0, activeHero.hp - 1) } });
+          dispatch(updateHero(selectedHero, { hp: Math.max(0, activeHero.hp - 1) }));
         } else if (result.result === 'blessing') {
-          dispatch({ type: 'UPD_HERO', i: selectedHero, u: { hp: Math.min(activeHero.maxHp, activeHero.hp + 1) } });
+          dispatch(updateHero(selectedHero, { hp: Math.min(activeHero.maxHp, activeHero.hp + 1) }));
         }
         break;
       case 'fountain':
@@ -96,7 +98,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           const newHp = result.healing === 999 
             ? activeHero.maxHp 
             : Math.max(0, Math.min(activeHero.maxHp, activeHero.hp + result.healing));
-          dispatch({ type: 'UPD_HERO', i: selectedHero, u: { hp: newHp } });
+          dispatch(updateHero(selectedHero, { hp: newHp }));
         }
         break;
       case 'statue':
@@ -107,7 +109,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
         break;
       case 'altar':
         if (state.gold < 2) {
-          dispatch({ type: 'LOG', t: 'Not enough gold for altar sacrifice!' });
+          dispatch(logMessage('Not enough gold for altar sacrifice!'));
           return;
         }
         result = interactAltar(dispatch, 2);
@@ -115,14 +117,14 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
       case 'library':
         result = interactLibrary(dispatch, heroWithIndex);
         if (result.result === 'trap') {
-          dispatch({ type: 'UPD_HERO', i: selectedHero, u: { hp: Math.max(0, activeHero.hp - 1) } });
+          dispatch(updateHero(selectedHero, { hp: Math.max(0, activeHero.hp - 1) }));
         }
         break;
       case 'armory':
         result = interactArmory(dispatch, heroWithIndex);
         break;
       default:
-        dispatch({ type: 'LOG', t: 'Unknown special room type.' });
+  dispatch(logMessage('Unknown special room type.'));
     }
     
     setCurrentSpecial({ ...currentSpecial, interacted: true, result });

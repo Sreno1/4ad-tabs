@@ -6,12 +6,26 @@ import { getXPForNextLevel, canLevelUp } from '../data/monsters.js';
 import { hasTraits, getTrait } from '../data/traits.js';
 import MarchingOrder from './MarchingOrder.jsx';
 import TraitSelector from './TraitSelector.jsx';
+import { selectParty, selectIsPartyFull, selectHeroAbilities } from '../state/selectors.js';
+import {
+  addHero as createAddHeroAction,
+  updateHero,
+  logMessage,
+  setAbility,
+  setMarchingOrder,
+  deleteHero,
+  adjustGold
+} from '../state/actionCreators.js';
 
 export default function Party({ state, dispatch, selectedHero = 0, onSelectHero }) {
   const [showClassPicker, setShowClassPicker] = useState(false);
   const [traitSelectorHero, setTraitSelectorHero] = useState(null);
-  
-  const addHero = (classKey) => {
+
+  // Use selectors
+  const party = selectParty(state);
+  const isPartyFull = selectIsPartyFull(state);
+
+  const addHeroToParty = (classKey) => {
     const classData = CLASSES[classKey];
     const hero = {
       id: Date.now(),
@@ -27,59 +41,47 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
       status: {},
       stats: { monstersKilled: 0, dungeonsSurvived: 0, totalGoldEarned: 0 }
     };
-    dispatch({ type: 'ADD_HERO', h: hero });
+    dispatch(createAddHeroAction(hero));
     setShowClassPicker(false);
   };
-  
+
   const adjustLevel = (index, delta) => {
-    const hero = state.party[index];
+    const hero = party[index];
     const newLevel = Math.max(1, Math.min(5, hero.lvl + delta));
     const newMaxHp = getMaxHP(hero.key, newLevel);
-    dispatch({ 
-      type: 'UPD_HERO', 
-      i: index, 
-      u: { 
-        lvl: newLevel, 
-        maxHp: newMaxHp, 
-        hp: Math.min(hero.hp, newMaxHp) 
-      } 
-    });
+    dispatch(updateHero(index, {
+      lvl: newLevel,
+      maxHp: newMaxHp,
+      hp: Math.min(hero.hp, newMaxHp)
+    }));
   };
-  
+
   const handleLevelUp = (index) => {
-    const hero = state.party[index];
+    const hero = party[index];
     if (!canLevelUp(hero)) return;
-    
+
     const newLevel = hero.lvl + 1;
     const newMaxHp = getMaxHP(hero.key, newLevel);
-    dispatch({ 
-      type: 'UPD_HERO', 
-      i: index, 
-      u: { 
-        lvl: newLevel, 
-        maxHp: newMaxHp, 
-        hp: hero.hp + 1 // Gain 1 HP on level up
-      } 
-    });
-    dispatch({ type: 'LOG', t: `🎉 ${hero.name} leveled up to L${newLevel}!` });
+    dispatch(updateHero(index, {
+      lvl: newLevel,
+      maxHp: newMaxHp,
+      hp: hero.hp + 1 // Gain 1 HP on level up
+    }));
+    dispatch(logMessage(`🎉 ${hero.name} leveled up to L${newLevel}!`));
   };
-  
+
   const adjustHP = (index, delta) => {
-    const hero = state.party[index];
+    const hero = party[index];
     const newHP = Math.max(0, Math.min(hero.maxHp, hero.hp + delta));
-    dispatch({ type: 'UPD_HERO', i: index, u: { hp: newHP } });
+    dispatch(updateHero(index, { hp: newHP }));
   };
-  
+
   const toggleAbility = (heroIndex, abilityKey) => {
-    const currentValue = state.abilities[heroIndex]?.[abilityKey] || false;
-    dispatch({ 
-      type: 'SET_ABILITY', 
-      heroIdx: heroIndex, 
-      ability: abilityKey, 
-      value: !currentValue 
-    });
+    const heroAbilities = selectHeroAbilities(state, heroIndex);
+    const currentValue = heroAbilities[abilityKey] || false;
+    dispatch(setAbility(heroIndex, abilityKey, !currentValue));
   };
-  
+
   const renderAbilities = (hero, index) => {
     // Cleric: Heals and Blessings
     if (hero.key === 'cleric') {
@@ -87,76 +89,88 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
         <div className="flex gap-2 text-xs mt-1">
           <div className="flex items-center gap-1">
             <span className="text-green-400">Heals:</span>
-            {[1, 2, 3].map(n => (
-              <button 
-                key={n} 
-                onClick={() => toggleAbility(index, `heal${n}`)}
-                className={`w-4 h-4 rounded ${state.abilities[index]?.[`heal${n}`] ? 'bg-slate-600' : 'bg-green-600'}`}
-              >
-                {!state.abilities[index]?.[`heal${n}`] && '✓'}
-              </button>
-            ))}
+            {[1, 2, 3].map(n => {
+              const heroAbilities = selectHeroAbilities(state, index);
+              return (
+                <button
+                  key={n}
+                  onClick={() => toggleAbility(index, `heal${n}`)}
+                  className={`w-4 h-4 rounded ${heroAbilities[`heal${n}`] ? 'bg-slate-600' : 'bg-green-600'}`}
+                >
+                  {!heroAbilities[`heal${n}`] && '✓'}
+                </button>
+              );
+            })}
           </div>
           <div className="flex items-center gap-1">
             <span className="text-blue-400">Bless:</span>
-            {[1, 2, 3].map(n => (
-              <button 
-                key={n} 
-                onClick={() => toggleAbility(index, `bless${n}`)}
-                className={`w-4 h-4 rounded ${state.abilities[index]?.[`bless${n}`] ? 'bg-slate-600' : 'bg-blue-600'}`}
-              >
-                {!state.abilities[index]?.[`bless${n}`] && '✓'}
-              </button>
-            ))}
+            {[1, 2, 3].map(n => {
+              const heroAbilities = selectHeroAbilities(state, index);
+              return (
+                <button
+                  key={n}
+                  onClick={() => toggleAbility(index, `bless${n}`)}
+                  className={`w-4 h-4 rounded ${heroAbilities[`bless${n}`] ? 'bg-slate-600' : 'bg-yellow-600'}`}
+                >
+                  {!heroAbilities[`bless${n}`] && '✓'}
+                </button>
+              );
+            })}
           </div>
         </div>
       );
     }
-    
+
     // Wizard/Elf: Spell slots
     if (hero.key === 'wizard' || hero.key === 'elf') {
       const slots = getSpellSlots(hero.key, hero.lvl);
       return (
         <div className="flex gap-2 text-xs mt-1 flex-wrap">
           <span className="text-purple-400">Spells: {slots}</span>
-          {Array.from({ length: slots }).map((_, n) => (
-            <button 
-              key={n} 
-              onClick={() => toggleAbility(index, `spell${n}`)}
-              className={`w-4 h-4 rounded ${state.abilities[index]?.[`spell${n}`] ? 'bg-slate-600' : 'bg-purple-600'}`}
-            >
-              {!state.abilities[index]?.[`spell${n}`] && '✓'}
-            </button>
-          ))}
+          {Array.from({ length: slots }).map((_, n) => {
+            const heroAbilities = selectHeroAbilities(state, index);
+            return (
+              <button
+                key={n}
+                onClick={() => toggleAbility(index, `spell${n}`)}
+                className={`w-4 h-4 rounded ${heroAbilities[`spell${n}`] ? 'bg-slate-600' : 'bg-purple-600'}`}
+              >
+                {!heroAbilities[`spell${n}`] && '✓'}
+              </button>
+            );
+          })}
         </div>
       );
     }
-    
+
     // Halfling: Luck points
     if (hero.key === 'halfling') {
       const luckPoints = getLuckPoints(hero.lvl);
       return (
         <div className="flex gap-2 text-xs mt-1 flex-wrap">
           <span className="text-yellow-400">Luck: {luckPoints}</span>
-          {Array.from({ length: luckPoints }).map((_, n) => (
-            <button 
-              key={n} 
-              onClick={() => toggleAbility(index, `luck${n}`)}
-              className={`w-4 h-4 rounded ${state.abilities[index]?.[`luck${n}`] ? 'bg-slate-600' : 'bg-yellow-600'}`}
-            >
-              {!state.abilities[index]?.[`luck${n}`] && '✓'}
-            </button>
-          ))}
+          {Array.from({ length: luckPoints }).map((_, n) => {
+            const heroAbilities = selectHeroAbilities(state, index);
+            return (
+              <button
+                key={n}
+                onClick={() => toggleAbility(index, `luck${n}`)}
+                className={`w-4 h-4 rounded ${heroAbilities[`luck${n}`] ? 'bg-slate-600' : 'bg-cyan-600'}`}
+              >
+                {!heroAbilities[`luck${n}`] && '✓'}
+              </button>
+            );
+          })}
         </div>
       );
     }
-    
+
     // Barbarian: Rage toggle
     if (hero.key === 'barbarian') {
       const isRaging = state.abilities[index]?.rage || false;
       return (
         <div className="flex gap-2 text-xs mt-1">
-          <button 
+          <button
             onClick={() => toggleAbility(index, 'rage')}
             className={`px-2 py-0.5 rounded ${isRaging ? 'bg-red-600 text-white' : 'bg-slate-600'}`}
           >
@@ -165,10 +179,10 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
         </div>
       );
     }
-    
+
     return null;
   };
-  
+
   return (
     <div className="p-3 space-y-2">
       {/* Marching Order UI */}
@@ -187,23 +201,23 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
         <span className="font-bold text-amber-400">
           Party ({state.party.length}/4) · HCL {state.hcl}
         </span>
-        {state.party.length < 4 && (
-          <button 
-            onClick={() => setShowClassPicker(!showClassPicker)} 
+        {!isPartyFull && (
+          <button
+            onClick={() => setShowClassPicker(!showClassPicker)}
             className="bg-amber-600 px-2 py-1 rounded text-sm"
           >
             <Plus size={14} />
           </button>
         )}
       </div>
-      
+
       {/* Class Picker */}
       {showClassPicker && (
         <div className="grid grid-cols-2 gap-1">
           {Object.entries(CLASSES).map(([key, classData]) => (
-            <button 
-              key={key} 
-              onClick={() => addHero(key)} 
+            <button
+              key={key}
+              onClick={() => addHeroToParty(classKey)}
               className="bg-slate-700 p-1.5 rounded text-left"
             >
               <div className="text-amber-400 text-sm font-bold">{classData.name}</div>
@@ -212,29 +226,29 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
           ))}
         </div>
       )}
-      
+
       {/* Hero Cards */}
-      {state.party.map((hero, index) => {
+      {party.map((hero, i) => {
         const xpNeeded = getXPForNextLevel(hero.lvl);
         const currentXP = hero.xp || 0;
         const readyToLevel = canLevelUp(hero);
-        
+
         return (
-        <div key={hero.id || index} className={`bg-slate-700 rounded p-2 text-sm ${readyToLevel ? 'ring-2 ring-yellow-400' : ''}`}>
+        <div key={hero.id || i} className={`bg-slate-700 rounded p-2 text-sm ${readyToLevel ? 'ring-2 ring-yellow-400' : ''}`}>
           <div className="flex justify-between">
             <div className="flex items-center gap-2">
-              <input 
-                value={hero.name} 
-                onChange={e => dispatch({ type: 'UPD_HERO', i: index, u: { name: e.target.value } })} 
-                className="bg-transparent text-amber-400 font-bold w-24 outline-none" 
+              <input
+                value={hero.name}
+                onChange={e => dispatch(updateHero(i, { name: e.target.value }))}
+                className="bg-transparent text-amber-400 font-bold w-24 outline-none"
               />
               {/* Marching Order Selector */}
               <select
-                value={state.marchingOrder?.indexOf(index) ?? ''}
+                value={state.marchingOrder?.indexOf(i) ?? ''}
                 onChange={(e) => {
                   const position = e.target.value === '' ? null : parseInt(e.target.value);
                   if (position !== null) {
-                    dispatch({ type: 'SET_MARCHING_ORDER', heroIdx: index, position });
+                    dispatch(setMarchingOrder(i, position));
                   }
                 }}
                 className="bg-slate-600 text-slate-300 text-xs px-1 py-0.5 rounded"
@@ -247,28 +261,28 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 <option value="3">Pos 4</option>
               </select>
             </div>
-            <button 
-              onClick={() => dispatch({ type: 'DEL_HERO', i: index })} 
+            <button
+              onClick={() => dispatch(deleteHero(i))}
               className="text-slate-500 hover:text-red-400"
             >
               <X size={14} />
             </button>          </div>
-          
+
           {/* Level and HP Controls */}
           <div className="flex justify-between items-center text-xs mt-1">
             <div className="flex items-center gap-1">
-              <button 
-                onClick={() => adjustLevel(index, -1)} 
+              <button
+                onClick={() => adjustLevel(i, -1)}
                 className="bg-slate-600 px-1 rounded"
               >-</button>
               <span>L{hero.lvl} {CLASSES[hero.key].name}</span>
-              <button 
-                onClick={() => adjustLevel(index, 1)} 
+              <button
+                onClick={() => adjustLevel(i, 1)}
                 className="bg-slate-600 px-1 rounded"
               >+</button>
               {readyToLevel && (
                 <button
-                  onClick={() => handleLevelUp(index)}
+                  onClick={() => handleLevelUp(i)}
                   className="bg-yellow-500 hover:bg-yellow-400 text-black px-2 py-0.5 rounded text-xs font-bold animate-pulse ml-2"
                 >
                   Level Up!
@@ -277,13 +291,13 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
             </div>
             <div className="flex items-center gap-1 text-red-400">
               <Heart size={12} />
-              <button 
-                onClick={() => adjustHP(index, -1)} 
+              <button
+                onClick={() => adjustHP(i, -1)}
                 className="bg-slate-600 px-1 rounded"
               >-</button>
               {hero.hp}/{hero.maxHp}
-              <button 
-                onClick={() => adjustHP(index, 1)} 
+              <button
+                onClick={() => adjustHP(i, 1)}
                 className="bg-slate-600 px-1 rounded"
               >+</button>
             </div>
@@ -312,7 +326,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                     )}
                   </div>
                   <button
-                    onClick={() => setTraitSelectorHero({ hero, index })}
+                    onClick={() => setTraitSelectorHero({ hero, index: i })}
                     className="text-cyan-400 hover:text-cyan-300 text-xs ml-2"
                     title="Change Trait"
                   >
@@ -321,7 +335,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 </div>
               ) : (
                 <button
-                  onClick={() => setTraitSelectorHero({ hero, index })}
+                  onClick={() => setTraitSelectorHero({ hero, index: i })}
                   className="flex-1 bg-slate-600 hover:bg-slate-500 rounded px-2 py-1 text-xs text-slate-300 flex items-center justify-center gap-1"
                 >
                   <Target size={12} />
@@ -331,10 +345,10 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
             </div>
           )}
             {/* Class Abilities */}
-          {renderAbilities(hero, index)}
-          
+          {renderAbilities(hero, i)}
+
           {/* Divider between heroes (RPGUI styled) */}
-          {index < state.party.length - 1 && <hr className="my-2" />}
+          {i < state.party.length - 1 && <hr className="my-2" />}
         </div>
         );
       })}
@@ -343,22 +357,22 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
         <div className="flex justify-between items-center">
           <span className="text-amber-400">Gold: {state.gold}</span>
           <div className="flex gap-1">
-            <button 
-              onClick={() => dispatch({ type: 'GOLD', n: -1 })} 
+            <button
+              onClick={() => dispatch(adjustGold(-1))}
               className="bg-slate-700 px-2 rounded"
             >-</button>
-            <button 
-              onClick={() => dispatch({ type: 'GOLD', n: 1 })} 
+            <button
+              onClick={() => dispatch(adjustGold(1))}
               className="bg-slate-700 px-2 rounded"
             >+</button>
-            <button 
-              onClick={() => dispatch({ type: 'GOLD', n: d6() })} 
+            <button
+              onClick={() => dispatch(adjustGold(d6()))}
               className="bg-amber-600 px-2 rounded"
             >+d6</button>
           </div>
         </div>
       </div>
-      
+
 
 
       {/* Trait Selector Modal */}

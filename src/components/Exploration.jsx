@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { selectParty, selectHero } from '../state/selectors.js';
+import { logMessage, updateHero, encounterBoss, incrementMajorFoe } from '../state/actionCreators.js';
 import { DoorOpen, AlertTriangle, Sparkles, Compass, Lock, Puzzle, Skull, Info } from 'lucide-react';
 import { d6 } from '../utils/dice.js';
 import { 
@@ -25,7 +27,8 @@ export default function Exploration({ state, dispatch }) {
   const [selectedHero, setSelectedHero] = useState(0);
   const [bossCheckResult, setBossCheckResult] = useState(null);
 
-  const activeHero = state.party[selectedHero] || null;
+  const party = selectParty(state);
+  const activeHero = selectHero(state, selectedHero) || null;
 
   // ========== Door Mechanics ==========
   const handleRollDoorType = () => {
@@ -90,14 +93,14 @@ export default function Exploration({ state, dispatch }) {
     switch (currentSpecial.typeKey) {
       case 'shrine':
         if (state.gold < 1) {
-          dispatch({ type: 'LOG', t: 'Not enough gold for shrine offering!' });
+          dispatch(logMessage('Not enough gold for shrine offering!'));
           return;
         }
         result = interactShrine(dispatch, heroWithIndex, 1);
         if (result.result === 'curse') {
-          dispatch({ type: 'UPD_HERO', i: selectedHero, u: { hp: Math.max(0, activeHero.hp - 1) } });
+          dispatch(updateHero(selectedHero, { hp: Math.max(0, activeHero.hp - 1) }));
         } else if (result.result === 'blessing') {
-          dispatch({ type: 'UPD_HERO', i: selectedHero, u: { hp: Math.min(activeHero.maxHp, activeHero.hp + 1) } });
+          dispatch(updateHero(selectedHero, { hp: Math.min(activeHero.maxHp, activeHero.hp + 1) }));
         }
         break;
       case 'fountain':
@@ -106,7 +109,7 @@ export default function Exploration({ state, dispatch }) {
           const newHp = result.healing === 999 
             ? activeHero.maxHp 
             : Math.max(0, Math.min(activeHero.maxHp, activeHero.hp + result.healing));
-          dispatch({ type: 'UPD_HERO', i: selectedHero, u: { hp: newHp } });
+          dispatch(updateHero(selectedHero, { hp: newHp }));
         }
         break;
       case 'statue':
@@ -118,7 +121,7 @@ export default function Exploration({ state, dispatch }) {
         break;
       case 'altar':
         if (state.gold < 2) {
-          dispatch({ type: 'LOG', t: 'Not enough gold for altar sacrifice!' });
+          dispatch(logMessage('Not enough gold for altar sacrifice!'));
           return;
         }
         result = interactAltar(dispatch, 2);
@@ -126,7 +129,7 @@ export default function Exploration({ state, dispatch }) {
       case 'library':
         result = interactLibrary(dispatch, heroWithIndex);
         if (result.result === 'trap') {
-          dispatch({ type: 'UPD_HERO', i: selectedHero, u: { hp: Math.max(0, activeHero.hp - 1) } });
+          dispatch(updateHero(selectedHero, { hp: Math.max(0, activeHero.hp - 1) }));
         }
         break;
       case 'armory':
@@ -134,7 +137,7 @@ export default function Exploration({ state, dispatch }) {
         // TODO: Add temporary bonus tracking
         break;
       default:
-        dispatch({ type: 'LOG', t: 'Unknown special room type.' });
+  dispatch(logMessage('Unknown special room type.'));
     }
     
     setCurrentSpecial({ ...currentSpecial, interacted: true, result });
@@ -163,16 +166,16 @@ export default function Exploration({ state, dispatch }) {
     const roll = d6();
     const result = checkForBoss(state.majorFoes || 0, roll);
     setBossCheckResult(result);
-    dispatch({ type: 'LOG', t: `🎲 Boss Check: ${result.message}` });
+  dispatch(logMessage(`🎲 Boss Check: ${result.message}`));
     
     if (result.isBoss) {
       // Spawn the boss
       spawnMajorFoe(dispatch, state.hcl, true);
-      dispatch({ type: 'BOSS' });
+  dispatch(encounterBoss());
     } else {
       // Spawn regular major foe
       spawnMajorFoe(dispatch, state.hcl, false);
-      dispatch({ type: 'MAJOR' });
+  dispatch(incrementMajorFoe());
     }
   };
 
