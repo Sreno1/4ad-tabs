@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { Plus, X, Heart, Star, Target } from 'lucide-react';
 import { CLASSES, getMaxHP, getSpellSlots, getLuckPoints } from '../data/classes.js';
 import { d6 } from '../utils/dice.js';
+import { formatRollPrefix } from '../utils/rollLog.js';
 import { performStealthSave } from '../utils/gameActions/stealthActions.js';
 import { getXPForNextLevel, canLevelUp } from '../data/monsters.js';
 import { hasTraits, getTrait } from '../data/traits.js';
@@ -460,7 +461,11 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
             >+</button>
             <button
               id="party_gold_roll_d6_button"
-              onClick={() => dispatch(adjustGold(d6()))}
+              onClick={() => {
+                const roll = d6();
+                dispatch(adjustGold(roll));
+                dispatch(logMessage(`${formatRollPrefix(roll)}Added ${roll} gold via manual roll`));
+              }}
               className="bg-amber-600 px-2 rounded"
               aria-label="Add 1d6 gold"
               aria-describedby="party_gold_display"

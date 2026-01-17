@@ -5,6 +5,7 @@ import { SPELLS, getSpellSlots, castSpell } from '../../data/spells.js';
 import { getScrollSpell, canUseScroll, getScrollCastingBonus } from '../../data/scrolls.js';
 import { getTier } from '../../data/classes.js';
 import { getTraitRollModifiers } from '../traitEffects.js';
+import { formatRollPrefix } from '../rollLog.js';
 
 /**
  * Cast a spell
@@ -57,11 +58,11 @@ export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context 
   // If MR check details were recorded, log them for visibility
   if (result.details && result.details.mr) {
     const mr = result.details.mr;
-    dispatch({ type: 'LOG', t: `🛡️ MR Roll: d6=${mr.roll} + L${caster.lvl} = ${mr.total} vs MR${mr.mr} → ${mr.passed ? 'Pass' : 'Fail'}` });
+    dispatch({ type: 'LOG', t: `${formatRollPrefix(mr.roll)}🛡️ MR Roll: d6=${mr.roll} + L${caster.lvl} = ${mr.total} vs MR${mr.mr} → ${mr.passed ? 'Pass' : 'Fail'}` });
   }
   if (result.details && result.details.cast) {
     const c = result.details.cast;
-    dispatch({ type: 'LOG', t: `🎲 Cast Roll: d6=${c.roll} + L${caster.lvl} + ${castingBonus} = ${c.total} vs target` });
+    dispatch({ type: 'LOG', t: `${formatRollPrefix(c.roll)}🎲 Cast Roll: d6=${c.roll} + L${caster.lvl} + ${castingBonus} = ${c.total} vs target` });
   }
 
   // Prefer the computed result.effect (some spells override behavior), else use definition

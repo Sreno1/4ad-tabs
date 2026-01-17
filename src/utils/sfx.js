@@ -19,6 +19,8 @@ const SOUND_MAP = {
   flee: 'turnoff2.wav',
   select: 'select2.wav',
   select3: 'select3.wav',
+  select5: 'select5.wav',
+  pickup4: 'pickup4.wav',
   upgrade4: 'upgrade4.wav'
 };
 

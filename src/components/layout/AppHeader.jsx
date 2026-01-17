@@ -10,10 +10,12 @@ import {
 } from "lucide-react";
 import LanternAnimation from '../LanternAnimation.jsx';
 import { Tooltip } from '../RulesReference.jsx';
-import FloatingDice from '../FloatingDice.jsx';
+import { adjustGold, adjustMajorFoes, adjustMinorEncounters } from '../../state/actionCreators.js';
+import sfx from '../../utils/sfx.js';
 
 export default function AppHeader({
   state,
+  dispatch,
   selectedHero,
   onSelectHero,
   onShowRules,
@@ -54,18 +56,34 @@ export default function AppHeader({
           <h1 className="text-lg font-bold text-amber-400 sm:hidden">4AD</h1>
         </div>
 
-        {/* Stats */}
-        <div id="app_header_stats" className="flex items-center gap-2 text-xs">
-          <Tooltip text="Gold collected">
-            <span className="text-amber-400 font-bold">{state.gold}g</span>
-          </Tooltip>
-          <span className="text-slate-500">|</span>
-          <Tooltip text="Minor encounters encountered">
-            <span className="text-slate-400">{state.minorEnc}/10</span>
-          </Tooltip>
-          <Tooltip text="Major foes encountered">
-            <span className="text-red-400 font-bold">{state.majorFoes}M</span>
-          </Tooltip>
+        {/* Stats with manual controls */}
+        <div id="app_header_stats" className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
+            <span className="text-slate-400 text-xs">Gold</span>
+            <span id="header_gold_value" className="text-amber-400 font-bold">{state.gold}</span>
+            <div className="flex gap-1">
+              <button aria-label="Decrease gold" onClick={() => { try { sfx.play('select5', { volume: 0.85 }); } catch(e){}; dispatch(adjustGold(-1)); }} className="px-1 text-slate-300">−</button>
+              <button aria-label="Increase gold" onClick={() => { try { sfx.play('pickup4', { volume: 0.9 }); } catch(e){}; dispatch(adjustGold(1)); }} className="px-1 text-amber-400 font-bold">+</button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
+            <span className="text-slate-400 text-xs">Minion Groups</span>
+            <span id="header_minion_value" className="text-slate-400 font-bold">{state.minorEnc}</span>
+            <div className="flex gap-1">
+              <button aria-label="Decrease minion groups" onClick={() => dispatch(adjustMinorEncounters(-1))} className="px-1 text-slate-300">−</button>
+              <button aria-label="Increase minion groups" onClick={() => dispatch(adjustMinorEncounters(1))} className="px-1 text-amber-400 font-bold">+</button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
+            <span className="text-slate-400 text-xs">Major Foes Faced</span>
+            <span id="header_major_value" className="text-red-400 font-bold">{state.majorFoes}</span>
+            <div className="flex gap-1">
+              <button aria-label="Decrease major foes" onClick={() => dispatch(adjustMajorFoes(-1))} className="px-1 text-slate-300">−</button>
+              <button aria-label="Increase major foes" onClick={() => dispatch(adjustMajorFoes(1))} className="px-1 text-red-400 font-bold">+</button>
+            </div>
+          </div>
         </div>
 
         {/* Header Actions */}
@@ -81,7 +99,6 @@ export default function AppHeader({
               </button>
             </Tooltip>
           </div>
-          <FloatingDice inline={true} />
           <Tooltip text="Rules">
             <button
               onClick={onShowRules}

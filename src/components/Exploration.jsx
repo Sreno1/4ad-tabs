@@ -3,6 +3,7 @@ import { selectParty, selectHero } from '../state/selectors.js';
 import { logMessage, updateHero, encounterBoss, incrementMajorFoe } from '../state/actionCreators.js';
 import { DoorOpen, AlertTriangle, Sparkles, Compass, Lock, Puzzle, Skull, Info } from 'lucide-react';
 import { d6 } from '../utils/dice.js';
+import { formatRollPrefix } from '../utils/rollLog.js';
 import { 
   DOOR_TYPES, TRAP_TYPES, SPECIAL_ROOMS, PUZZLE_TYPES,
   DOOR_TYPE_TABLE, TRAP_TABLE, SPECIAL_FEATURE_TABLE, PUZZLE_TABLE,
@@ -166,9 +167,9 @@ export default function Exploration({ state, dispatch }) {
     const roll = d6();
     const result = checkForBoss(state.majorFoes || 0, roll);
     setBossCheckResult(result);
-  dispatch(logMessage(`🎲 Boss Check: ${result.message}`));
+  dispatch(logMessage(`${formatRollPrefix(roll)}🎲 Boss Check: ${result.message}`));
     
-    if (result.isBoss) {
+  if (result.isBoss) {
       // Spawn the boss
       spawnMajorFoe(dispatch, state.hcl, true);
   dispatch(encounterBoss());

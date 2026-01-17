@@ -5,7 +5,10 @@ import {
   PUZZLE_TABLE, PUZZLE_TYPES
 } from '../data/rooms.js';
 import { performSearch, rollWanderingMonster } from "../utils/gameActions/index.js";
+import { addMonster, logMessage } from '../state/actionCreators.js';
+import { TILE_SHAPE_TABLE } from '../data/rooms.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
+import DungeonHeaderButtons from './DungeonHeaderButtons.jsx';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
 import ContextMenu from './ContextMenu.jsx';
 import { getEquipment, hasEquipment } from '../data/equipment.js';
@@ -89,7 +92,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   }, [dispatch]);
 
   // Right-click opens context menu for actions
-  const handleCellRightClick = useCallback((x, y, e) => {
+  const handleCellRightClick = useCallback((x, y, e, edge = null) => {
     e.preventDefault();
     // If our in-app context menu is already open, a right-click should close it and clear the highlight
     if (contextMenu) {
@@ -123,8 +126,22 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
         }
       }
     } catch (e) {}
+    // detect if this right-click targeted a door edge and capture its index
+    let doorEdge = null;
+    let doorIdx = -1;
+    try {
+      if (edge) {
+        const idx = (state.doors || []).findIndex(d => d.x === x && d.y === y && d.edge === edge);
+        if (idx >= 0) { doorEdge = edge; doorIdx = idx; }
+      } else {
+        // try to detect any door on this cell (for fallback)
+        const idx = (state.doors || []).findIndex(d => d.x === x && d.y === y);
+        if (idx >= 0) { doorEdge = state.doors[idx].edge; doorIdx = idx; }
+      }
+    } catch (e) { /* ignore */ }
+
     setContextSelectedTile({ x, y });
-    setContextMenu({ xPx: menuX, yPx: menuY, cellX: x, cellY: y });
+    setContextMenu({ xPx: menuX, yPx: menuY, cellX: x, cellY: y, doorEdge, doorIdx });
   }, []);
 
   const closeRadial = useCallback(() => setRadialMenu(null), []);
@@ -326,8 +343,38 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
           // Prevent the browser context menu and open our menu; also highlight the tile
           e.preventDefault();
           e.stopPropagation();
+          // Determine which edge (if any) was targeted so we can offer door actions
+          let doorEdge = null;
+          let doorIdx = -1;
+          try {
+            const logicalX = shouldRotate ? mouseY : mouseX;
+            const logicalY = shouldRotate ? (canvasWidth - mouseX) : mouseY;
+            const cellLocalX = ((logicalX % cellSize) + cellSize) % cellSize;
+            const cellLocalY = ((logicalY % cellSize) + cellSize) % cellSize;
+            const threshold = cellSize * 0.2;
+            let edge = null;
+            if (cellLocalY < threshold && cellLocalX < threshold) {
+              edge = cellLocalY < cellLocalX ? 'N' : 'W';
+            } else if (cellLocalY < threshold && cellLocalX > cellSize - threshold) {
+              edge = cellLocalY < (cellSize - cellLocalX) ? 'N' : 'E';
+            } else if (cellLocalY > cellSize - threshold && cellLocalX < threshold) {
+              edge = (cellSize - cellLocalY) < cellLocalX ? 'S' : 'W';
+            } else if (cellLocalY > cellSize - threshold && cellLocalX > cellSize - threshold) {
+              edge = (cellSize - cellLocalY) < (cellSize - cellLocalX) ? 'S' : 'E';
+            } else {
+              if (cellLocalY < threshold) edge = 'N';
+              else if (cellLocalY > cellSize - threshold) edge = 'S';
+              else if (cellLocalX > cellSize - threshold) edge = 'E';
+              else if (cellLocalX < threshold) edge = 'W';
+            }
+            if (edge) {
+              const idx = (state.doors || []).findIndex(d => d.x === x && d.y === y && d.edge === edge);
+              if (idx >= 0) { doorEdge = edge; doorIdx = idx; }
+            }
+          } catch (err) { /* ignore */ }
+
           setContextSelectedTile({ x, y });
-          setContextMenu({ xPx: e.clientX, yPx: e.clientY, cellX: x, cellY: y });
+          setContextMenu({ xPx: e.clientX, yPx: e.clientY, cellX: x, cellY: y, doorEdge, doorIdx });
         }
       } catch (err) {
         // ignore
@@ -342,27 +389,55 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
       {/* Dungeon Grid - No extra outline/container, never scrolls */}
       <div className="flex-1 flex flex-col overflow-hidden" data-dungeon-section="true">
         <div id="dungeon_controls" className="flex items-center justify-end gap-2 p-1">
-          <div id="dungeon_view_display" className="text-xs text-slate-300 mr-2">
-            {showLogMiddle ? 'Viewing: Log' : 'Viewing: Map'}
-          </div>
-          <div id="dungeon_header_buttons" className="flex items-center gap-2">
-            <button
-              id="dungeon_toggle_log_button"
-              onClick={() => onToggleShowLog && onToggleShowLog()}
-              className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
-              title={showLogMiddle ? 'Show dungeon' : 'Show full log in middle pane'}
-            >
-              {showLogMiddle ? 'Map' : 'Log'}
-            </button>
-            <button
-              id="dungeon_room_designer_button"
-              onClick={() => onShowRoomDesigner && onShowRoomDesigner()}
-              className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
-              title="Open Room Designer"
-            >
-              Designer
-            </button>
-          </div>
+          <DungeonHeaderButtons
+            showLogMiddle={showLogMiddle}
+            onToggleShowLog={() => onToggleShowLog && onToggleShowLog()}
+            onShowRoomDesigner={() => onShowRoomDesigner && onShowRoomDesigner()}
+            onGenerateTile={() => typeof externalGenerateTile === 'function' ? externalGenerateTile() : null}
+            onWandering={() => { try { rollWanderingMonster(dispatch, { state }); } catch (e) {} }}
+            onCustomTile={() => {
+              try {
+                const rawD66 = prompt('Enter d66 (e.g. 11, 12, 21, 66):', '11');
+                if (!rawD66) return;
+                const shapeRoll = parseInt(rawD66, 10);
+                if (Number.isNaN(shapeRoll) || !Object.keys(TILE_SHAPE_TABLE).includes(String(shapeRoll))) {
+                  alert('Invalid d66 value');
+                  return;
+                }
+                const raw2d6 = prompt('Enter 2d6 result (2-12):', '8');
+                if (!raw2d6) return;
+                const contentsRoll = parseInt(raw2d6, 10);
+                if (Number.isNaN(contentsRoll) || contentsRoll < 2 || contentsRoll > 12) {
+                  alert('Invalid 2d6 value');
+                  return;
+                }
+                if (typeof externalGenerateTile === 'function') externalGenerateTile({ shapeRoll, contentsRoll });
+              } catch (e) { console.error(e); }
+            }}
+            onCustomMonster={() => {
+              try {
+                const name = prompt('Monster Name?', 'Custom Monster') || 'Custom Monster';
+                const level = parseInt(prompt('Monster Level (1-5)?', '2')) || 2;
+                const isMajor = confirm('Is this a Major Foe (single creature with HP)? Cancel for Minor Foe (group with count).');
+                let monster;
+                if (isMajor) {
+                  const hp = parseInt(prompt('HP?', '6')) || 6;
+                  monster = { id: Date.now(), name, level, hp, maxHp: hp, type: 'custom', isMinorFoe: false };
+                  dispatch(addMonster(monster));
+                  dispatch(logMessage(`⚔️ ${name} L${level} (${hp}HP) Major Foe added`));
+                } else {
+                  const count = parseInt(prompt('How many?', '6')) || 6;
+                  monster = { id: Date.now(), name, level, hp: 1, maxHp: 1, count, initialCount: count, type: 'custom', isMinorFoe: true };
+                  dispatch(addMonster(monster));
+                  dispatch(logMessage(`👥 ${count}x ${name} L${level} Minor Foes added`));
+                }
+              } catch (e) { console.error(e); }
+            }}
+            onClearMap={() => {
+              try { dispatch({ type: 'CLEAR_GRID' }); } catch (e) {}
+              try { if (typeof externalClearTile === 'function') externalClearTile(); } catch (e) {}
+            }}
+          />
         </div>
   <div
           id="dungeon_grid"
@@ -453,6 +528,22 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                   { key: 'E', label: 'East', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'E' }) },
                   { key: 'W', label: 'West', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'W' }) }
                 ] },
+                // If a door was clicked, offer Lock/Unlock toggle
+                ...(contextMenu && typeof contextMenu.doorIdx === 'number' && contextMenu.doorIdx >= 0 ? [{ key: 'lock', label: (state.doors[contextMenu.doorIdx]?.locked ? 'Unlock door' : 'Lock door'), onClick: () => {
+                    try {
+                      const di = contextMenu.doorIdx;
+                      // Toggle locked flag on the door
+                      const newDoors = (state.doors || []).map((d, i) => i === di ? { ...d, locked: !d.locked } : d);
+                      dispatch({ type: 'SET_DOORS', doors: newDoors });
+                    } catch (e) {}
+                  } }] : []),
+                ...(contextMenu && typeof contextMenu.doorIdx === 'number' && contextMenu.doorIdx >= 0 ? [{ key: 'type', label: 'Door Type...', submenu: [
+                  { key: 'normal', label: 'Normal', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'normal' }) },
+                  { key: 'magically_sealed', label: 'Magically sealed', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'magically_sealed' }) },
+                  { key: 'iron', label: 'Iron door', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'iron' }) },
+                  { key: 'illusionary', label: 'Illusionary', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'illusionary' }) },
+                  { key: 'trapped', label: 'Trap', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'trapped' }) }
+                ] }] : []),
                 { key: 'wall', label: 'Wall off room', onClick: () => {
                     try {
                       const gridEl = state.grid;
@@ -516,8 +607,18 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                 { key: 'note', label: 'Add Note', onClick: () => {
                     const txt = window.prompt('Enter note for this tile:');
                     if (txt && txt.trim()) {
-                      // add as a marker with custom tooltip
-                      addMarker(contextMenu.cellX, contextMenu.cellY, 'note', 'Note', txt.trim());
+                      // If a marker already exists on this tile, preserve its type/label
+                      // and merge the note into its tooltip instead of replacing the marker.
+                      const existing = getMarker(contextMenu.cellX, contextMenu.cellY);
+                      if (existing) {
+                        const mergedTooltip = existing.tooltip && existing.tooltip.length > 0
+                          ? `${existing.tooltip} — Note: ${txt.trim()}`
+                          : txt.trim();
+                        addMarker(contextMenu.cellX, contextMenu.cellY, existing.type, existing.label, mergedTooltip);
+                      } else {
+                        // add as a note marker
+                        addMarker(contextMenu.cellX, contextMenu.cellY, 'note', 'Note', txt.trim());
+                      }
                     }
                   }
                 }

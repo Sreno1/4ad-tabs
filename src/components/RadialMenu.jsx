@@ -4,7 +4,8 @@ import MARKER_STYLES from '../constants/markerStyles.js';
 
 // Full-circle radial layout: distribute items evenly around 360°
 const getPosition = (index, total, radius = 96) => {
-  const angle = (index / total) * Math.PI * 2 - Math.PI / 2; // start at top (-90°)
+  // Start at right (0°) and distribute clockwise around the circle
+  const angle = (index / total) * Math.PI * 2; // start at 0° (right)
   const x = Math.cos(angle) * radius;
   const y = Math.sin(angle) * radius;
   return { x, y };

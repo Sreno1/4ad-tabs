@@ -1,5 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { d6 } from '../utils/dice.js';
+import sfx from '../utils/sfx.js';
+import { updateMonster, deleteMonster } from '../state/actionCreators.js';
+import { MONSTER_ABILITIES } from '../data/monsters.js';
+import { getEquipment, hasEquipment } from '../data/equipment.js';
+import { hasDarkvision, getFlurryAttacks, getPrayerPoints, getTrickPoints, getMaxPanache, getSpellSlots } from '../data/classes.js';
+import { SPELLS, getAvailableSpells } from '../data/spells.js';
 import {
   calculateAttack,
   calculateDefense,
@@ -11,6 +17,13 @@ import {
   useClericBless,
   useBarbarianRage,
   useHalflingLuck,
+  useAssassinHide,
+  useSwashbucklerPanache,
+  useMonkFlurry,
+  useAcrobatTrick,
+  usePaladinPrayer,
+  useLightGladiatorParry,
+  toggleDualWield,
   attemptPartyFlee,
   attemptWithdraw,
   awardXP,
@@ -18,92 +31,48 @@ import {
   processMonsterRoundStart,
   performCastSpell,
   getRemainingSpells,
-  // Phase 7a: Core Combat Functions
   processMinorFoeAttack,
   processMajorFoeAttack,
-  checkMinorFoeMorale,
-  checkMajorFoeLevelReduction,
-  // Phase 7c: Advanced Class Abilities
-  useAssassinHide,
-  setRangerSwornEnemy,
-  useSwashbucklerPanache,
-  useMonkFlurry,
-  useAcrobatTrick,
-  usePaladinPrayer,
-  useLightGladiatorParry,
-  useBulwarkSacrifice,
-  toggleDualWield
-} from "../utils/gameActions/index.js";
-import { isLifeThreatening, getRerollOptions } from '../data/saves.js';
-import { getAvailableSpells, SPELLS, getSpellSlots } from '../data/spells.js';
-import { MONSTER_ABILITIES, rollMonsterReaction, REACTION_TYPES } from '../data/monsters.js';
-import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
-import sfx from '../utils/sfx.js';
-import { getPrayerPoints, getTrickPoints, getMaxPanache, getFlurryAttacks, hasDarkvision } from '../data/classes.js';
-import { hasEquipment, getEquipment } from '../data/equipment.js';
-import { InitiativePhase, VictoryPhase, MonsterReaction } from './combat/index.js';
-import { selectParty, selectHero } from '../state/selectors.js';
-import {
-  logMessage,
-  clearMonsters,
-  updateHero,
-  addMonster,
-  updateMonster,
-  deleteMonster
-} from '../state/actionCreators.js';
-import { canHeroMeleeAttack } from '../utils/combatLocationHelpers.js';
-import SpellTargetModal from './SpellTargetModal.jsx';
+} from '../utils/gameActions/index.js';
+import MonsterReaction from './combat/MonsterReaction';
+import InitiativePhase from './combat/phases/InitiativePhase';
+import VictoryPhase from './combat/phases/VictoryPhase';
+import { canHeroMeleeAttack, getNarrowCorridorPenalty, getEquippedMeleeWeapon } from '../utils/combatLocationHelpers.js';
 
-export default function Combat({ state, dispatch, selectedHero, setSelectedHero, handleRollReaction }) {
-  // Per-monster levels are used. Global foeLevel removed in favor of each monster.level.
+export default function Combat({ state, dispatch, selectedHero = 0, setSelectedHero = () => {}, handleRollReaction = () => {} }) {
+  // Local combat log (for UI) and helper to forward messages to global log
   const [combatLog, setCombatLog] = useState([]);
-  const [pendingSave, setPendingSave] = useState(null); // { heroIdx, damageSource }
-  const [showSpells, setShowSpells] = useState(null); // heroIdx or null
-  const [showAbilities, setShowAbilities] = useState(null); // heroIdx or null
-  const [spellTargeting, setSpellTargeting] = useState(null); // { casterIdx, spellKey, spell }
-  const [combatInitiative, setCombatInitiative] = useState(null); // Initiative info for current combat
-  const [showRangedVolley, setShowRangedVolley] = useState(false);
-  const [attackedThisRound, setAttackedThisRound] = useState({}); // { heroIdx: true }
-  const [roundStartsWith, setRoundStartsWith] = useState('attack'); // 'attack' | 'defend'
-  const [showCombatModule, setShowCombatModule] = useState(false); // hide both until player/initiative decides
-  const [targetMonsterIdx, setTargetMonsterIdx] = useState(null); // Selected target monster
-  const [shieldsDisabledFirst, setShieldsDisabledFirst] = useState(false);
-  
-  const party = selectParty(state);
-  const activeHero = selectHero(state, selectedHero) || null;
-  
-
-  // Compute if any party member is carrying an equipped light source (lantern/torch)
-  const partyHasEquippedLight = party.some((h) => {
-    if (!h) return false;
-    // Quick check for lantern key
-    if (hasEquipment(h, 'lantern')) return true;
-    const eq = h.equipment || [];
-    if (!Array.isArray(eq)) return false;
-    return eq.some((k) => {
-      const item = getEquipment(k);
-      return item && item.lightSource === true;
-    });
-  });
-
-  const effectiveHasLight = state.hasLightSource || partyHasEquippedLight;
-  // Gather names of equipped light items (unique)
-  const partyLightNames = [];
-  party.forEach((h) => {
-    const eq = h?.equipment || [];
-    if (!Array.isArray(eq)) return;
-    eq.forEach((k) => {
-      const it = getEquipment(k);
-      if (it && it.lightSource && !partyLightNames.includes(it.name)) {
-        partyLightNames.push(it.name);
-      }
-    });
-  });
-
   const addToCombatLog = useCallback((message) => {
     setCombatLog(prev => [message, ...prev].slice(0, 20));
-    dispatch({ type: 'LOG', t: message });
+    try { dispatch({ type: 'LOG', t: message }); } catch (e) {}
   }, [dispatch]);
+
+  // Darkvision & light computation used by many handlers
+  const partyHasDarkvision = (state.party || []).some(h => h && h.hp > 0 && hasDarkvision(h.key));
+  const partyLacksDarkvision = (state.party || []).some(h => h && h.hp > 0 && !hasDarkvision(h.key));
+  const partyHasEquippedLight = (state.party || []).some(h => {
+    if (!h || h.hp <= 0) return false;
+    if (hasEquipment(h, 'lantern')) return true;
+    if (!Array.isArray(h.equipment)) return false;
+    return h.equipment.some(k => {
+      const it = getEquipment(k);
+      return it && it.lightSource;
+    });
+  });
+  const effectiveHasLight = state.hasLightSource || partyHasEquippedLight;
+
+  // Local UI state (missing earlier) -------------------------------------
+  const [combatInitiative, setCombatInitiative] = useState(null);
+  const [showCombatModule, setShowCombatModule] = useState(false);
+  const [showRangedVolley, setShowRangedVolley] = useState(false);
+  const [roundStartsWith, setRoundStartsWith] = useState('attack');
+  const [attackedThisRound, setAttackedThisRound] = useState({});
+  const [targetMonsterIdx, setTargetMonsterIdx] = useState(null);
+  const [pendingSave, setPendingSave] = useState(null);
+  const [spellTargeting, setSpellTargeting] = useState(null);
+  const [showAbilities, setShowAbilities] = useState(null);
+  const [showSpells, setShowSpells] = useState(null);
+  const [shieldsDisabledFirst, setShieldsDisabledFirst] = useState(false);
 
   // Ensure new encounters always start at the InitiativePhase: if monsters were 0 and now >0,
   // reset combat module visibility and initiative so player can choose.
@@ -572,9 +541,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     }
   }, [getAbilityUsage]);
   
-  // Check if any party members lack darkvision
-  const partyHasDarkvision = state.party.some(h => h.hp > 0 && hasDarkvision(h.key));
-  const partyLacksDarkvision = state.party.some(h => h.hp > 0 && !hasDarkvision(h.key));
+  // ...existing code...
 
   // Combat location flags (used to display compact tag in Active Monsters panel)
   const combatIsCorridor = state.currentCombatLocation && state.currentCombatLocation.type === 'corridor';
@@ -978,224 +945,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
         </div>
   ) : null}
       
-      {/* Class Abilities */}
-      <div id="combat_abilities" className="bg-slate-800 rounded p-2">
-        <div id="combat_abilities_title" className="text-purple-400 font-bold text-sm mb-2">✨ Class Abilities</div>
-        <div id="combat_ability_list" className="space-y-1">
-          {state.party.map((hero, index) => {
-            const abilities = getAbilityUsage(index);
-            const hasAbilities = ['cleric', 'wizard', 'elf', 'druid', 'illusionist', 'barbarian', 'halfling',
-              'paladin', 'ranger', 'assassin', 'swashbuckler', 'acrobat', 'mushroomMonk', 'lightGladiator'].includes(hero.key);
-
-            if (!hasAbilities || hero.hp <= 0) return null;
-
-            return (
-              <div key={hero.id || index} id={`combat_ability_${index}`} className="bg-slate-700 rounded p-1.5">
-                <div className="flex justify-between items-center">
-                  <span id={`combat_ability_${index}_name`} className="text-white text-xs font-bold">{hero.name}</span>
-                  <div className="flex gap-1">
-                    {/* Cleric Abilities */}
-                    {hero.key === 'cleric' && (
-                      <>
-                        <button
-                          onClick={() => setShowAbilities(showAbilities === `heal-${index}` ? null : `heal-${index}`)}
-                          disabled={(abilities.healsUsed || 0) >= 3}
-                          className="bg-green-600 hover:bg-green-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
-                        >
-                          💚Heal ({3 - (abilities.healsUsed || 0)})
-                        </button>
-                        <button
-                          onClick={() => setShowAbilities(showAbilities === `bless-${index}` ? null : `bless-${index}`)}
-                          disabled={(abilities.blessingsUsed || 0) >= 3}
-                          className="bg-amber-600 hover:bg-amber-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
-                        >
-                          ✨Bless ({3 - (abilities.blessingsUsed || 0)})
-                        </button>
-                      </>
-                    )}
-                    
-                    {/* Wizard/Elf/Druid/Illusionist Spells */}
-                    {['wizard', 'elf', 'druid', 'illusionist'].includes(hero.key) && (
-                      <button
-                        onClick={() => setShowSpells(showSpells === index ? null : index)}
-                        disabled={(abilities.spellsUsed || 0) >= getSpellSlots(hero.key, hero.lvl)}
-                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
-                      >
-                        🔮Spells ({getSpellSlots(hero.key, hero.lvl) - (abilities.spellsUsed || 0)})
-                      </button>
-                    )}
-                    
-                    {/* Barbarian Rage */}
-                    {hero.key === 'barbarian' && (
-                      <button
-                        onClick={() => handleToggleRage(index)}
-                        className={`px-1.5 py-0.5 rounded text-xs ${
-                          abilities.rageActive 
-                            ? 'bg-red-500 hover:bg-red-400' 
-                            : 'bg-red-700 hover:bg-red-600'
-                        }`}
-                      >
-                        😤{abilities.rageActive ? 'End Rage' : 'Rage!'}
-                      </button>
-                    )}
-                    
-                    {/* Halfling Luck */}
-                    {hero.key === 'halfling' && (
-                      <button
-                        onClick={() => handleUseLuck(index)}
-                        disabled={(abilities.luckUsed || 0) >= (hero.lvl + 1)}
-                        className="bg-green-600 hover:bg-green-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
-                      >
-                        🍀Luck ({hero.lvl + 1 - (abilities.luckUsed || 0)})
-                      </button>
-                    )}
-
-                    {/* Paladin Prayer */}
-                    {hero.key === 'paladin' && (
-                      <button
-                        onClick={() => usePaladinPrayer(dispatch, index, 'smite')}
-                        disabled={(abilities.prayersUsed || 0) >= getPrayerPoints(hero.lvl)}
-                        className="bg-yellow-600 hover:bg-yellow-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
-                      >
-                        Prayer ({getPrayerPoints(hero.lvl) - (abilities.prayersUsed || 0)})
-                      </button>
-                    )}
-
-                    {/* Ranger Dual Wield */}
-                    {['ranger', 'lightGladiator', 'swashbuckler'].includes(hero.key) && (
-                      <button
-                        onClick={() => toggleDualWield(dispatch, index, !abilities.dualWielding)}
-                        className={`px-1.5 py-0.5 rounded text-xs ${
-                          abilities.dualWielding
-                            ? 'bg-orange-500 hover:bg-orange-400'
-                            : 'bg-orange-700 hover:bg-orange-600'
-                        }`}
-                      >
-                        ⚔️⚔️{abilities.dualWielding ? 'Single' : 'Dual Wield'}
-                      </button>
-                    )}
-
-                    {/* Assassin Hide */}
-                    {hero.key === 'assassin' && (
-                      <button
-                        onClick={() => useAssassinHide(dispatch, index, !abilities.hidden)}
-                        className={`px-1.5 py-0.5 rounded text-xs ${
-                          abilities.hidden
-                            ? 'bg-purple-500 hover:bg-purple-400'
-                            : 'bg-purple-700 hover:bg-purple-600'
-                        }`}
-                      >
-                        🥷{abilities.hidden ? 'Reveal' : 'Hide'}
-                      </button>
-                    )}
-
-                    {/* Swashbuckler Panache */}
-                    {hero.key === 'swashbuckler' && (
-                      <button
-                        onClick={() => useSwashbucklerPanache(dispatch, index, 'dodge')}
-                        disabled={(abilities.panacheUsed || 0) >= getMaxPanache(hero.lvl)}
-                        className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
-                      >
-                        🤺Panache ({getMaxPanache(hero.lvl) - (abilities.panacheUsed || 0)})
-                      </button>
-                    )}
-
-                    {/* Acrobat Trick */}
-                    {hero.key === 'acrobat' && (
-                      <button
-                        onClick={() => useAcrobatTrick(dispatch, index, 'dodge')}
-                        disabled={(abilities.tricksUsed || 0) >= getTrickPoints(hero.lvl)}
-                        className="bg-pink-600 hover:bg-pink-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
-                      >
-                        🤸Trick ({getTrickPoints(hero.lvl) - (abilities.tricksUsed || 0)})
-                      </button>
-                    )}
-
-                    {/* Mushroom Monk Flurry */}
-                    {hero.key === 'mushroomMonk' && (
-                      <button
-                        onClick={() => useMonkFlurry(dispatch, index, hero.lvl)}
-                        disabled={abilities.flurryActive}
-                        className="bg-green-700 hover:bg-green-600 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
-                      >
-                        🥋Flurry ({getFlurryAttacks(hero.lvl)}x)
-                      </button>
-                    )}
-
-                    {/* Light Gladiator Parry */}
-                    {hero.key === 'lightGladiator' && (
-                      <button
-                        onClick={() => useLightGladiatorParry(dispatch, index)}
-                        disabled={abilities.parryActive}
-                        className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-600 px-1.5 py-0.5 rounded text-xs"
-                      >
-                        ⚔️Parry
-                      </button>
-                    )}
-                  </div>
-                </div>
-                
-                {/* Target selection for Heal */}
-                {showAbilities === `heal-${index}` && (
-                  <div className="mt-1 p-1 bg-slate-600 rounded">
-                    <div className="text-xs text-slate-300 mb-1">Heal who?</div>
-                    <div className="flex flex-wrap gap-1">
-                      {state.party.map((target, targetIdx) => (
-                        <button
-                          key={targetIdx}
-                          onClick={() => handleClericHeal(index, targetIdx)}
-                          disabled={target.hp <= 0 || target.hp >= target.maxHp}
-                          className="bg-green-700 hover:bg-green-600 disabled:bg-slate-500 px-2 py-0.5 rounded text-xs"
-                        >
-                          {target.name} ({target.hp}/{target.maxHp})
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Target selection for Bless */}
-                {showAbilities === `bless-${index}` && (
-                  <div className="mt-1 p-1 bg-slate-600 rounded">
-                    <div className="text-xs text-slate-300 mb-1">Bless who?</div>
-                    <div className="flex flex-wrap gap-1">
-                      {state.party.map((target, targetIdx) => (
-                        <button
-                          key={targetIdx}
-                          onClick={() => handleClericBless(index, targetIdx)}
-                          disabled={target.hp <= 0 || target.status?.blessed}
-                          className="bg-amber-700 hover:bg-amber-600 disabled:bg-slate-500 px-2 py-0.5 rounded text-xs"
-                        >
-                          {target.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Spell selection */}
-                {showSpells === index && (
-                  <div className="mt-1 p-1 bg-slate-600 rounded">
-                    <div className="text-xs text-slate-300 mb-1">Cast spell:</div>
-                    <div className="grid grid-cols-2 gap-1">
-                      {getAvailableSpells(hero.key).map(spellKey => (
-                        <button
-                          key={spellKey}
-                          onClick={() => handleCastSpell(index, spellKey)}
-                          className="bg-blue-700 hover:bg-blue-600 px-2 py-0.5 rounded text-xs text-left"
-                          title={SPELLS[spellKey].description}
-                        >
-                          {SPELLS[spellKey].name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+  {/* Class Abilities removed: use floating radial menu for quick ability actions */}
       
       {/* Treasure & Victory: only show after the encounter is actually won */}
       {state.monsters.length > 0 && state.monsters.every(m => (m.count !== undefined ? m.count === 0 : m.hp === 0)) && (

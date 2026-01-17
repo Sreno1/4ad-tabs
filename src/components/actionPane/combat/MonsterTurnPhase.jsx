@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Button } from '../../ui/Button';
 
 import { d6 } from '../../../utils/dice.js';
+import { formatRollPrefix } from '../../../utils/rollLog.js';
 
 const MonsterTurnPhase = memo(function MonsterTurnPhase({
   state,
@@ -36,7 +37,7 @@ const MonsterTurnPhase = memo(function MonsterTurnPhase({
     if (protectedBonus) bonusBreakdown += `+1(protected)`;
     bonusBreakdown += `=${total}`;
 
-  dispatch({ type: 'LOG', t: `${hero.name} defends: ${bonusBreakdown} vs ${targetNum}+ - ${blocked ? 'Blocked!' : 'HIT!'}` });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}${hero.name} defends: ${bonusBreakdown} vs ${targetNum}+ - ${blocked ? 'Blocked!' : 'HIT!'}` });
 
     if (!blocked) {
       const newHp = Math.max(0, hero.hp - 1);

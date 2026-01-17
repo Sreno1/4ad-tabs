@@ -2,6 +2,7 @@
  * Treasure Actions - Rolling treasure and searching
  */
 import { d6, r2d6 } from '../dice.js';
+import { formatRollPrefix } from '../rollLog.js';
 import { TREASURE_TABLE } from '../../data/treasure.js';
 import { ASSIGN_TREASURE, SHOW_MODAL } from '../../state/actions.js';
 
@@ -19,12 +20,12 @@ export const rollTreasure = (dispatch, options = {}) => {
   if (result.includes('Gold (d6)')) {
     let gold = d6() * multiplier;
     gold = Math.max(gold, minGold); // Apply minimum if specified
+  const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
+  const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
   // Assign treasure respecting per-hero carry limits; leftover goes to party gold
   dispatch({ type: ASSIGN_TREASURE, amount: gold });
 
-  const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
-  const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
-  const logText = `Treasure: Found ${gold} gold!${multiplierText}${minText}`;
+  const logText = `${formatRollPrefix(roll)}Treasure: Found ${gold} gold!${multiplierText}${minText}`;
   dispatch({ type: 'LOG', t: logText });
   // Show modal for treasure
   dispatch({ type: SHOW_MODAL, message: logText, msgType: 'success', autoClose: 4000 });
@@ -104,6 +105,6 @@ export const performSearch = (dispatch) => {
     dispatch({ type: 'CLUE', n: 1 });
   }
 
-  dispatch({ type: 'LOG', t: `Search ${roll}: ${result}` });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}Search ${roll}: ${result}` });
   return { roll, result };
 };

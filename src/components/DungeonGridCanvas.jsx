@@ -204,22 +204,43 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
     }
 
-  // Draw doors
-    const doorThickness = Math.max(2, Math.floor(cellSize * 0.15));
-    ctx.fillStyle = '#f59e0b'; // amber-500
+  // Draw doors (shorter, centered on each edge) with color by door type/state
+  const doorThickness = Math.max(2, Math.floor(cellSize * 0.15)) + 1;
+
+    // doorLength is the fraction of the edge the door occupies (centered)
+    const doorLength = Math.max(2, Math.floor(cellSize * 0.66));
+    const doorOffset = Math.floor((cellSize - doorLength) / 2);
+
+    const doorColorFor = (d) => {
+      try {
+        if (d && d.opened) return '#10b981'; // green (open)
+        if (d && d.locked) return '#ef4444'; // red (locked)
+        const typ = d && (d.doorType || d.type || d.doorType);
+        switch (typ) {
+          case 'magically_sealed': return '#3b82f6'; // blue
+          case 'iron': return '#9ca3af'; // silver-ish
+          case 'illusionary': return '#c4b5fd'; // light purple
+          case 'trapped': return '#6b21a8'; // deep purple
+          case 'normal':
+          default:
+            return '#f59e0b'; // amber fallback
+        }
+      } catch (e) { return '#f59e0b'; }
+    };
 
     doors.forEach(door => {
       const px = door.x * cellSize;
       const py = door.y * cellSize;
+      ctx.fillStyle = doorColorFor(door);
 
       if (door.edge === 'N') {
-        ctx.fillRect(px, py - 1, cellSize, 3);
+        ctx.fillRect(px + doorOffset, py - Math.floor(doorThickness / 2), doorLength, doorThickness);
       } else if (door.edge === 'S') {
-        ctx.fillRect(px, py + cellSize - 2, cellSize, 3);
+        ctx.fillRect(px + doorOffset, py + cellSize - Math.floor(doorThickness / 2), doorLength, doorThickness);
       } else if (door.edge === 'E') {
-        ctx.fillRect(px + cellSize - 2, py, 3, cellSize);
+        ctx.fillRect(px + cellSize - Math.floor(doorThickness / 2), py + doorOffset, doorThickness, doorLength);
       } else if (door.edge === 'W') {
-        ctx.fillRect(px - 1, py, 3, cellSize);
+        ctx.fillRect(px - Math.floor(doorThickness / 2), py + doorOffset, doorThickness, doorLength);
       }
     });
 
@@ -323,28 +344,225 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
             const py = gy * cellSize;
             ctx.fillStyle = val === 1 ? 'rgba(180,83,9,0.6)' : 'rgba(29,78,216,0.6)';
             ctx.fillRect(px, py, cellSize, cellSize);
-            ctx.strokeStyle = '#fbbf24';
+            ctx.strokeStyle = 'rgba(110,231,183,0.95)';
             ctx.lineWidth = 1;
             ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
           }
         }
       }
 
-      // Draw doors preview
-      ctx.strokeStyle = '#fbbf24';
-      ctx.lineWidth = Math.max(2, Math.floor(cellSize * 0.12));
+      // Draw a subtle bounding box around the entire template so its outer
+      // perimeter is always visible even where no walls are present.
+      try {
+        const bboxX = startX * cellSize;
+        const bboxY = startY * cellSize;
+        const bboxW = tpl[0].length * cellSize;
+        const bboxH = tpl.length * cellSize;
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = Math.max(1, Math.floor(cellSize * 0.04));
+        ctx.strokeRect(bboxX + 0.5, bboxY + 0.5, Math.max(0, bboxW - 1), Math.max(0, bboxH - 1));
+      } catch (e) { /* ignore */ }
+
+      // Draw faint inner edges (open edges) between adjacent template cells so
+      // gaps are visible, and then draw solid wall edges where the template
+      // borders empty space. Inner edges are subtle and won't compete with doors.
+      const tplInnerEdges = { horiz: [], vert: [] };
+      const tplWallEdges = [];
+      for (let ry = 0; ry < tpl.length; ry++) {
+        for (let rx = 0; rx < tpl[ry].length; rx++) {
+          const val = tpl[ry][rx];
+          if (!val || val === 0) continue;
+          const gx = startX + rx;
+          const gy = startY + ry;
+
+          // Check neighbors inside tpl coords
+          const northExists = (ry - 1) >= 0 && tpl[ry - 1] && tpl[ry - 1][rx];
+          const southExists = (ry + 1) < tpl.length && tpl[ry + 1] && tpl[ry + 1][rx];
+          const westExists = (rx - 1) >= 0 && tpl[ry][rx - 1];
+          const eastExists = (rx + 1) < tpl[ry].length && tpl[ry][rx + 1];
+
+          // If neighbor exists, this is an inner edge between cells; collect it
+          // using a canonical direction to avoid duplicates (only add E and S).
+          if (eastExists) tplInnerEdges.vert.push({ x: gx, y: gy });
+          if (southExists) tplInnerEdges.horiz.push({ x: gx, y: gy });
+
+          // If neighbor does NOT exist, it's a wall edge bordering empty space
+          if (!northExists) tplWallEdges.push({ x: gx, y: gy, edge: 'N' });
+          if (!southExists) tplWallEdges.push({ x: gx, y: gy, edge: 'S' });
+          if (!eastExists) tplWallEdges.push({ x: gx, y: gy, edge: 'E' });
+          if (!westExists) tplWallEdges.push({ x: gx, y: gy, edge: 'W' });
+        }
+      }
+
+      // Draw inner edges first (subtle lines)
+      if (tplInnerEdges.horiz.length > 0 || tplInnerEdges.vert.length > 0) {
+        // Make inner (open) edges more visible: dashed amber lines with rounded caps
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.setLineDash([Math.max(2, Math.floor(cellSize * 0.08)), Math.max(2, Math.floor(cellSize * 0.04))]);
+        ctx.strokeStyle = 'rgba(110,231,183,0.6)'; // mint/light-green, semi-visible
+        ctx.lineWidth = Math.max(1, Math.floor(cellSize * 0.06));
+        // Horizontal inner edges (bottom edge of the cell)
+        tplInnerEdges.horiz.forEach(e => {
+          const px = e.x * cellSize;
+          const py = e.y * cellSize + cellSize;
+          ctx.beginPath();
+          ctx.moveTo(px + 0.5, py + 0.5);
+          ctx.lineTo(px + cellSize - 0.5, py + 0.5);
+          ctx.stroke();
+        });
+        // Vertical inner edges (right edge of the cell)
+        tplInnerEdges.vert.forEach(e => {
+          const px = e.x * cellSize + cellSize;
+          const py = e.y * cellSize;
+          ctx.beginPath();
+          ctx.moveTo(px + 0.5, py + 0.5);
+          ctx.lineTo(px + 0.5, py + cellSize - 0.5);
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+  // (tick drawing moved below so it renders on top of walls/doors)
+
+      // Draw wall edges (solid) on top of inner edges
+      if (tplWallEdges.length > 0) {
+        ctx.fillStyle = '#ffffff';
+        const wt = Math.max(1, Math.floor(cellSize * 0.08));
+        tplWallEdges.forEach(w => {
+          const px = w.x * cellSize;
+          const py = w.y * cellSize;
+          if (w.edge === 'N') ctx.fillRect(px, py - Math.floor(wt/2), cellSize, wt);
+          else if (w.edge === 'S') ctx.fillRect(px, py + cellSize - Math.floor(wt/2), cellSize, wt);
+          else if (w.edge === 'E') ctx.fillRect(px + cellSize - Math.floor(wt/2), py, wt, cellSize);
+          else if (w.edge === 'W') ctx.fillRect(px - Math.floor(wt/2), py, wt, cellSize);
+        });
+      }
+
+  // Draw doors preview (colored by type/state when available), shortened and centered
       tplDoors.forEach(d => {
         const gx = startX + (d.x || 0);
         const gy = startY + (d.y || 0);
         if (gx >= 0 && gx < cols && gy >= 0 && gy < rows) {
           const px = gx * cellSize;
           const py = gy * cellSize;
-          if (d.edge === 'N') ctx.fillRect(px, py - 1, cellSize, 3);
-          if (d.edge === 'S') ctx.fillRect(px, py + cellSize - 2, cellSize, 3);
-          if (d.edge === 'E') ctx.fillRect(px + cellSize - 2, py, 3, cellSize);
-          if (d.edge === 'W') ctx.fillRect(px - 1, py, 3, cellSize);
+          ctx.fillStyle = doorColorFor(d);
+          if (d.edge === 'N') ctx.fillRect(px + doorOffset, py - Math.floor(doorThickness / 2), doorLength, doorThickness);
+          if (d.edge === 'S') ctx.fillRect(px + doorOffset, py + cellSize - Math.floor(doorThickness / 2), doorLength, doorThickness);
+          if (d.edge === 'E') ctx.fillRect(px + cellSize - Math.floor(doorThickness / 2), py + doorOffset, doorThickness, doorLength);
+          if (d.edge === 'W') ctx.fillRect(px - Math.floor(doorThickness / 2), py + doorOffset, doorThickness, doorLength);
         }
       });
+      // Draw inner (open) edges on top of doors so gaps are obvious
+      if (tplInnerEdges.horiz.length > 0 || tplInnerEdges.vert.length > 0) {
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(110,231,183,0.95)'; // strong mint/light-green
+        ctx.lineWidth = Math.max(1, Math.floor(cellSize * 0.12));
+        ctx.setLineDash([]);
+        tplInnerEdges.horiz.forEach(e => {
+          const px = e.x * cellSize;
+          const py = e.y * cellSize + cellSize;
+          ctx.beginPath();
+          ctx.moveTo(px + 0.5, py + 0.5);
+          ctx.lineTo(px + cellSize - 0.5, py + 0.5);
+          ctx.stroke();
+        });
+        tplInnerEdges.vert.forEach(e => {
+          const px = e.x * cellSize + cellSize;
+          const py = e.y * cellSize;
+          ctx.beginPath();
+          ctx.moveTo(px + 0.5, py + 0.5);
+          ctx.lineTo(px + 0.5, py + cellSize - 0.5);
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      // Draw small 'open edge' ticks on perimeter edges where no wall exists
+      // so users can immediately see gaps. Use a bright lime tick for visibility.
+      try {
+        // Build a set of walls that will exist if the template is placed: include
+        // current state walls plus any walls defined on the template (offset).
+        const wallSet = new Set();
+        try {
+          (walls || []).forEach(w => wallSet.add(`${w.x},${w.y},${w.edge}`));
+        } catch (e) {}
+        try {
+          const tplWalls = (activeTemplate && (activeTemplate.walls || [])) || [];
+          tplWalls.forEach(w => {
+            const wx = (startX || 0) + (w.x || 0);
+            const wy = (startY || 0) + (w.y || 0);
+            wallSet.add(`${wx},${wy},${w.edge}`);
+          });
+        } catch (e) {}
+        // Build a set of doors that will exist (current doors + any template doors)
+        const doorSet = new Set();
+        try {
+          (doors || []).forEach(d => doorSet.add(`${d.x},${d.y},${d.edge}`));
+        } catch (e) {}
+        try {
+          const tplDoorsLocal = (activeTemplate && (activeTemplate.doors || [])) || [];
+          tplDoorsLocal.forEach(d => {
+            const dx = (startX || 0) + (d.x || 0);
+            const dy = (startY || 0) + (d.y || 0);
+            doorSet.add(`${dx},${dy},${d.edge}`);
+          });
+        } catch (e) {}
+        ctx.save();
+  // Draw larger hollow lime rings slightly outside the perimeter so
+  // open edges are unmistakable and visually distinct from doors.
+  ctx.strokeStyle = 'rgba(34,197,94,0.98)'; // lime-500 strong
+  ctx.fillStyle = 'transparent';
+  const markerSize = Math.max(6, Math.floor(cellSize * 0.34));
+  ctx.lineWidth = Math.max(2, Math.floor(cellSize * 0.06));
+  for (let ry = 0; ry < tpl.length; ry++) {
+          for (let rx = 0; rx < tpl[ry].length; rx++) {
+            const val = tpl[ry][rx];
+            if (!val || val === 0) continue;
+            const gx = startX + rx;
+            const gy = startY + ry;
+            const px = gx * cellSize;
+            const py = gy * cellSize;
+            const northNeighbor = (ry - 1) >= 0 && tpl[ry - 1] && tpl[ry - 1][rx];
+            const southNeighbor = (ry + 1) < tpl.length && tpl[ry + 1] && tpl[ry + 1][rx];
+            const westNeighbor = (rx - 1) >= 0 && tpl[ry][rx - 1];
+            const eastNeighbor = (rx + 1) < tpl[ry].length && tpl[ry][rx + 1];
+
+            // Draw marker slightly outside the cell edge (half marker outside)
+            if (!northNeighbor && !wallSet.has(`${gx},${gy},N`) && !doorSet.has(`${gx},${gy},N`)) {
+              const cx = px + cellSize / 2;
+              const cy = py - Math.floor(markerSize / 2);
+              ctx.beginPath();
+              ctx.arc(cx, cy, Math.floor(markerSize / 2), 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            if (!southNeighbor && !wallSet.has(`${gx},${gy},S`) && !doorSet.has(`${gx},${gy},S`)) {
+              const cx = px + cellSize / 2;
+              const cy = py + cellSize + Math.floor(markerSize / 2);
+              ctx.beginPath();
+              ctx.arc(cx, cy, Math.floor(markerSize / 2), 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            if (!eastNeighbor && !wallSet.has(`${gx},${gy},E`) && !doorSet.has(`${gx},${gy},E`)) {
+              const cx = px + cellSize + Math.floor(markerSize / 2);
+              const cy = py + cellSize / 2;
+              ctx.beginPath();
+              ctx.arc(cx, cy, Math.floor(markerSize / 2), 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            if (!westNeighbor && !wallSet.has(`${gx},${gy},W`) && !doorSet.has(`${gx},${gy},W`)) {
+              const cx = px - Math.floor(markerSize / 2);
+              const cy = py + cellSize / 2;
+              ctx.beginPath();
+              ctx.arc(cx, cy, Math.floor(markerSize / 2), 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
+        }
+        ctx.restore();
+      } catch (e) { /* ignore */ }
     }
 
     // Draw rectangle preview when user is holding Meta/Cmd and dragging
@@ -721,8 +939,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           onPartyMove(x, y);
         }
 
-        // If we're dragging to paint, fill this cell
-        if (isDragging && dragFillValue !== null && onCellSet && !rectStartRef.current) {
+  // If we're dragging to paint, fill this cell (disabled while placing a template)
+  if (!(placementTemplate || autoPlacedRoom) && isDragging && dragFillValue !== null && onCellSet && !rectStartRef.current) {
           const cellKey = `${x},${y}`;
           // Only fill if we haven't already filled this cell in this drag session
           if (!draggedCellsRef.current.has(cellKey)) {
@@ -793,6 +1011,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   }, []);
 
   const handleMouseDown = useCallback((e) => {
+    // Prevent manual painting when a placement template is active
+    if (placementTemplate || autoPlacedRoom) return;
     // If the application context menu is open elsewhere, clicks should dismiss it and not act on the map
     if (contextMenuOpen && typeof onContextDismiss === 'function') {
       onContextDismiss();
@@ -814,15 +1034,20 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
       const cx = Math.floor(logicalX / cellSize);
       const cy = Math.floor(logicalY / cellSize);
-      if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) {
-        setHoveredCell({ x: cx, y: cy });
-  try { console.debug('mouseDown right-click cell', cx, cy); if (typeof onCellContextMenu === 'function') onCellContextMenu(cx, cy, e); else if (typeof onCellRightClick === 'function') onCellRightClick(cx, cy, e); } catch (err) { console.error(err); }
+  if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) {
+    setHoveredCell({ x: cx, y: cy });
+  try { console.debug('mouseDown right-click cell', cx, cy); if (typeof onCellContextMenu === 'function') onCellContextMenu(cx, cy, e); else if (typeof onCellRightClick === 'function') onCellRightClick(cx, cy, e, hoveredDoor?.edge); } catch (err) { console.error(err); }
       }
       return;
     }
     // Don't start drag on other non-left buttons
     if (e.button !== 0) return;
   if (!hoveredCell) return;
+
+  // When placing a full template (designer or auto-placed), disable manual painting/drags
+  // so accidental clicks while positioning don't paint squares. Commit placement still
+  // happens in the click handler, so we only block drag/paint behavior here.
+  if (placementTemplate || autoPlacedRoom) return;
 
   // If Shift is held, don't start normal mousedown-driven actions (painting or pawn-drag).
   // Shift+Click is handled in the click handler for placing/removing the pawn.
@@ -1076,6 +1301,11 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     };
 
     const handleGridKeyDown = (e) => {
+      // When placing a template (designer or auto-placed), placement keys
+      // (Q/E/W) should transform the template and must not be interpreted
+      // as grid actions (such as toggling doors). Early return to avoid
+      // accidental door toggles while in placement mode.
+      if (placementTemplate || autoPlacedRoom) return;
       if (!hoveredCell) return;
       let edge = null;
       if (e.key === 'w' || e.key === 'W') edge = 'N';

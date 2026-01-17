@@ -1,4 +1,5 @@
 import { explodingD6 } from '../../utils/dice.js';
+import { formatRollPrefix } from '../rollLog.js';
 import { calculateEquipmentBonuses, hasEquipment } from '../../data/equipment.js';
 import { logMessage } from '../../state/actionCreators.js';
 import { SHOW_MODAL } from '../../state/actions.js';
@@ -104,7 +105,7 @@ export const performStealthSave = (dispatch, heroOrHeroes, foeLevel = 1, options
   const heroNames = heroes.map(h => h.name).join(', ');
 
   const message = `🕶️ Stealth: ${heroNames} ${success ? 'succeed' : 'fail'}! Roll: ${rollResult.rolls.join('+')}+${worst.mod} = ${total} vs L${foeLevel}${reasonsStr}`;
-  dispatch(logMessage(message, 'exploration'));
+  dispatch(logMessage(`${formatRollPrefix(rollResult)}${message}`, 'exploration'));
   // Show modal for immediate feedback
   dispatch({ type: SHOW_MODAL, message, msgType: success ? 'success' : 'failure', autoClose: 3500 });
 

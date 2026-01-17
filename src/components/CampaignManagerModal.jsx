@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trophy, ArrowRight, CheckCircle, XCircle, RotateCcw, X } from 'lucide-react';
+import Analytics from './Analytics.jsx';
 import { clearAllCampaigns } from '../utils/campaignStorage';
 
 export default function CampaignManagerModal({ isOpen, onClose, state, dispatch }) {
@@ -85,6 +86,11 @@ export default function CampaignManagerModal({ isOpen, onClose, state, dispatch 
                 <div className="text-lg font-bold text-yellow-400">{state.gold || 0}</div>
               </div>
             </div>
+          </div>
+
+          {/* Full Stats Dashboard (moved from Sidebar) */}
+          <div id="campaign_manager_full_stats_section" className="mt-2">
+            <Analytics state={state} />
           </div>
 
           {/* Current Adventure Status */}

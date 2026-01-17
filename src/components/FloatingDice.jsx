@@ -2,6 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Dices } from 'lucide-react';
 import DiceBox from '@3d-dice/dice-box';
+import RadialMenu from './RadialMenu.jsx';
+import {
+  useClericHeal,
+  useClericBless,
+  useBarbarianRage,
+  useHalflingLuck,
+  useAssassinHide,
+  useSwashbucklerPanache,
+  useMonkFlurry,
+  useAcrobatTrick,
+  usePaladinPrayer,
+  useLightGladiatorParry,
+  toggleDualWield,
+} from '../utils/gameActions/index.js';
 import sfx from '../utils/sfx.js';
 import { useDiceTheme } from '../contexts/DiceContext.jsx';
 
@@ -14,15 +28,21 @@ const DICE_OPTIONS = [
   { type: 'd10', label: 'D10', notation: '1d10' },
 ];
 
-export default function FloatingDice({ onLogRoll = null, inline = false }) {
+export default function FloatingDice({ onLogRoll = null, inline = false, onShowFeatures = null, onShowAbilities = null, state = null, dispatch = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [diceBox, setDiceBox] = useState(null);
   const [result, setResult] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
   const [menuPos, setMenuPos] = useState(null);
+  const [featuresOpen, setFeaturesOpen] = useState(false);
+  const [featuresPos, setFeaturesPos] = useState(null);
+  const [abilitiesOpen, setAbilitiesOpen] = useState(false);
+  const [abilitiesPos, setAbilitiesPos] = useState(null);
+  const [abilitiesItems, setAbilitiesItems] = useState([]);
   const initRef = useRef(false);
   const { diceColorHex, diceTheme } = useDiceTheme();
   const btnRef = useRef(null);
+  const featRef = useRef(null);
 
   // Initialize dice-box
   useEffect(() => {
@@ -214,7 +234,7 @@ export default function FloatingDice({ onLogRoll = null, inline = false }) {
   const spreadAngle = 150;
   // Rotate the whole radial menu by ~20 degrees clockwise to keep
   // some items from flying off the top of the viewport when used in the header.
-  const rotationOffset = -70; // degrees, negative = clockwise
+  const rotationOffset = 0; // degrees, negative = clockwise
   const angle = startAngle + rotationOffset - (spreadAngle / (total - 1)) * index;
     const radius = 120;
     const x = Math.cos((angle * Math.PI) / 180) * radius;
@@ -334,6 +354,98 @@ export default function FloatingDice({ onLogRoll = null, inline = false }) {
           )
         )}
 
+  {/* Features small button (left of main) */}
+    <div style={{ position: 'absolute', right: '86px', bottom: '8px', display: 'flex', gap: '8px', alignItems: 'center' }} aria-hidden={isRolling}>
+    {/* Abilities floating button (left of features) */}
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        // If state/dispatch available, build radial menu from current party abilities
+        if (state && dispatch) {
+          const rect = e.currentTarget?.getBoundingClientRect();
+          if (rect) setAbilitiesPos({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+          const items = [];
+          (state.party || []).forEach((h, idx) => {
+            if (!h || h.hp <= 0) return;
+            const name = h.name || h.key;
+            // Map classes to available quick abilities
+            switch (h.key) {
+              case 'cleric':
+                items.push({ key: `cleric-${idx}-heal`, label: `${name}: Heal` });
+                items.push({ key: `cleric-${idx}-bless`, label: `${name}: Bless` });
+                break;
+              case 'barbarian':
+                items.push({ key: `barbarian-${idx}-rage`, label: `${name}: Rage` });
+                break;
+              case 'halfling':
+                items.push({ key: `halfling-${idx}-luck`, label: `${name}: Luck` });
+                break;
+              case 'wizard':
+              case 'elf':
+              case 'druid':
+              case 'illusionist':
+                items.push({ key: `spell-${idx}`, label: `${name}: Spells` });
+                break;
+              case 'paladin':
+                items.push({ key: `paladin-${idx}-prayer`, label: `${name}: Prayer` });
+                break;
+              case 'ranger':
+                items.push({ key: `ranger-${idx}-dual`, label: `${name}: Dual Wield` });
+                break;
+              case 'assassin':
+                items.push({ key: `assassin-${idx}-hide`, label: `${name}: Hide` });
+                break;
+              case 'swashbuckler':
+                items.push({ key: `swashbuckler-${idx}-panache`, label: `${name}: Panache` });
+                break;
+              case 'acrobat':
+                items.push({ key: `acrobat-${idx}-trick`, label: `${name}: Trick` });
+                break;
+              case 'mushroomMonk':
+                items.push({ key: `monk-${idx}-flurry`, label: `${name}: Flurry` });
+                break;
+              case 'lightGladiator':
+                items.push({ key: `gladiator-${idx}-parry`, label: `${name}: Parry` });
+                break;
+              default:
+                break;
+            }
+          });
+          if (items.length === 0) {
+            // Fallback: open full abilities modal if no quick abilities available
+            if (typeof onShowAbilities === 'function') try { onShowAbilities(); } catch (e) {}
+            return;
+          }
+          setAbilitiesItems(items);
+          setAbilitiesOpen(true);
+          return;
+        }
+        // Fallback: open modal if no state/dispatch passed
+        try { if (typeof onShowAbilities === 'function') onShowAbilities(); } catch (err) {}
+      }}
+      className="w-10 h-10 rounded-full bg-purple-700 text-white border-2 border-purple-500 hover:bg-purple-600 shadow-md flex items-center justify-center"
+      aria-label="Class abilities"
+      title="Class Abilities"
+    >
+      ✨
+    </button>
+
+    <button
+      ref={featRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (featuresOpen) { setFeaturesOpen(false); return; }
+        const rect = featRef.current?.getBoundingClientRect();
+        if (rect) setFeaturesPos({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+        setFeaturesOpen(true);
+      }}
+      className="w-10 h-10 rounded-full bg-slate-700 text-amber-400 border-2 border-slate-600 hover:bg-slate-600 shadow-md flex items-center justify-center"
+      aria-label="Dungeon features"
+    >
+      ✨
+    </button>
+  </div>
+
   {/* Main button */}
   <button
     ref={btnRef}
@@ -351,6 +463,82 @@ export default function FloatingDice({ onLogRoll = null, inline = false }) {
   >
           <Dices size={28} />
         </button>
+            {/* Features radial menu (uses existing RadialMenu component) */}
+            {featuresOpen && featuresPos && (
+              <RadialMenu
+                x={featuresPos.x}
+                y={featuresPos.y}
+                items={[
+                  { key: 'door', label: 'Door' },
+                  { key: 'trap', label: 'Trap' },
+                  { key: 'special', label: 'Special' },
+                  { key: 'puzzle', label: 'Puzzle' },
+                  { key: 'reference', label: 'Quick Ref' },
+                ]}
+                onSelect={(key) => {
+                  setFeaturesOpen(false);
+                  try { if (onShowFeatures) onShowFeatures(key); } catch (e) {}
+                }}
+                onClose={() => setFeaturesOpen(false)}
+              />
+            )}
+            {abilitiesOpen && abilitiesPos && (
+              <RadialMenu
+                x={abilitiesPos.x}
+                y={abilitiesPos.y}
+                items={abilitiesItems}
+                onSelect={(key) => {
+                  setAbilitiesOpen(false);
+                  // parse key and dispatch appropriate game action
+                  try {
+                    const parts = key.split('-');
+                    const cls = parts[0];
+                    const idx = parseInt(parts[1], 10);
+                    const action = parts[2];
+                    switch (cls) {
+                      case 'cleric':
+                        if (action === 'heal') useClericHeal(dispatch, idx, idx, state.party[idx]);
+                        else if (action === 'bless') useClericBless(dispatch, idx, idx, state.party[idx]);
+                        break;
+                      case 'barbarian':
+                        useBarbarianRage(dispatch, idx, true);
+                        break;
+                      case 'halfling':
+                        useHalflingLuck(dispatch, idx);
+                        break;
+                      case 'assassin':
+                        useAssassinHide(dispatch, idx, true);
+                        break;
+                      case 'swashbuckler':
+                        useSwashbucklerPanache(dispatch, idx, 'dodge');
+                        break;
+                      case 'acrobat':
+                        useAcrobatTrick(dispatch, idx, 'dodge');
+                        break;
+                      case 'monk':
+                        useMonkFlurry(dispatch, idx, state.party[idx].lvl);
+                        break;
+                      case 'gladiator':
+                        useLightGladiatorParry(dispatch, idx);
+                        break;
+                      case 'ranger':
+                        toggleDualWield(dispatch, idx, true);
+                        break;
+                      case 'paladin':
+                        usePaladinPrayer(dispatch, idx, 'heal');
+                        break;
+                      case 'spell':
+                        // open abilities modal or fallback to existing handler for spells
+                        if (typeof onShowAbilities === 'function') try { onShowAbilities(); } catch (e) {}
+                        break;
+                      default:
+                        break;
+                    }
+                  } catch (e) { console.error('Abilities radial action error', e); }
+                }}
+                onClose={() => setAbilitiesOpen(false)}
+              />
+            )}
       </div>
 
       {/* CSS for animations */}

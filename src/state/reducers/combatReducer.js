@@ -76,8 +76,18 @@ export function combatReducer(state, action) {
     case A.MINOR:
       return { ...state, minorEnc: state.minorEnc + 1 };
 
+    case A.ADJUST_MINOR: {
+      const newVal = Math.max(0, (state.minorEnc || 0) + (action.n || 0));
+      return { ...state, minorEnc: newVal };
+    }
+
     case A.MAJOR:
       return { ...state, majorFoes: state.majorFoes + 1 };
+
+    case A.ADJUST_MAJOR: {
+      const newVal = Math.max(0, (state.majorFoes || 0) + (action.n || 0));
+      return { ...state, majorFoes: newVal };
+    }
 
     case A.BOSS:
       return { ...state, finalBoss: true };

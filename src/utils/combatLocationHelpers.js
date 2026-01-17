@@ -29,6 +29,12 @@ export const canHeroMeleeAttack = (state, heroIdx, options = {}) => {
 
   // In corridors, check marching order position
   if (location.type === 'corridor') {
+    // Only enforce corridor melee restrictions for wandering/ambush encounters.
+    // Tile-generated combats (normal room spawns) should allow melee from all positions.
+    const isWanderingAmbush = !!(state && state.combatMeta && state.combatMeta.wanderingEncounter && state.combatMeta.wanderingEncounter.ambush);
+    if (!isWanderingAmbush) {
+      return { canMelee: true, reason: null };
+    }
     const position = state.marchingOrder.indexOf(heroIdx);
 
     // If hero not in marching order, assume they can fight (fallback)

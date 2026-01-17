@@ -3,6 +3,7 @@ import { selectParty, selectMonsters } from '../state/selectors.js';
 import { setAbility, addMonster, logMessage, clearMonsters } from '../state/actionCreators.js';
 import { Dices } from "lucide-react";
 import { d6 } from "../utils/dice.js";
+import { formatRollPrefix } from '../utils/rollLog.js';
 import { rollTreasure, performCastSpell, rollWanderingMonster, attemptPartyFlee, attemptWithdraw } from "../utils/gameActions/index.js";
 import { SPELLS, getAvailableSpells } from "../data/spells.js";
 import { createMonsterFromTable, MONSTER_CATEGORIES, getAllMonsters } from '../data/monsters.js';
@@ -61,6 +62,7 @@ export default function ActionPane({
   const [showBlessTarget, setShowBlessTarget] = useState(null);
   const [showProtectionTarget, setShowProtectionTarget] = useState(null);
   const [searchResult, setSearchResult] = useState(null);
+  const [tileSearched, setTileSearched] = useState(false);
   const [hiddenTreasureResult, setHiddenTreasureResult] = useState(null);
   const [secretDoorResult, setSecretDoorResult] = useState(null);
   const [secretPassageResult, setSecretPassageResult] = useState(null);
@@ -139,6 +141,8 @@ export default function ActionPane({
   // saving detailed tile state is handled in useRoomEvents; keep this flag for compatibility
   localStorage.setItem('lastTileData', JSON.stringify({ tileResult }));
         setHasSavedTile(true);
+  // Reset local per-tile searched flag when a new tile appears
+  setTileSearched(false);
       } else {
   localStorage.removeItem('lastTileData');
         setHasSavedTile(false);
@@ -212,138 +216,6 @@ export default function ActionPane({
         <div className="space-y-3">
           <div className="mb-2">
             <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} dispatch={dispatch} />
-          </div>
-          <div className="bg-slate-800 rounded p-4 text-center">
-            <div className="text-slate-400 text-sm mb-3">Ready to explore</div>
-            <button
-              onClick={generateTile}
-              className="w-full bg-gradient-to-r from-blue-600 to-amber-600 hover:from-blue-500 hover:to-amber-500 px-4 py-3 rounded font-bold text-sm flex items-center justify-center gap-2"
-            >
-              <Dices size={18} /> Generate Tile
-            </button>
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={() => rollWanderingMonster(dispatch, { state })}
-                className="flex-1 bg-red-700 hover:bg-red-600 px-3 py-2 rounded text-sm"
-              >
-                Wandering (d6)
-              </button>
-
-              <button
-                onClick={() => {
-                  // Prompt for manual d66 and 2d6 values for debugging
-                  const rawD66 = prompt('Enter d66 (e.g. 11, 12, 21, 66):', '11');
-                  if (!rawD66) return;
-                  const shapeRoll = parseInt(rawD66, 10);
-                  if (Number.isNaN(shapeRoll) || !Object.keys(TILE_SHAPE_TABLE).includes(String(shapeRoll))) {
-                    alert('Invalid d66 value');
-                    return;
-                  }
-                  const raw2d6 = prompt('Enter 2d6 result (2-12):', '8');
-                  if (!raw2d6) return;
-                  const contentsRoll = parseInt(raw2d6, 10);
-                  if (Number.isNaN(contentsRoll) || contentsRoll < 2 || contentsRoll > 12) {
-                    alert('Invalid 2d6 value');
-                    return;
-                  }
-                  // Call generateTile with overrides
-                  try {
-                    generateTile({ shapeRoll, contentsRoll });
-                  } catch (e) {
-                    console.error('Custom tile generation failed', e);
-                  }
-                }}
-                className="flex-1 bg-emerald-700 hover:bg-emerald-600 px-3 py-2 rounded text-sm"
-              >
-                Custom Tile
-              </button>
-            </div>
-            {/* Monster spawn controls moved from Combat: Custom Monster, Quick Minor Foe, and Monster Table */}
-            <div className="grid grid-cols-2 gap-1 mt-3">
-              <button
-                onClick={() => {
-                  // Custom Monster prompt flow (simple inline prompts)
-                  const name = prompt('Monster Name?', 'Custom Monster') || 'Custom Monster';
-                  const level = parseInt(prompt('Monster Level (1-5)?', '2')) || 2;
-                  const isMajor = confirm('Is this a Major Foe (single creature with HP)? Cancel for Minor Foe (group with count).');
-                  let monster;
-                  if (isMajor) {
-                    const hp = parseInt(prompt('HP?', '6')) || 6;
-                    monster = {
-                      id: Date.now(),
-                      name,
-                      level,
-                      hp,
-                      maxHp: hp,
-                      type: 'custom',
-                      isMinorFoe: false
-                    };
-                    dispatch(addMonster(monster));
-                    dispatch(logMessage(`⚔️ ${name} L${level} (${hp}HP) Major Foe added`));
-                  } else {
-                    const count = parseInt(prompt('How many?', '6')) || 6;
-                    monster = {
-                      id: Date.now(),
-                      name,
-                      level,
-                      hp: 1,
-                      maxHp: 1,
-                      count: count,
-                      initialCount: count,
-                      type: 'custom',
-                      isMinorFoe: true
-                    };
-                    dispatch(addMonster(monster));
-                    dispatch(logMessage(`👥 ${count}x ${name} L${level} Minor Foes added`));
-                  }
-                }}
-                className="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm"
-              >
-                Custom Monster
-              </button>
-
-              <div className="bg-slate-700 rounded p-2">
-                <div className="text-xs text-blue-400 mb-1">👥 Quick Minor Foe Group</div>
-                <div className="flex gap-1">
-                  {[
-                    { name: 'Goblins', level: 1, count: 6 },
-                    { name: 'Orcs', level: 2, count: 4 },
-                    { name: 'Skeletons', level: 1, count: 8 },
-                    { name: 'Rats', level: 1, count: 10 }
-                  ].map(foe => (
-                    <button
-                      key={foe.name}
-                      onClick={() => {
-                        const monster = {
-                          id: Date.now(),
-                          name: foe.name,
-                          level: foe.level,
-                          hp: 1,
-                          maxHp: 1,
-                          count: foe.count,
-                          initialCount: foe.count,
-                          isMinorFoe: true,
-                          xp: foe.level * 5
-                        };
-                        dispatch(addMonster(monster));
-                        dispatch(logMessage(`👥 ${foe.count}x ${foe.name} L${foe.level} appear!`));
-                      }}
-                      className="bg-blue-600 hover:bg-blue-500 px-1.5 py-0.5 rounded text-xs"
-                    >
-                      {foe.count}x L{foe.level}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Monster Table Dropdown */}
-            <div className="flex gap-1 mt-2">
-              <MonsterTableSpawn dispatch={dispatch} />
-            </div>
-            <div className="text-slate-500 text-xs mt-2">
-              Rolls d66 for shape + 2d6 for contents
-            </div>
           </div>
         </div>
       ) : (
@@ -442,7 +314,7 @@ export default function ActionPane({
 
               {/* Dual-content rolls are auto-resolved based on the d66 roll (no player choice required) */}
 
-              {(actionMode === ACTION_MODES.EMPTY || actionMode === ACTION_MODES.TREASURE) && !(tileResult?.contentType === 'treasure' && [2,3].includes(tileResult?.contentsRoll)) && (
+      {(actionMode === ACTION_MODES.EMPTY || actionMode === ACTION_MODES.TREASURE) && !tileSearched && !(tileResult?.contentType === 'treasure' && [2,3].includes(tileResult?.contentsRoll)) && (
                 <button
                   onClick={() => {
                     // Perform search roll - corridor status from tileResult if available
@@ -450,6 +322,14 @@ export default function ActionPane({
                     const result = performSearchRoll({ isInCorridor });
                     try { sfx.play('miss', { volume: 0.7 }); } catch (e) {}
                     setSearchResult(result);
+                    // Mark this tile as searched locally so the Search button is hidden
+                    setTileSearched(true);
+                    // If this tile has explicit coordinates, mark it in global dungeon state so other components know
+                    try {
+                      if (tileResult && typeof tileResult.x === 'number' && typeof tileResult.y === 'number') {
+                        dispatch({ type: 'MARK_TILE_SEARCHED', x: tileResult.x, y: tileResult.y });
+                      }
+                    } catch (e) {}
                     dispatch({ type: 'LOG', t: result.message });
                   }}
                   className="w-full px-3 py-2 rounded text-sm bg-blue-600 hover:bg-blue-500"
@@ -617,20 +497,20 @@ export default function ActionPane({
               const clericIdx = state.party.findIndex(h => h.class === 'Cleric' && h.hp > 0);
               if (clericIdx >= 0) {
                 const cleric = state.party[clericIdx];
-                const roll = d6();
+        const roll = d6();
                 const bonus = Math.floor(cleric.lvl / 2); // Clerics get +½L vs undead
                 const total = roll + bonus;
                 const dc = 3 + state.hcl; // DC increases with dungeon level
 
                 if (total >= dc) {
                   dispatch({
-                    type: 'LOG',
-                    t: `✨ ${cleric.name} banishes the ghost! (${roll}+${bonus}=${total} vs DC${dc})`
+          type: 'LOG',
+          t: `${formatRollPrefix(roll)}✨ ${cleric.name} banishes the ghost! (${roll}+${bonus}=${total} vs DC${dc})`
                   });
                 } else {
                   dispatch({
-                    type: 'LOG',
-                    t: `💀 ${cleric.name} fails to banish the ghost! (${roll}+${bonus}=${total} vs DC${dc}) All PCs lose 1 Life!`
+          type: 'LOG',
+          t: `${formatRollPrefix(roll)}💀 ${cleric.name} fails to banish the ghost! (${roll}+${bonus}=${total} vs DC${dc}) All PCs lose 1 Life!`
                   });
                   // Apply 1 damage to all party members
                   state.party.forEach((hero, idx) => {

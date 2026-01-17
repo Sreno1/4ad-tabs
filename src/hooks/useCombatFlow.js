@@ -2,6 +2,7 @@ import { useState } from "react";
 import { COMBAT_PHASES } from "../constants/gameConstants.js";
 import { rollMonsterReaction } from "../data/monsters.js";
 import { awardXP, checkLevelUp } from "../utils/gameActions/index.js";
+import { performMonsterAttacks } from "../utils/gameActions/combatActions.js";
 import { logMessage } from "../state/actionCreators.js";
 
 export function useCombatFlow(state, dispatch) {
@@ -66,6 +67,10 @@ export function useCombatFlow(state, dispatch) {
     if (getActiveMonsters().length > 0) {
       setCombatPhase(COMBAT_PHASES.MONSTER_TURN);
       dispatch(logMessage(`Monsters' turn to attack!`, 'combat'));
+      try {
+        // Perform monster attacks now using the centralized combatActions logic
+        performMonsterAttacks(dispatch, state);
+      } catch (e) {}
     } else {
       handleCombatVictory();
     }

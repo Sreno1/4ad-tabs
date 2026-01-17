@@ -34,7 +34,9 @@ export function dungeonReducer(state, action) {
       return {
         ...state,
         grid: Array(28).fill(null).map(() => Array(20).fill(0)),
-        doors: []
+  doors: [],
+  walls: [],
+  traps: []
       };
 
     // ========== Environment ==========
@@ -183,6 +185,10 @@ export function dungeonReducer(state, action) {
 
     case A.SET_WALLS: {
       return { ...state, walls: action.walls || [] };
+    }
+
+    case A.SET_DOORS: {
+      return { ...state, doors: action.doors || [] };
     }
 
     default:

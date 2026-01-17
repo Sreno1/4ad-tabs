@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Skull, Info, MapPin } from "lucide-react";
 import { d6 } from "../utils/dice.js";
+import { formatRollPrefix } from '../utils/rollLog.js';
 import { checkForBoss, isGridNearlyFull, countExploredTiles } from "../data/rooms.js";
 import { spawnMajorFoe } from "../utils/gameActions/index.js";
 
@@ -16,7 +17,7 @@ export default function BossMechanics({ state, dispatch }) {
     const roll = d6();
     const result = checkForBoss(state.majorFoes || 0, roll, { isLastTile });
     setBossCheckResult(result);
-    dispatch({ type: "LOG", t: `🎲 Boss Check: ${result.message}` });
+  dispatch({ type: "LOG", t: `${formatRollPrefix(roll)}🎲 Boss Check: ${result.message}` });
 
     if (result.isBoss) {
       // Spawn the boss

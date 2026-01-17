@@ -6,6 +6,7 @@ import { previewTreasureRoll } from '../utils/gameActions/treasureActions.js';
 import { getTrait } from '../data/traits.js';
 import { createMonsterFromTable, createMonster, MONSTER_TABLE } from '../data/monsters.js';
 import { addMonster, logMessage as logMsgAction } from '../state/actionCreators.js';
+import { formatRollPrefix } from '../utils/rollLog.js';
 import { ACTION_MODES, EVENT_TYPES } from '../constants/gameConstants.js';
 import { logMessage } from '../state/actionCreators.js';
 import roomLibrary from '../utils/roomLibrary.js';
@@ -104,7 +105,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
           const dwarf = state.party[dwarfIdx];
           const saveRoll = d6();
           const total = saveRoll + dwarf.lvl;
-          dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
+          dispatch(logMsgAction(`${formatRollPrefix(saveRoll)}🕵️ ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
           if (total >= 6) {
             const preview = previewTreasureRoll();
       dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
@@ -146,7 +147,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
           const dwarf = state.party[dwarfIdx2];
           const saveRoll = d6();
           const total = saveRoll + dwarf.lvl;
-          dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
+          dispatch(logMsgAction(`${formatRollPrefix(saveRoll)}🕵️ ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
           if (total >= 6) {
             const preview = previewTreasureRoll();
       dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
@@ -199,7 +200,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
           const dwarf = state.party[dwarfIdx3];
           const saveRoll = d6();
           const total = saveRoll + dwarf.lvl;
-          dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
+            dispatch(logMsgAction(`${formatRollPrefix(saveRoll)}🕵️ ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
           if (total >= 6) {
             const preview = previewTreasureRoll();
       dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
@@ -229,7 +230,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
             const dwarf = state.party[dwarfIdx4];
             const saveRoll = d6();
             const total = saveRoll + dwarf.lvl;
-            dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
+            dispatch(logMsgAction(`${formatRollPrefix(saveRoll)}🕵️ ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
             if (total >= 6) {
               const preview = previewTreasureRoll();
         dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
@@ -284,7 +285,18 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
   // Combined tile generation - rolls both shape and contents at once
   // generateTile optionally accepts overrides: { shapeRoll, contentsRoll }
   const generateTile = (opts = {}) => {
-    const shapeRoll = (opts && typeof opts.shapeRoll === 'number') ? opts.shapeRoll : d66();
+    // Compute d66 shape roll, preserving overrides. When not overridden, roll two d6 so we can
+    // show the individual dice in the log prefix (e.g. [3+4]=34).
+    let shapeRoll;
+    let shapeBreakdown = null;
+    if (opts && typeof opts.shapeRoll === 'number') {
+      shapeRoll = opts.shapeRoll;
+    } else {
+      const sh1 = d6();
+      const sh2 = d6();
+      shapeRoll = sh1 * 10 + sh2;
+      shapeBreakdown = [sh1, sh2];
+    }
   const shapeResult = TILE_SHAPE_TABLE[shapeRoll];
   // Determine corridor from the TILE_SHAPE_TABLE mapping (type field)
   const isCorridor = !!(shapeResult && String(shapeResult.type || '').toLowerCase() === 'corridor');
@@ -308,6 +320,12 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       timestamp: Date.now()
     }];
 
+    // Log the d66 shape roll (with breakdown when available)
+    try {
+      const prefix = shapeBreakdown ? formatRollPrefix(shapeBreakdown) : formatRollPrefix(shapeRoll);
+      dispatch(logMessage(`${prefix}🔷 Tile Shape: d66=${shapeRoll} → ${shapeResult?.name || shapeResult?.type || ''}`, 'exploration'));
+    } catch (e) { /* ignore logging errors */ }
+
     // Check if this d66 roll matches any saved room template
     const matchedRoom = roomLibrary.getByD66(shapeRoll);
     if (matchedRoom) {
@@ -325,9 +343,25 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
   // continue on to roll contents and process them below
     }
 
-  // No match - roll 2d6 for contents (or use provided override)
-  const contentsRoll = (opts && typeof opts.contentsRoll === 'number') ? opts.contentsRoll : r2d6();
+  // No match - roll 2d6 for contents (or use provided override). When rolling here, capture
+  // the two d6 values so the log can show the breakdown like [3+4]=7.
+  let contentsRoll;
+  let contentsBreakdown = null;
+  if (opts && typeof opts.contentsRoll === 'number') {
+    contentsRoll = opts.contentsRoll;
+  } else {
+    const c1 = d6();
+    const c2 = d6();
+    contentsRoll = c1 + c2;
+    contentsBreakdown = [c1, c2];
+  }
   const contentsResult = TILE_CONTENTS_TABLE[contentsRoll];
+
+  // Log the contents roll (with breakdown when available)
+  try {
+    const cPrefix = contentsBreakdown ? formatRollPrefix(contentsBreakdown) : formatRollPrefix(contentsRoll);
+    dispatch(logMessage(`${cPrefix}🎲 Contents Roll: 2d6=${contentsRoll} → ${contentsResult ? (isCorridor ? contentsResult.corridorDescription : contentsResult.roomDescription || contentsResult.description) : ''}`, 'exploration'));
+  } catch (e) { /* ignore logging errors */ }
 
     // Check if this content roll has different outcomes for room vs corridor
     const hasDualContent = contentsResult.corridorType && contentsResult.roomType;

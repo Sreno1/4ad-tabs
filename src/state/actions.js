@@ -18,6 +18,9 @@ export const ASSIGN_TREASURE = 'ASSIGN_TREASURE'; // Assign found treasure to he
 export const MINOR = 'MINOR';
 export const MAJOR = 'MAJOR';
 export const BOSS = 'BOSS';
+// Adjustable counters (allow manual +/- for header controls)
+export const ADJUST_MAJOR = 'ADJUST_MAJOR';
+export const ADJUST_MINOR = 'ADJUST_MINOR';
 
 // Monster management
 export const ADD_MONSTER = 'ADD_MONSTER';
@@ -37,6 +40,7 @@ export const SET_CELL = 'SET_CELL'; // Set cell to specific value (0, 1, or 2)
 export const TOGGLE_DOOR = 'TOGGLE_DOOR';
 export const CLEAR_GRID = 'CLEAR_GRID';
 export const SET_WALLS = 'SET_WALLS';
+export const SET_DOORS = 'SET_DOORS';
 
 // Environment
 export const CHANGE_ENVIRONMENT = 'CHANGE_ENVIRONMENT';

@@ -2,6 +2,7 @@
  * Monster Actions - Spawning, reactions, XP, morale, and monster-specific logic
  */
 import { d6 } from '../dice.js';
+import { formatRollPrefix } from '../rollLog.js';
 import {
   createMonster,
   WANDERING_TABLE,
@@ -105,7 +106,7 @@ export const rollWanderingMonster = (dispatch, opts = {}) => {
   }
 
   const displayNames = ['', 'Goblin (L1)', 'Orc (L2)', 'Troll (L3)', 'Ogre (L4)', 'Dragon (L5)', 'Special'];
-  dispatch({ type: 'LOG', t: `Wandering Monster d6=${roll}: ${displayNames[roll]}` });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}Wandering Monster: ${displayNames[roll]}` });
 
   return { roll, type: monsterType };
 };
@@ -120,7 +121,7 @@ export const rollMonsterReaction = (dispatch, monsterIdx) => {
   const reaction = rollReaction();
 
   dispatch({ type: 'SET_MONSTER_REACTION', monsterIdx, reaction: reaction.reaction });
-  dispatch({ type: 'LOG', t: `🎲 Reaction d6=${reaction.roll}: ${reaction.description}` });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(reaction.roll)}🎲 Reaction: ${reaction.description}` });
 
   if (reaction.initiative === 'monster') {
     dispatch({ type: 'LOG', t: `⚠️ Monster attacks first!` });
@@ -166,7 +167,7 @@ export const awardXP = (dispatch, monster, party) => {
 
       dispatch({
         type: 'LOG',
-        t: `🎲 ${hero.name} rolls ${roll} for XP: ${earnedXP} XP earned!`
+        t: `${formatRollPrefix(roll)}🎲 ${hero.name} rolls ${roll} for XP: ${earnedXP} XP earned!`
       });
     }
   });
@@ -293,8 +294,8 @@ export const checkMinorFoeMorale = (foe, initialCount, currentCount) => {
     adjustedRoll,
     fled,
     message: fled
-      ? `🏃 Morale check: d6=${roll}${modStr} → ${foe.name} FLEE!`
-      : `⚔️ Morale check: d6=${roll}${modStr} → ${foe.name} keep fighting!`
+      ? `${formatRollPrefix(roll)}🏃 Morale check: d6=${roll}${modStr} → ${foe.name} FLEE!`
+      : `${formatRollPrefix(roll)}⚔️ Morale check: d6=${roll}${modStr} → ${foe.name} keep fighting!`
   };
 };
 
@@ -342,7 +343,7 @@ export const rollSurprise = (monster, surpriseChanceOverride = null) => {
     roll,
     chance: surpriseChance,
     message: surprised
-      ? `😱 Party is surprised! (rolled ${roll}, needed ≤${surpriseChance})`
-      : `✅ Party avoids surprise (rolled ${roll}, needed ≤${surpriseChance})`
+      ? `${formatRollPrefix(roll)}😱 Party is surprised! (rolled ${roll}, needed ≤${surpriseChance})`
+      : `${formatRollPrefix(roll)}✅ Party avoids surprise (rolled ${roll}, needed ≤${surpriseChance})`
   };
 };

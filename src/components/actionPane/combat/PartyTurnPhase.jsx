@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Button } from '../../ui/Button';
 
 import { d6 } from '../../../utils/dice.js';
+import { formatRollPrefix } from '../../../utils/rollLog.js';
 import { checkMinorFoeMorale } from '../../../utils/gameActions/monsterActions.js';
 
 const PartyTurnPhase = memo(function PartyTurnPhase({
@@ -33,7 +34,7 @@ const PartyTurnPhase = memo(function PartyTurnPhase({
     if (blessed) bonusBreakdown += `+1(blessed)`;
     bonusBreakdown += `=${total}`;
 
-  dispatch({ type: 'LOG', t: `${hero.name} attacks: ${bonusBreakdown} vs L${monster.level} - ${hit ? 'HIT!' : 'Miss'}` });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}${hero.name} attacks: ${bonusBreakdown} vs L${monster.level} - ${hit ? 'HIT!' : 'Miss'}` });
 
     if (hit && monster.count !== undefined) {
       // Minor foe - multi-kill

@@ -2,6 +2,7 @@
  * Dungeon Actions - Doors, traps, special rooms, corridors, puzzles, and boss room
  */
 import { d6 } from '../dice.js';
+import { formatRollPrefix } from '../rollLog.js';
 import {
   DOOR_TYPE_TABLE,
   DOOR_TYPES,
@@ -31,7 +32,7 @@ export const rollDoorType = (dispatch) => {
   const typeKey = DOOR_TYPE_TABLE[roll];
   const type = DOOR_TYPES[typeKey];
 
-  dispatch({ type: 'LOG', t: `Door Type d6=${roll}: ${type.name}` });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}Door Type: ${type.name}` });
 
   return { roll, typeKey, ...type };
 };
@@ -69,7 +70,7 @@ export const attemptOpenDoor = (dispatch, hero, doorType) => {
     ? `${hero.name} opens the ${door.name}! (${roll}+${access.bonus}=${total} vs DC${door.openDC})`
     : `${hero.name} fails to open the ${door.name}. (${roll}+${access.bonus}=${total} vs DC${door.openDC})`;
 
-  dispatch({ type: 'LOG', t: message });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}${message}` });
 
   return { success, roll, total, dc: door.openDC, message };
 };
@@ -84,7 +85,7 @@ export const rollTrap = (dispatch) => {
   const typeKey = TRAP_TABLE[roll];
   const trap = TRAP_TYPES[typeKey];
 
-  dispatch({ type: 'LOG', t: `⚠️ Trap detected: ${trap.name}!` });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}⚠️ Trap detected: ${trap.name}!` });
 
   return { roll, typeKey, ...trap };
 };

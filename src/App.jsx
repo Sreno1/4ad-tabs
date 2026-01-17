@@ -34,6 +34,10 @@ import LogBar from "./components/layout/LogBar.jsx";
 import { useGameState } from "./hooks/useGameState.js";
 import { useCombatFlow } from "./hooks/useCombatFlow.js";
 import { useRoomEvents } from "./hooks/useRoomEvents.js";
+import { rollWanderingMonster } from "./utils/gameActions/index.js";
+import { addMonster, logMessage } from './state/actionCreators.js';
+import { TILE_SHAPE_TABLE } from './data/rooms.js';
+import DungeonHeaderButtons from './components/DungeonHeaderButtons.jsx';
 
 // Constants
 import { ACTION_MODES } from "./constants/gameConstants.js";
@@ -64,6 +68,7 @@ export default function App() {
   const [showRules, setShowRules] = useState(false);
 
   const [showDungeonFeatures, setShowDungeonFeatures] = useState(false);
+  const [activeDungeonFeature, setActiveDungeonFeature] = useState(null);
   const [showCampaign, setShowCampaign] = useState(false);
   const [showRoomDesigner, setShowRoomDesigner] = useState(false);
   const [placementTemplate, setPlacementTemplate] = useState(null);
@@ -76,6 +81,7 @@ export default function App() {
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [leftPanelTab, setLeftPanelTab] = useState("party"); // 'party', 'stats', 'story', or 'rules'
   const [showLogMiddle, setShowLogMiddle] = useState(false);
+  const [showLogSidebar, setShowLogSidebar] = useState(false);
   // When the bottom log expands we want the sidebar to visually contract
   // (like the dungeon pane) but not change the logical `leftPanelOpen` state.
   const [leftPanelContracted, setLeftPanelContracted] = useState(false);
@@ -345,6 +351,7 @@ export default function App() {
       {/* Header */}
       <AppHeader
         state={state}
+  dispatch={dispatch}
         selectedHero={selectedHero}
         onSelectHero={setSelectedHero}
         onShowRules={() => setShowRules(true)}
@@ -437,8 +444,23 @@ export default function App() {
                 isOpen={leftPanelOpen}
                 contracted={leftPanelContracted}
                 activeTab={leftPanelTab}
-                onToggle={setLeftPanelOpen}
-                onTabChange={setLeftPanelTab}
+                onToggle={(open) => {
+                  setLeftPanelOpen(open);
+                }}
+                onTabChange={(tab) => {
+                  // If switching to the log tab, ensure middle log is closed
+                  if (tab === 'log') {
+                    setShowLogMiddle(false);
+                    setShowLogSidebar(true);
+                    setLeftPanelTab(tab);
+                  } else {
+                    // turning off sidebar log state if we navigate away
+                    if (leftPanelTab === 'log') setShowLogSidebar(false);
+                    setLeftPanelTab(tab);
+                  }
+                }}
+                onOpenCampaign={() => { setShowCampaign(true); }}
+                onOpenLog={() => { setShowLogMiddle(false); setShowLogSidebar(true); setLeftPanelTab('log'); setLeftPanelOpen(true); }}
                 selectedHero={selectedHero}
                 onSelectHero={setSelectedHero}
               />
@@ -500,30 +522,63 @@ export default function App() {
                       roomEvents.setAutoPlacedRoom(null);
                     }}
                     sidebarCollapsed={!leftPanelOpen}
-                    onToggleShowLog={() => setShowLogMiddle((s) => !s)}
+                    onToggleShowLog={() => {
+                      setShowLogSidebar(false);
+                      setShowLogMiddle((s) => !s);
+                      try { if (leftPanelTab === 'log') setLeftPanelTab('party'); } catch (e) {}
+                    }}
                     showLogMiddle={showLogMiddle}
                     onShowRoomDesigner={() => setShowRoomDesigner(true)}
                   />
                 ) : (
                   <div className="flex-1 flex flex-col min-h-0">
-                    <div className="flex items-center justify-between p-2 border-b border-slate-700 bg-slate-800">
-                      <div className="text-sm font-semibold text-amber-400">Adventure Log</div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setShowLogMiddle(false)}
-                        className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
-                        title="Show dungeon"
-                      >
-                        Map
-                      </button>
-                      <button
-                        onClick={() => setShowRoomDesigner(true)}
-                        className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
-                        title="Open Room Designer"
-                      >
-                        Room Designer
-                      </button>
-                    </div>
+                    <div className="flex items-center justify-end p-2 border-b border-slate-700 bg-slate-800">
+                      <DungeonHeaderButtons
+                        showLogMiddle={showLogMiddle}
+                        onToggleShowLog={() => { setShowLogSidebar(false); setShowLogMiddle(false); try { if (leftPanelTab === 'log') setLeftPanelTab('party'); } catch (e) {} }}
+                        onShowRoomDesigner={() => setShowRoomDesigner(true)}
+                        onGenerateTile={() => { try { roomEvents.generateTile && roomEvents.generateTile(); } catch (e) {} }}
+                        onWandering={() => { try { rollWanderingMonster(dispatch, { state }); } catch (e) {} }}
+                        onCustomTile={() => {
+                          try {
+                            const rawD66 = prompt('Enter d66 (e.g. 11, 12, 21, 66):', '11');
+                            if (!rawD66) return;
+                            const shapeRoll = parseInt(rawD66, 10);
+                            if (Number.isNaN(shapeRoll) || !Object.keys(TILE_SHAPE_TABLE).includes(String(shapeRoll))) {
+                              alert('Invalid d66 value');
+                              return;
+                            }
+                            const raw2d6 = prompt('Enter 2d6 result (2-12):', '8');
+                            if (!raw2d6) return;
+                            const contentsRoll = parseInt(raw2d6, 10);
+                            if (Number.isNaN(contentsRoll) || contentsRoll < 2 || contentsRoll > 12) {
+                              alert('Invalid 2d6 value');
+                              return;
+                            }
+                            roomEvents.generateTile && roomEvents.generateTile({ shapeRoll, contentsRoll });
+                          } catch (e) { console.error(e); }
+                        }}
+                        onCustomMonster={() => {
+                          try {
+                            const name = prompt('Monster Name?', 'Custom Monster') || 'Custom Monster';
+                            const level = parseInt(prompt('Monster Level (1-5)?', '2')) || 2;
+                            const isMajor = confirm('Is this a Major Foe (single creature with HP)? Cancel for Minor Foe (group with count).');
+                            let monster;
+                            if (isMajor) {
+                              const hp = parseInt(prompt('HP?', '6')) || 6;
+                              monster = { id: Date.now(), name, level, hp, maxHp: hp, type: 'custom', isMinorFoe: false };
+                              dispatch({ type: 'ADD_MONSTER', m: monster });
+                              dispatch(logMessage(`⚔️ ${name} L${level} (${hp}HP) Major Foe added`));
+                            } else {
+                              const count = parseInt(prompt('How many?', '6')) || 6;
+                              monster = { id: Date.now(), name, level, hp: 1, maxHp: 1, count, initialCount: count, type: 'custom', isMinorFoe: true };
+                              dispatch({ type: 'ADD_MONSTER', m: monster });
+                              dispatch(logMessage(`👥 ${count}x ${name} L${level} Minor Foes added`));
+                            }
+                          } catch (e) { console.error(e); }
+                        }}
+                        onClearMap={() => { try { dispatch({ type: 'CLEAR_GRID' }); } catch (e) {} try { roomEvents.clearTile && roomEvents.clearTile(); } catch (e) {} }}
+                      />
                     </div>
                     <div className="flex-1 overflow-hidden min-h-0">
                       <Log state={state} dispatch={dispatch} isBottomPanel={true} />
@@ -534,7 +589,17 @@ export default function App() {
             </div>
 
             {/* Right Column - Action Pane (col 3) - span both rows so its background remains visible under the LogBar */}
-            <div id="action_pane" style={{ gridColumn: '3 / 4', gridRow: '1 / 3' }} className="overflow-y-auto p-3 bg-slate-850 min-w-0">
+            <div
+              id="action_pane"
+              style={{
+                gridColumn: '3 / 4',
+                gridRow: '1 / 3',
+                // Limit action pane height so floating dice has room; make content scroll inside
+                maxHeight: 'calc(100% - 7rem)',
+                overflowY: 'auto',
+              }}
+              className="p-3 bg-slate-850 min-w-0"
+            >
               <div className="mb-2" />
               <ActionPane
                 state={state}
@@ -605,10 +670,11 @@ export default function App() {
 
       <DungeonFeaturesModal
         isOpen={showDungeonFeatures}
-        onClose={() => setShowDungeonFeatures(false)}
+        onClose={() => { setShowDungeonFeatures(false); setActiveDungeonFeature(null); }}
         state={state}
         dispatch={dispatch}
         selectedHero={selectedHero}
+        activeSection={activeDungeonFeature}
       />
       <CampaignManagerModal
         isOpen={showCampaign}
@@ -641,6 +707,8 @@ export default function App() {
       </div>
 
   {/* Floating Dice Roller moved into header */}
+  {/* Floating Dice Roller: fixed bottom-right on desktop */}
+  <FloatingDice inline={false} onShowFeatures={(key) => { setActiveDungeonFeature(key); setShowDungeonFeatures(true); }} onShowAbilities={() => setShowAbilities(true)} state={state} dispatch={dispatch} />
     </div>
   );
 }

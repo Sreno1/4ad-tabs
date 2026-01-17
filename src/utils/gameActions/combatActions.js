@@ -2,6 +2,7 @@
  * Combat Actions - Attack, defense, saves, fleeing, and initiative
  */
 import { d6, explodingD6 } from "../dice.js";
+import { formatRollPrefix } from '../rollLog.js';
 import { calculateEquipmentBonuses } from "../../data/equipment.js";
 import {
   getSaveThreshold,
@@ -604,8 +605,8 @@ export const performSaveRoll = (
       statusKey: "wounded",
       value: true,
     });
-    dispatch({ type: "LOG", t: `💀 ${hero.name} makes a SAVE ROLL!${modStr}` });
-    dispatch({ type: "LOG", t: `✅ ${result.message}` });
+  dispatch({ type: "LOG", t: `💀 ${hero.name} makes a SAVE ROLL!${modStr}` });
+  dispatch({ type: "LOG", t: `${formatRollPrefix(result.roll)}✅ ${result.message}` });
   } else {
     // Dead - set to 0 HP and mark as dead
     dispatch({ type: "UPD_HERO", i: heroIdx, u: { hp: 0 } });
@@ -615,8 +616,8 @@ export const performSaveRoll = (
       statusKey: "dead",
       value: true,
     });
-    dispatch({ type: "LOG", t: `💀 ${hero.name} makes a SAVE ROLL!${modStr}` });
-    dispatch({ type: "LOG", t: `❌ ${result.message}` });
+  dispatch({ type: "LOG", t: `💀 ${hero.name} makes a SAVE ROLL!${modStr}` });
+  dispatch({ type: "LOG", t: `${formatRollPrefix(result.roll)}❌ ${result.message}` });
   }
 
   return result;
@@ -690,13 +691,13 @@ export const attemptFlee = (dispatch, hero, heroIdx, monsterLevel) => {
   if (success) {
     dispatch({
       type: "LOG",
-      t: `🏃 ${hero.name} escapes! (${roll}+${mod}=${total} vs L${monsterLevel})`,
+  t: `${formatRollPrefix(roll)}🏃 ${hero.name} escapes! (${roll}+${mod}=${total} vs L${monsterLevel})`,
     });
   } else {
     // Failed flee = free attack from monsters
     dispatch({
       type: "LOG",
-      t: `❌ ${hero.name} fails to escape! (${roll}+${mod}=${total} vs L${monsterLevel})`,
+  t: `${formatRollPrefix(roll)}❌ ${hero.name} fails to escape! (${roll}+${mod}=${total} vs L${monsterLevel})`,
     });
     dispatch({ type: "LOG", t: `⚔️ Monsters get a free attack!` });
   }
@@ -753,8 +754,8 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
       return;
     }
 
-    // Roll d6 for monster attack
-    const roll = d6();
+  // Roll d6 for monster attack
+  const roll = d6();
     const targetDefense = isWithdraw ? target.lvl + 1 : target.lvl; // +1 Defense when withdrawing
     const defenseMod = isWithdraw ? 1 : 0;
 
@@ -768,7 +769,7 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
       hitCount += 1;
       dispatch({
         type: "LOG",
-        t: `❌ ${monster.name} hits ${target.name}! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense})`,
+        t: `${formatRollPrefix(roll)}❌ ${monster.name} hits ${target.name}! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense})`,
       });
 
       // Apply damage
@@ -787,7 +788,7 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
     } else {
       dispatch({
         type: "LOG",
-        t: `✅ ${target.name} avoids ${monster.name}'s attack! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense}${defenseMod > 0 ? '+1' : ''})`,
+        t: `${formatRollPrefix(roll)}✅ ${target.name} avoids ${monster.name}'s attack! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense}${defenseMod > 0 ? '+1' : ''})`,
       });
     }
   });
@@ -830,16 +831,16 @@ export const initialWanderingStrikes = (dispatch, state) => {
       dispatch({ type: 'LOG', t: `😴 ${monster.name} is asleep and does not attack.` });
       return false;
     }
-    const roll = d6();
+  const roll = d6();
     const defense = hero.lvl; // no withdraw modifier here
     const effectiveLevel = getEffectiveMonsterLevel(monster);
     const hits = (roll + effectiveLevel) > defense;
     if (hits) {
-      dispatch({ type: 'LOG', t: `❌ ${monster.name} hits ${hero.name}! (${roll}+${monster.level} vs ${defense})` });
+      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}❌ ${monster.name} hits ${hero.name}! (${roll}+${monster.level} vs ${defense})` });
       dispatch({ type: 'UPD_HERO', i: heroIdx, u: { hp: Math.max(0, hero.hp - 1) } });
       if (hero.hp - 1 <= 0) dispatch({ type: 'LOG', t: `💀 ${hero.name} is defeated!` });
     } else {
-      dispatch({ type: 'LOG', t: `✅ ${hero.name} avoids ${monster.name}'s attack (${roll}+${monster.level} vs ${defense})` });
+      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}✅ ${hero.name} avoids ${monster.name}'s attack (${roll}+${monster.level} vs ${defense})` });
     }
     return hits;
   };
@@ -907,6 +908,157 @@ export const initialWanderingStrikes = (dispatch, state) => {
     let target = hpSorted[ai2 % hpSorted.length];
     resolveAttack(att, target);
     ai2 += 1;
+  });
+};
+
+/**
+ * Perform standard monster turn attacks following allocation rules.
+ * Applies rules for room vs corridor, attacker/PC counts, hatred targeting,
+ * and respects wandering ambush meta when present.
+ */
+export const performMonsterAttacks = (dispatch, state) => {
+  const monsters = state.monsters || [];
+  if (!monsters || monsters.length === 0) return;
+  const party = state.party || [];
+  const marchingOrder = state.marchingOrder || [0,1,2,3];
+  const location = state.currentCombatLocation?.type || null;
+
+  dispatch({ type: 'LOG', t: `⚔️ Monsters strike!` });
+
+  // Build list of alive hero indices
+  const aliveIdx = party.map((h, idx) => ({ h, idx })).filter(x => x.h && x.h.hp > 0).map(x => x.idx);
+  if (aliveIdx.length === 0) return;
+
+  // Expand monsters into individual attackers (for minor foes with counts, expand count times)
+  const attackers = [];
+  monsters.forEach(m => {
+    const count = m.count && m.isMinorFoe ? m.count : 1;
+    for (let i = 0; i < count; i++) attackers.push(m);
+  });
+  if (attackers.length === 0) return;
+
+  // Helper to resolve a single monster attack
+  const resolveAttack = (monster, heroIdx) => {
+    const hero = party[heroIdx];
+    if (!hero || hero.hp <= 0) return false;
+    if (monster.status && monster.status.asleep) {
+      dispatch({ type: 'LOG', t: `😴 ${monster.name} is asleep and does not attack.` });
+      return false;
+    }
+  const roll = d6();
+    const defense = hero.lvl;
+    const effectiveLevel = getEffectiveMonsterLevel(monster);
+    const hits = (roll + effectiveLevel) > defense;
+    if (hits) {
+      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}❌ ${monster.name} hits ${hero.name}! (${roll}+${monster.level} vs ${defense})` });
+      dispatch({ type: 'UPD_HERO', i: heroIdx, u: { hp: Math.max(0, hero.hp - 1) } });
+      if (hero.hp - 1 <= 0) dispatch({ type: 'LOG', t: `💀 ${hero.name} is defeated!` });
+    } else {
+      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}✅ ${hero.name} avoids ${monster.name}'s attack (${roll}+${monster.level} vs ${defense})` });
+    }
+    return hits;
+  };
+
+  // If this encounter is a wandering ambush meta, prefer the ambush rules
+  const isWandering = !!(state && state.combatMeta && state.combatMeta.wanderingEncounter && state.combatMeta.wanderingEncounter.ambush);
+  if (isWandering && location === 'corridor') {
+    // Ambush in corridor: target rear marching positions (2 & 3)
+    const rearPositions = [2,3];
+    const rearHeroIdx = [];
+    rearPositions.forEach(pos => {
+      const heroIdx = marchingOrder[pos];
+      if (typeof heroIdx === 'number' && party[heroIdx] && party[heroIdx].hp > 0) rearHeroIdx.push(heroIdx);
+    });
+    let ai = 0;
+    attackers.forEach(attacker => {
+      const target = rearHeroIdx[ai % rearHeroIdx.length] || aliveIdx[0];
+      resolveAttack(attacker, target);
+      ai += 1;
+    });
+    return;
+  }
+
+  // Corridor (non-ambush): at most TWO foes attack positions 1 and 2 (marchingOrder[0,1])
+  if (location === 'corridor') {
+    const frontPositions = [marchingOrder[0], marchingOrder[1]].filter(i => typeof i === 'number' && party[i] && party[i].hp > 0);
+    // If only one PC present, they can be attacked by up to two foes
+    if (frontPositions.length === 1) {
+      const target = frontPositions[0];
+      // Use up to two attackers
+      for (let i = 0; i < Math.min(2, attackers.length); i++) resolveAttack(attackers[i], target);
+      if (attackers.length > 2) dispatch({ type: 'LOG', t: `⚠️ ${attackers.length-2} foes cannot reach the front in the corridor.` });
+      return;
+    }
+    // Two front positions: assign first two attackers to them
+    for (let i = 0; i < Math.min(2, attackers.length); i++) {
+      const target = frontPositions[i % frontPositions.length];
+      resolveAttack(attackers[i], target);
+    }
+    if (attackers.length > 2) dispatch({ type: 'LOG', t: `⚠️ ${attackers.length-2} foes cannot reach the front in the corridor.` });
+    return;
+  }
+
+  // Room logic
+  const N = attackers.length;
+  const M = aliveIdx.length;
+
+  // Helper: find hated index if any (monster-level hatred isn't stored per attacker here, so check party for .hated flag)
+  const hatedIdx = party.findIndex(h => h && h.hated && h.hp > 0);
+
+  if (N < M) {
+    // Fewer foes than PCs: choose targets by priority (prefer warriors/clerics/defenders)
+    const classPriority = ['warrior','cleric','barbarian','paladin','ranger','rogue','wizard','halfling'];
+    const sortedTargets = aliveIdx.slice().sort((a,b) => {
+      const ca = classPriority.indexOf((party[a].class || '').toLowerCase());
+      const cb = classPriority.indexOf((party[b].class || '').toLowerCase());
+      if (ca !== cb) return (ca === -1 ? 99 : ca) - (cb === -1 ? 99 : cb);
+      return (party[b].hp - party[a].hp); // prefer higher HP among same class
+    });
+    // Assign each attacker to next preferred target (no hero gets >1 unless attackers exceed preferred list)
+    attackers.forEach((att, i) => {
+      const target = sortedTargets[i % sortedTargets.length];
+      resolveAttack(att, target);
+    });
+    return;
+  }
+
+  if (N === M) {
+    // One attacker per hero
+    for (let i = 0; i < M; i++) resolveAttack(attackers[i], aliveIdx[i]);
+    return;
+  }
+
+  // N > M: distribute equally then assign remaining to hated or lowest HP
+  const base = Math.floor(N / M);
+  const rem = N % M;
+  // assignments: counts per hero index
+  const counts = {};
+  aliveIdx.forEach(idx => counts[idx] = base);
+
+  // Distribute remainder: first to any hated heroes, then lowest HP
+  let remaining = rem;
+  if (hatedIdx !== -1 && counts[hatedIdx] !== undefined) {
+    counts[hatedIdx] += 1;
+    remaining -= 1;
+  }
+  if (remaining > 0) {
+    const hpOrder = aliveIdx.slice().sort((a,b) => (party[a].hp - party[b].hp)); // lowest HP first
+    let i = 0;
+    while (remaining > 0) {
+      const t = hpOrder[i % hpOrder.length];
+      counts[t] += 1;
+      remaining -= 1;
+      i += 1;
+    }
+  }
+
+  // Now resolve attacks in order: iterate attackers and apply to heroes according to counts
+  let attackerIdx = 0;
+  aliveIdx.forEach(heroIdx => {
+    const c = counts[heroIdx] || 0;
+    for (let k = 0; k < c && attackerIdx < attackers.length; k++) {
+      resolveAttack(attackers[attackerIdx++], heroIdx);
+    }
   });
 };
 
@@ -982,14 +1134,14 @@ export const attemptWithdraw = (dispatch, party, monsters, doors) => {
   if (wanderingRoll === 1) {
     dispatch({
       type: "LOG",
-      t: `⚠️ Party encounters a Wandering Monster during retreat! (rolled ${wanderingRoll})`,
+      t: `${formatRollPrefix(wanderingRoll)}⚠️ Party encounters a Wandering Monster during retreat! (rolled ${wanderingRoll})`,
     });
     // Actual wandering monster spawning handled by caller
     return { success: true, wanderingMonster: true, strikeResult };
   } else {
     dispatch({
       type: "LOG",
-      t: `✅ Party retreats safely! (wandering check: ${wanderingRoll}, no encounter)`,
+      t: `${formatRollPrefix(wanderingRoll)}✅ Party retreats safely! (wandering check: ${wanderingRoll}, no encounter)`,
     });
     dispatch({ type: "CLEAR_MONSTERS" });
     return { success: true, wanderingMonster: false, strikeResult };

@@ -9,13 +9,32 @@ import {
   rollPuzzle, attemptPuzzle
 } from "../utils/gameActions/index.js";
 
-export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch, selectedHero }) {
+export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch, selectedHero, activeSection = null }) {
   const [currentDoor, setCurrentDoor] = useState(null);
   const [currentTrap, setCurrentTrap] = useState(null);
   const [currentSpecial, setCurrentSpecial] = useState(null);
   const [currentPuzzle, setCurrentPuzzle] = useState(null);
-
+  const doorRef = React.useRef(null);
+  const trapRef = React.useRef(null);
+  const specialRef = React.useRef(null);
+  const puzzleRef = React.useRef(null);
   const activeHero = selectHero(state, selectedHero) || null;
+
+  // Scroll to requested section when modal opens with activeSection
+  React.useEffect(() => {
+    if (!isOpen || !activeSection) return;
+    setTimeout(() => {
+      const map = {
+        door: doorRef.current,
+        trap: trapRef.current,
+        special: specialRef.current,
+        puzzle: puzzleRef.current,
+        reference: document.getElementById('dungeon_features_reference_section'),
+      };
+      const el = map[activeSection];
+      if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  }, [isOpen, activeSection]);
 
   if (!isOpen) return null;
 
@@ -181,7 +200,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           )}
 
           {/* Door Mechanics */}
-          <div id="dungeon_features_door_section" className="bg-slate-700/50 rounded p-3">
+          <div ref={doorRef} id="dungeon_features_door_section" className="bg-slate-700/50 rounded p-3">
             <div id="dungeon_features_door_title" className="flex items-center gap-2 text-amber-400 font-bold text-sm mb-2">
               <DoorOpen size={16} /> Door Mechanics
             </div>
@@ -215,7 +234,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           </div>
 
           {/* Trap Mechanics */}
-          <div id="dungeon_features_trap_section" className="bg-slate-700/50 rounded p-3">
+          <div ref={trapRef} id="dungeon_features_trap_section" className="bg-slate-700/50 rounded p-3">
             <div id="dungeon_features_trap_title" className="flex items-center gap-2 text-red-400 font-bold text-sm mb-2">
               <AlertTriangle size={16} /> Trap Mechanics
             </div>
@@ -279,7 +298,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           </div>
 
           {/* Special Rooms */}
-          <div id="dungeon_features_special_section" className="bg-slate-700/50 rounded p-3">
+          <div ref={specialRef} id="dungeon_features_special_section" className="bg-slate-700/50 rounded p-3">
             <div id="dungeon_features_special_title" className="flex items-center gap-2 text-purple-400 font-bold text-sm mb-2">
               <Sparkles size={16} /> Special Rooms
             </div>
@@ -315,7 +334,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           </div>
 
           {/* Puzzle Rooms */}
-          <div id="dungeon_features_puzzle_section" className="bg-slate-700/50 rounded p-3">
+          <div ref={puzzleRef} id="dungeon_features_puzzle_section" className="bg-slate-700/50 rounded p-3">
             <div id="dungeon_features_puzzle_title" className="flex items-center gap-2 text-cyan-400 font-bold text-sm mb-2">
               <Puzzle size={16} /> Puzzle Rooms
             </div>

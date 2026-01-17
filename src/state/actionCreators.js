@@ -198,6 +198,18 @@ export const incrementMinorEncounter = () => ({ type: A.MINOR });
 export const incrementMajorFoe = () => ({ type: A.MAJOR });
 
 /**
+ * Adjust major foe counter by n (positive or negative)
+ * @param {number} n
+ */
+export const adjustMajorFoes = (n) => ({ type: A.ADJUST_MAJOR, n });
+
+/**
+ * Adjust minor encounter counter by n (positive or negative)
+ * @param {number} n
+ */
+export const adjustMinorEncounters = (n) => ({ type: A.ADJUST_MINOR, n });
+
+/**
  * Mark boss as encountered
  */
 export const encounterBoss = () => ({ type: A.BOSS });

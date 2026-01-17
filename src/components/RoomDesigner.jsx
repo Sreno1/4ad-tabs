@@ -15,6 +15,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
   const [name, setName] = useState((initialTemplate && initialTemplate.name) || '');
   const [d66Number, setD66Number] = useState((initialTemplate && initialTemplate.d66Number) || '');
   const [library, setLibrary] = useState(() => roomLibrary.loadAll());
+  const [selectedLibIds, setSelectedLibIds] = useState(() => new Set());
   const [designerContextMenu, setDesignerContextMenu] = useState(null); // {xPx,yPx,cellX,cellY}
   const designerGridRef = useRef(null);
   // Native contextmenu handler for designer
@@ -125,15 +126,40 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
     URL.revokeObjectURL(url);
   }, []);
 
+  // Export multiple selected templates as an array JSON
+  const exportSelected = useCallback((templates) => {
+    if (!Array.isArray(templates) || templates.length === 0) return;
+    const payload = JSON.stringify(templates);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `room-templates-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, []);
+
   const importFile = useCallback((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const parsed = JSON.parse(e.target.result);
-        if (Array.isArray(parsed.grid)) {
+        // If parsed is an array, import multiple templates
+        if (Array.isArray(parsed)) {
+          parsed.forEach(item => {
+            try {
+              if (item && item.grid && Array.isArray(item.grid)) {
+                roomLibrary.save({ name: item.name || '', grid: item.grid, doors: item.doors || [], walls: item.walls || [], d66Number: item.d66Number != null ? item.d66Number : null });
+              }
+            } catch (err) {}
+          });
+          setLibrary(roomLibrary.loadAll());
+        } else if (parsed && Array.isArray(parsed.grid)) {
+          // Single template import (backwards compatible)
           setGrid(parsed.grid);
           setDoors(parsed.doors || []);
-          // Keep imported template name internal-only; do not surface it in the editor UI
           setName(parsed.name || '');
         }
       } catch (err) {
@@ -281,11 +307,28 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
 
           <div className="flex-1">
             <div className="text-sm text-slate-300 mb-2">Library</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-slate-400">Saved templates</div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => { setSelectedLibIds(new Set(library.map(i => i.id))); }} className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-xs">Select All</button>
+                <button onClick={() => { const arr = library.filter(i => selectedLibIds.has(i.id)); exportSelected(arr); }} className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-xs">Export Selected</button>
+                <button onClick={() => { setSelectedLibIds(new Set()); }} className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-xs">Clear Selection</button>
+              </div>
+            </div>
             <div className="space-y-3 max-h-[380px] overflow-auto">
               {library.length === 0 && <div className="text-slate-500 text-sm">No templates saved</div>}
               {library.map(item => (
                 <div key={item.id} className="bg-slate-700 p-2 rounded">
                   <div className="flex gap-2">
+                    <div className="flex items-start">
+                      <input type="checkbox" className="mr-2 mt-1" checked={selectedLibIds.has(item.id)} onChange={() => {
+                        setSelectedLibIds(prev => {
+                          const next = new Set(prev);
+                          if (next.has(item.id)) next.delete(item.id); else next.add(item.id);
+                          return next;
+                        });
+                      }} />
+                    </div>
                     {/* Preview */}
                     <div className="flex-shrink-0">
                       <RoomPreview grid={item.grid} doors={item.doors || []} walls={item.walls || []} cellSize={16} />

@@ -6,9 +6,10 @@ import {
   Book,
   ChevronLeft,
   ChevronRight,
+  FileText,
 } from "lucide-react";
+import Log from "../Log.jsx";
 import Party from "../Party.jsx";
-import Analytics from "../Analytics.jsx";
 import StoryLog from "../StoryLog.jsx";
 import RulesPdfViewer from "../RulesPdfViewer.jsx";
 
@@ -20,8 +21,10 @@ export default function DesktopSidebar({
   activeTab,
   onToggle,
   onTabChange,
+  onOpenCampaign, // new prop: open campaign manager modal
   selectedHero,
   onSelectHero,
+  onOpenLog,
 }) {
   if (!isOpen) {
   // When collapsed, render a narrow column that fits the parent width
@@ -41,16 +44,7 @@ export default function DesktopSidebar({
         >
           <Users size={20} />
         </button>
-        <button
-          onClick={() => {
-            onToggle(true);
-            onTabChange("stats");
-          }}
-          className={`p-2 rounded hover:bg-slate-700 ${activeTab === "stats" ? "text-purple-400" : "text-slate-400"}`}
-          title="Open Stats Panel"
-        >
-          <TrendingUp size={20} />
-        </button>
+  {/* Stats button removed - moved into Campaign Manager modal */}
         <button
           onClick={() => {
             onToggle(true);
@@ -60,6 +54,17 @@ export default function DesktopSidebar({
           title="Open Story Panel"
         >
           <Scroll size={20} />
+        </button>
+        <button
+          onClick={() => {
+            onToggle(true);
+            onTabChange("log");
+            if (typeof onOpenLog === 'function') onOpenLog();
+          }}
+          className={`p-2 rounded hover:bg-slate-700 ${activeTab === "log" ? "text-amber-400" : "text-slate-400"}`}
+          title="Open Log Panel"
+        >
+          <FileText size={20} />
         </button>
         <button
           onClick={() => {
@@ -100,16 +105,7 @@ export default function DesktopSidebar({
         >
           <Users size={16} /> Party
         </button>
-        <button
-          onClick={() => onTabChange("stats")}
-          className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 ${
-            activeTab === "stats"
-              ? "bg-slate-700 text-purple-400"
-              : "text-slate-400 hover:bg-slate-750"
-          }`}
-        >
-          <TrendingUp size={16} /> Stats
-        </button>
+  {/* Stats tab removed - stats are now in Campaign Manager */}
         <button
           onClick={() => onTabChange("story")}
           className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 ${
@@ -119,6 +115,16 @@ export default function DesktopSidebar({
           }`}
         >
           <Scroll size={16} /> Story
+        </button>
+        <button
+          onClick={() => { onTabChange("log"); if (typeof onOpenLog === 'function') onOpenLog(); }}
+          className={`flex-1 px-3 py-2 text-sm flex items-center justify-center gap-2 ${
+            activeTab === "log"
+              ? "bg-slate-700 text-amber-400"
+              : "text-slate-400 hover:bg-slate-750"
+          }`}
+        >
+          <FileText size={16} /> Log
         </button>
         <button
           onClick={() => onTabChange("rules")}
@@ -143,18 +149,20 @@ export default function DesktopSidebar({
       <div
         className={`flex-1 overflow-y-auto ${activeTab === "rules" ? "" : "p-3"}`}
       >
-        {activeTab === "party" ? (
+  {activeTab === "party" ? (
           <Party
             state={state}
             dispatch={dispatch}
             selectedHero={selectedHero}
             onSelectHero={onSelectHero}
           />
-        ) : activeTab === "stats" ? (
-          <Analytics state={state} />
-        ) : activeTab === "story" ? (
+  ) : activeTab === "story" ? (
           <div className="space-y-3">
             <StoryLog state={state} dispatch={dispatch} />
+          </div>
+        ) : activeTab === "log" ? (
+          <div className="space-y-3">
+            <Log state={state} dispatch={dispatch} isBottomPanel={false} />
           </div>
         ) : (
           <RulesPdfViewer />
