@@ -486,13 +486,18 @@ export default function App() {
                       try { const sfx = require('./utils/sfx.js').default; sfx.play('hurt2', { volume: 0.9 }); } catch (e) {}
                       const templateGrid = tpl.grid || tpl;
                       const templateDoors = tpl.doors || [];
+                      const tplStyles = tpl.cellStyles || {};
                       templateGrid.forEach((row, ry) => {
                         row.forEach((val, rx) => {
                           if (val && val !== 0) {
                             const x = startX + rx;
                             const y = startY + ry;
                             if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
-                              dispatch({ type: 'SET_CELL', x, y, value: val });
+                              const styleKey = `${rx},${ry}`;
+                              const style = tplStyles[styleKey];
+                              if (style) dispatch({ type: 'SET_CELL', x, y, value: val, style });
+                              else if (val === 1) dispatch({ type: 'SET_CELL', x, y, value: val, style: 'full' });
+                              else dispatch({ type: 'SET_CELL', x, y, value: val });
                             }
                           }
                         });

@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import sfx from '../utils/sfx.js';
 import { X, Download, Upload, Save, PlusSquare, Trash2 } from 'lucide-react';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
+import { cellHasEdgeFromStyle, nextStyle } from '../utils/tileStyles.js';
 import ContextMenu from './ContextMenu.jsx';
 import RoomPreview from './RoomPreview.jsx';
 import roomLibrary from '../utils/roomLibrary.js';
@@ -12,6 +13,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
   const [grid, setGrid] = useState(() => (initialTemplate && initialTemplate.grid) || blank);
   const [doors, setDoors] = useState(() => (initialTemplate && initialTemplate.doors) || []);
   const [walls, setWalls] = useState(() => (initialTemplate && initialTemplate.walls) || []);
+  const [designerCellStyles, setDesignerCellStyles] = useState(() => (initialTemplate && initialTemplate.cellStyles) || {});
   const [name, setName] = useState((initialTemplate && initialTemplate.name) || '');
   const [d66Number, setD66Number] = useState((initialTemplate && initialTemplate.d66Number) || '');
   const [library, setLibrary] = useState(() => roomLibrary.loadAll());
@@ -51,12 +53,48 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
       next[y][x] = value;
       return next;
     });
+    // Maintain designer-local visual styles lifecycle: clear styles when emptied,
+    // and set a default 'full' style when a cell is programmatically filled.
+    setDesignerCellStyles(s => {
+      const next = { ...(s || {}) };
+      const key = `${x},${y}`;
+      if (value === 0) {
+        if (next[key]) delete next[key];
+      } else if (value === 1) {
+        next[key] = next[key] || 'full';
+      }
+      return next;
+    });
   }, []);
 
   const onCellClick = useCallback((x, y) => {
+    // Mirror Dungeon behavior: if cell is filled, cycle its style; otherwise set it to filled.
     setGrid(g => {
       const next = g.map(row => row.slice());
-      next[y][x] = (next[y][x] + 1) % 3;
+      const current = next[y][x] || 0;
+      if (current === 1) {
+        // leave logical value as-is; style cycling handled separately
+        return next;
+      }
+      // set to filled
+      next[y][x] = 1;
+      return next;
+    });
+
+    setDesignerCellStyles(s => {
+      const key = `${x},${y}`;
+      const prev = s || {};
+      const curStyle = prev[key] || 'full';
+      // If the cell was already 1 and user clicked, they intended to cycle styles.
+      // We need to detect that from the current grid snapshot; however, to keep
+      // this handler simple and deterministic, always advance the style when
+      // there is an existing style entry, otherwise ensure it's set to 'full'.
+      const next = { ...prev };
+      if (prev[key]) {
+        next[key] = nextStyle(prev[key]);
+      } else {
+        next[key] = 'full';
+      }
       return next;
     });
   }, []);
@@ -94,6 +132,8 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
   }, [doors]);
 
   const clearGrid = useCallback(() => { setGrid(blank); setDoors([]); setWalls([]); }, [blank]);
+  // Ensure visual styles reset when clearing the designer
+  const clearDesignerGrid = useCallback(() => { setGrid(blank); setDoors([]); setWalls([]); setDesignerCellStyles({}); }, [blank]);
 
   const saveToLibrary = useCallback(() => {
     roomLibrary.save({
@@ -207,20 +247,16 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                 roomMarkers={{}}
                 showMarkers={false}
                 cellSize={28}
+                cellStyles={designerCellStyles}
                 shouldRotate={false}
                 suppressContextAction={true}
                 showPawnHint={false}
                 onCellClick={(x,y)=>onCellClick(x,y)}
                 onCellSet={(x,y,val)=>onCellSet(x,y,val)}
                 onCellContextMenu={(x,y,e)=>{
-                  // Only open context menu for room cells
+                  // compute menu position relative to click
                   try { e.preventDefault(); } catch (err) {}
                   if (!grid[y] || grid[y][x] !== 1) return;
-                  setDesignerContextMenu({ xPx: e.clientX, yPx: e.clientY, cellX: x, cellY: y });
-                }}
-                onCellContextMenu={(x,y,e)=>{
-                  // compute menu position relative to click
-                  e.preventDefault();
                   setDesignerContextMenu({ xPx: e.clientX, yPx: e.clientY, cellX: x, cellY: y });
                 }}
                 onDoorToggle={(x,y,edge)=>onDoorToggle(x,y,edge)}
@@ -254,6 +290,16 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                           region.add(k);
                           toVisit.push({x: c.x+1, y: c.y}); toVisit.push({x: c.x-1, y: c.y}); toVisit.push({x: c.x, y: c.y+1}); toVisit.push({x: c.x, y: c.y-1});
                         }
+                        const styles = {};
+                        const edgeOpp = (e) => (e === 'N' ? 'S' : e === 'S' ? 'N' : e === 'E' ? 'W' : 'E');
+                        const cellHasEdge = (cx, cy, edge) => {
+                          if (!(cy >= 0 && cy < rows && cx >= 0 && cx < cols)) return false;
+                          const key = `${cx},${cy}`;
+                          let style = styles[key];
+                          if (!style) style = (grid[cy] && grid[cy][cx]) === 1 ? 'full' : null;
+                          return cellHasEdgeFromStyle(style, edge);
+                        };
+
                         const perimeter = [];
                         region.forEach(k => {
                           const [rx, ry] = k.split(',').map(Number);
@@ -266,10 +312,15 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                           neighbors.forEach(n => {
                             if (!(n.ny >= 0 && n.ny < rows && n.nx >= 0 && n.nx < cols) || grid[n.ny][n.nx] !== 1) {
                               perimeter.push({ x: rx, y: ry, edge: n.edge });
+                              return;
                             }
+                            const currentHas = cellHasEdge(rx, ry, n.edge);
+                            const neighborHas = cellHasEdge(n.nx, n.ny, edgeOpp(n.edge));
+                            if (currentHas && !neighborHas) perimeter.push({ x: rx, y: ry, edge: n.edge });
                           });
                         });
                         if (perimeter.length === 0) return;
+                        try { console.debug('designer wall-off: regionSize=', region.size, 'perimeterCount=', perimeter.length, 'sample=', perimeter.slice(0,6)); } catch (e) {}
                         const allExist = perimeter.every(pe => walls.some(w => w.x === pe.x && w.y === pe.y && w.edge === pe.edge));
                         if (allExist) {
                           setWalls(prev => prev.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === w.edge)));
@@ -300,8 +351,8 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
               </>
             </div>
             <div className="mt-2 flex gap-2">
-              <button onClick={clearGrid} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">Clear</button>
-              <button onClick={()=>{ try { sfx.play('select2', { volume: 0.8 }); } catch(e){}; onPlaceTemplate({ name, grid, doors, walls }) }} className="px-2 py-1 bg-amber-600 hover:bg-amber-500 rounded text-sm">Place to map</button>
+              <button onClick={clearDesignerGrid} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">Clear</button>
+              <button onClick={()=>{ try { sfx.play('select2', { volume: 0.8 }); } catch(e){}; onPlaceTemplate({ name, grid, doors, walls, cellStyles: designerCellStyles }) }} className="px-2 py-1 bg-amber-600 hover:bg-amber-500 rounded text-sm">Place to map</button>
             </div>
           </div>
 

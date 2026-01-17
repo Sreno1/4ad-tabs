@@ -10,6 +10,7 @@ import { TILE_SHAPE_TABLE } from '../data/rooms.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import DungeonHeaderButtons from './DungeonHeaderButtons.jsx';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
+import { cellHasEdgeFromStyle } from '../utils/tileStyles.js';
 import ContextMenu from './ContextMenu.jsx';
 import { getEquipment, hasEquipment } from '../data/equipment.js';
 import RadialMenu from './RadialMenu.jsx';
@@ -102,12 +103,17 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     if (cell === 1) {
       dispatch({ type: 'CYCLE_CELL_STYLE', x, y });
     } else {
-      dispatch({ type: 'SET_CELL', x, y, value: 1 });
+  // When clicking to set a cell, ensure it's initialized with a 'full' visual style
+  dispatch({ type: 'SET_CELL', x, y, value: 1, style: 'full' });
     }
   }, [dispatch, state.grid]);
 
   const handleCellSet = useCallback((x, y, value) => {
-    dispatch({ type: 'SET_CELL', x, y, value });
+  // Ensure programmatic sets (drag/rectangle/placement) explicitly set a
+  // fresh 'full' visual style for newly-filled cells so they don't inherit
+  // any lingering diagonal/rounded variants from prior state.
+  if (value === 1) dispatch({ type: 'SET_CELL', x, y, value, style: 'full' });
+  else dispatch({ type: 'SET_CELL', x, y, value });
   }, [dispatch]);
 
   // Right-click opens context menu for actions
@@ -586,6 +592,21 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                         toVisit.push({x: c.x+1, y: c.y}); toVisit.push({x: c.x-1, y: c.y}); toVisit.push({x: c.x, y: c.y+1}); toVisit.push({x: c.x, y: c.y-1});
                       }
                       const perimeter = [];
+                      // Consider visual styles when deciding if an adjacent edge is filled.
+                      // Only add a perimeter edge if the current cell has visible coverage
+                      // on that edge and the neighbor does not.
+                      const styles = state.cellStyles || {};
+                      const edgeOpp = (e) => (e === 'N' ? 'S' : e === 'S' ? 'N' : e === 'E' ? 'W' : 'E');
+                      const cellHasEdge = (cx, cy, edge) => {
+                        if (!(cy >= 0 && cy < rows && cx >= 0 && cx < cols)) return false;
+                        const key = `${cx},${cy}`;
+                        let style = styles[key];
+                        if (!style) {
+                          style = (gridEl[cy] && gridEl[cy][cx]) === 1 ? 'full' : null;
+                        }
+                        return cellHasEdgeFromStyle(style, edge);
+                      };
+
                       region.forEach(k => {
                         const [rx, ry] = k.split(',').map(Number);
                         const neighbors = [
@@ -595,13 +616,45 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                           {edge: 'W', nx: rx-1, ny: ry}
                         ];
                         neighbors.forEach(n => {
+                          // If neighbor is outside or not a room, always treat as perimeter
                           if (!(n.ny >= 0 && n.ny < rows && n.nx >= 0 && n.nx < cols) || gridEl[n.ny][n.nx] !== 1) {
+                            perimeter.push({ x: rx, y: ry, edge: n.edge });
+                            return;
+                          }
+                          // Otherwise, use visual-coverage test to decide if this edge should be walled
+                          const currentHas = cellHasEdge(rx, ry, n.edge);
+                          const neighborHas = cellHasEdge(n.nx, n.ny, edgeOpp(n.edge));
+                          if (currentHas && !neighborHas) {
                             perimeter.push({ x: rx, y: ry, edge: n.edge });
                           }
                         });
                       });
                       try {
                         const existingWalls = state.walls || [];
+                        // If visual perimeter produced nothing, fall back to the legacy behavior
+                        // (neighbor cell not a room) so the user can still wall the region.
+                        if (perimeter.length === 0) {
+                          region.forEach(k2 => {
+                            const [rx2, ry2] = k2.split(',').map(Number);
+                            const neighbors2 = [
+                              {edge: 'N', nx: rx2, ny: ry2-1},
+                              {edge: 'S', nx: rx2, ny: ry2+1},
+                              {edge: 'E', nx: rx2+1, ny: ry2},
+                              {edge: 'W', nx: rx2-1, ny: ry2}
+                            ];
+                            neighbors2.forEach(n2 => {
+                              if (!(n2.ny >= 0 && n2.ny < rows && n2.nx >= 0 && n2.nx < cols) || gridEl[n2.ny][n2.nx] !== 1) {
+                                perimeter.push({ x: rx2, y: ry2, edge: n2.edge });
+                              }
+                            });
+                          });
+                        }
+
+                        // debug info to help diagnose missing walls
+                        try {
+                          console.debug('wall-off: regionSize=', region.size, 'perimeterCount=', perimeter.length, 'sample=', perimeter.slice(0,6));
+                        } catch (e) {}
+
                         const allExist = perimeter.every(pe => existingWalls.some(w => w.x === pe.x && w.y === pe.y && w.edge === pe.edge));
                         if (allExist) {
                           // remove perimeter edges from existing walls
@@ -622,7 +675,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                           });
                           dispatch({ type: 'SET_WALLS', walls: union });
                         }
-                      } catch (err) { /* ignore */ }
+                        } catch (err) { console.error('wall-off error', err); }
                     } catch (e) { /* ignore */ }
                 } },
                 { key: 'note', label: 'Add Note', onClick: () => {

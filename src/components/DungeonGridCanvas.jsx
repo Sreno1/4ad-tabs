@@ -3,6 +3,7 @@ import { getEquipment } from '../data/equipment.js';
 import sfx from '../utils/sfx.js';
 
 import MARKER_STYLES from '../constants/markerStyles.js';
+import { getEdgeCoverage } from '../utils/tileStyles.js';
 
 /**
  * High-performance canvas-based dungeon grid
@@ -379,6 +380,9 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   // Draw walls (collected earlier) on top of cells and doors
     if (wallEdges.length > 0) {
       const wt = Math.max(1, Math.floor(cellSize * 0.08));
+
+  // use getEdgeCoverage from utils
+
       wallEdges.forEach(w => {
         const px = w.x * cellSize;
         const py = w.y * cellSize;
@@ -387,7 +391,6 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         // cell value at the wall's origin, then the neighbor across the edge.
         let edgeColor = '#ffffff';
         try {
-          // If wall object contains srcTag (set when merging template walls), use it
           if (w.srcTag && typeof w.srcTag === 'string') {
             const t = w.srcTag.toLowerCase();
             if (t === 'room') edgeColor = '#B45309';
@@ -396,29 +399,55 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
             const originVal = (grid[w.y] && grid[w.y][w.x]) || 0;
             let lookup = originVal;
             if (!lookup) {
-              // inspect neighbor across the edge
               if (w.edge === 'N') lookup = (grid[w.y - 1] && grid[w.y - 1][w.x]) || 0;
               else if (w.edge === 'S') lookup = (grid[w.y + 1] && grid[w.y + 1][w.x]) || 0;
               else if (w.edge === 'E') lookup = (grid[w.y] && grid[w.y][w.x + 1]) || 0;
               else if (w.edge === 'W') lookup = (grid[w.y] && grid[w.y][w.x - 1]) || 0;
             }
-            // Map cell types to colors: room -> amber, corridor -> blue
-            if (lookup === 1) edgeColor = '#B45309'; // room (amber-ish)
-            else if (lookup === 2) edgeColor = '#1D4ED8'; // corridor (blue)
+            if (lookup === 1) edgeColor = '#B45309';
+            else if (lookup === 2) edgeColor = '#1D4ED8';
           }
         } catch (e) {
           edgeColor = '#ffffff';
         }
 
+        // Compute coverage from origin and neighbor and draw only on covered segments
+        const keyA = `${w.x},${w.y}`;
+        const styleA = (cellStyles && cellStyles[keyA]) || ((grid[w.y] && grid[w.y][w.x]) === 1 ? 'full' : null);
+
+        let nx = w.x, ny = w.y, opposite = null;
+        if (w.edge === 'N') { ny = w.y - 1; opposite = 'S'; }
+        else if (w.edge === 'S') { ny = w.y + 1; opposite = 'N'; }
+        else if (w.edge === 'E') { nx = w.x + 1; opposite = 'W'; }
+        else if (w.edge === 'W') { nx = w.x - 1; opposite = 'E'; }
+
+        const keyB = `${nx},${ny}`;
+        const styleB = (cellStyles && cellStyles[keyB]) || ((grid[ny] && grid[ny][nx]) === 1 ? 'full' : null);
+
+        const covA = getEdgeCoverage(styleA, w.edge);
+        const covB = getEdgeCoverage(styleB, opposite);
+
+        const start = Math.min(covA[0], covB[0]);
+        const end = Math.max(covA[1], covB[1]);
+        if (end <= start) return; // nothing to draw
+
         ctx.fillStyle = edgeColor;
         if (w.edge === 'N') {
-          ctx.fillRect(px, py - Math.floor(wt/2), cellSize, wt);
+          const sx = px + start * cellSize;
+          const wlen = (end - start) * cellSize;
+          ctx.fillRect(sx, py - Math.floor(wt/2), wlen, wt);
         } else if (w.edge === 'S') {
-          ctx.fillRect(px, py + cellSize - Math.floor(wt/2), cellSize, wt);
+          const sx = px + start * cellSize;
+          const wlen = (end - start) * cellSize;
+          ctx.fillRect(sx, py + cellSize - Math.floor(wt/2), wlen, wt);
         } else if (w.edge === 'E') {
-          ctx.fillRect(px + cellSize - Math.floor(wt/2), py, wt, cellSize);
+          const sy = py + start * cellSize;
+          const hlen = (end - start) * cellSize;
+          ctx.fillRect(px + cellSize - Math.floor(wt/2), sy, wt, hlen);
         } else if (w.edge === 'W') {
-          ctx.fillRect(px - Math.floor(wt/2), py, wt, cellSize);
+          const sy = py + start * cellSize;
+          const hlen = (end - start) * cellSize;
+          ctx.fillRect(px - Math.floor(wt/2), sy, wt, hlen);
         }
       });
     }

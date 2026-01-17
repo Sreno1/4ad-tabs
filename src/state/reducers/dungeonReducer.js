@@ -2,6 +2,7 @@
  * Dungeon Reducer - Handles dungeon grid, doors, traps, and special rooms
  */
 import * as A from '../actions.js';
+import { STYLE_ORDER } from '../../utils/tileStyles.js';
 
 /**
  * Dungeon reducer - handles all dungeon-related state changes
@@ -43,15 +44,19 @@ export function dungeonReducer(state, action) {
       if (action.value === 0) {
         if (styles[key]) delete styles[key];
       } else if (action.value === 1) {
-        if (!styles[key]) styles[key] = 'full';
+        // If an explicit style was provided with the action, use it (used when placing templates).
+        // Otherwise default to 'full' to ensure a fresh fill doesn't inherit previous variants.
+        if (action.style && typeof action.style === 'string') styles[key] = action.style;
+        else styles[key] = 'full';
       }
       return { ...state, grid: newGrid, cellStyles: styles };
     }
 
     case A.CLEAR_GRID:
       return {
-        ...state,
-        grid: Array(28).fill(null).map(() => Array(20).fill(0)),
+    ...state,
+    grid: Array(28).fill(null).map(() => Array(20).fill(0)),
+    cellStyles: {},
   doors: [],
   walls: [],
   traps: []
@@ -209,10 +214,10 @@ export function dungeonReducer(state, action) {
       const key = `${action.x},${action.y}`;
       const styles = { ...(state.cellStyles || {}) };
   // New order: full -> diag1 -> diag2 -> diag3 -> diag4 -> round1 -> round2 -> round3 -> round4
-  const order = ['full', 'diag1', 'diag2', 'diag3', 'diag4', 'round1', 'round2', 'round3', 'round4'];
-      const current = styles[key] || 'full';
-      const idx = Math.max(0, order.indexOf(current));
-      const next = order[(idx + 1) % order.length];
+  const order = STYLE_ORDER;
+  const current = styles[key] || 'full';
+  const idx = Math.max(0, order.indexOf(current));
+  const next = order[(idx + 1) % order.length];
       styles[key] = next;
       return { ...state, cellStyles: styles };
     }
