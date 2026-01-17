@@ -345,6 +345,7 @@ This document provides a complete audit of the Four Against Darkness companion a
 
 - ADD CURVED AND ENTRANCE ROOMS (1-6, 25, 34, 36)
 - add xp roll button to each party card
+- when placing a recognized tile from the library that was generated, the walls need to be two different colors for the two tile types, corridor and room.
 
 ### Combat System
 

@@ -150,6 +150,7 @@ export const addMonster = (monster) => ({ type: A.ADD_MONSTER, m: monster });
  */
 export const updateMonster = (index, updates) => ({ type: A.UPD_MONSTER, i: index, u: updates });
 
+export const cycleCellStyle = (x, y) => ({ type: A.CYCLE_CELL_STYLE, x, y });
 /**
  * Delete a monster
  * @param {number} index - Monster index to remove

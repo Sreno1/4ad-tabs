@@ -27,6 +27,20 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
       }
     } catch (e) {}
   }, []);
+
+  // Listen for external updates to roomMarkers (written by other code paths)
+  React.useEffect(() => {
+    const handler = () => {
+      try {
+        const raw = localStorage.getItem('roomMarkers');
+        if (!raw) { setRoomMarkers({}); return; }
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') setRoomMarkers(parsed);
+      } catch (e) { /* ignore */ }
+    };
+    window.addEventListener('roomMarkersUpdated', handler);
+    return () => window.removeEventListener('roomMarkersUpdated', handler);
+  }, []);
   const [radialMenu, setRadialMenu] = useState(null); // {xPx,yPx,cellX,cellY}
   const [contextMenu, setContextMenu] = useState(null); // {xPx,yPx,cellX,cellY}
   const [contextSelectedTile, setContextSelectedTile] = useState(null); // {x,y}
@@ -84,8 +98,13 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   }, [roomMarkers]);
 
   const handleCellClick = useCallback((x, y) => {
-    dispatch({ type: 'TOGGLE_CELL', x, y });
-  }, [dispatch]);
+    const cell = state.grid[y] && state.grid[y][x];
+    if (cell === 1) {
+      dispatch({ type: 'CYCLE_CELL_STYLE', x, y });
+    } else {
+      dispatch({ type: 'SET_CELL', x, y, value: 1 });
+    }
+  }, [dispatch, state.grid]);
 
   const handleCellSet = useCallback((x, y, value) => {
     dispatch({ type: 'SET_CELL', x, y, value });
@@ -436,6 +455,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             onClearMap={() => {
               try { dispatch({ type: 'CLEAR_GRID' }); } catch (e) {}
               try { if (typeof externalClearTile === 'function') externalClearTile(); } catch (e) {}
+              try { localStorage.removeItem('roomMarkers'); try { window.dispatchEvent(new CustomEvent('roomMarkersUpdated')); } catch (e) {} } catch (e) {}
             }}
           />
         </div>
@@ -462,6 +482,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             doors={state.doors}
             walls={state.walls || []}
             roomMarkers={roomMarkers}
+            cellStyles={state.cellStyles || {}}
             showMarkers={showMarkers}
             cellSize={cellSize}
             shouldRotate={shouldRotate}

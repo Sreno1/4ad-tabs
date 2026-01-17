@@ -13,12 +13,22 @@ export function dungeonReducer(state, action) {
   switch (action.type) {
     // ========== Dungeon Grid ==========
     case A.TOGGLE_CELL: {
-      const newGrid = state.grid.map((row, y) =>
-        row.map((cell, x) =>
-          (x === action.x && y === action.y) ? (cell + 1) % 3 : cell
-        )
-      );
-      return { ...state, grid: newGrid };
+      // New behavior: clicking toggles the logical cell between 0 (empty) and 1 (room full).
+      // Visual variants (diag1, diag2, round1, round2) are stored in cellStyles and cycled
+      // independently. We implement a cycle order for styles when toggling a filled cell.
+      const key = `${action.x},${action.y}`;
+      const current = (state.grid[action.y] && state.grid[action.y][action.x]) || 0;
+      const nextGrid = state.grid.map((row, y) => row.map((cell, x) => (x === action.x && y === action.y) ? (current === 0 ? 1 : 0) : cell));
+      // Update styles: if we just turned a cell on (0 -> 1), set style to 'full' if none exists.
+      const styles = { ...(state.cellStyles || {}) };
+      if (current === 0) {
+        // turning on
+        if (!styles[key]) styles[key] = 'full';
+      } else {
+        // turning off: remove any style for this cell
+        if (styles[key]) delete styles[key];
+      }
+      return { ...state, grid: nextGrid, cellStyles: styles };
     }
 
     case A.SET_CELL: {
@@ -27,7 +37,15 @@ export function dungeonReducer(state, action) {
           (x === action.x && y === action.y) ? action.value : cell
         )
       );
-      return { ...state, grid: newGrid };
+      // If setting to empty, clear any style for this cell. If setting to 1 and no style exists, set 'full'.
+      const key = `${action.x},${action.y}`;
+      const styles = { ...(state.cellStyles || {}) };
+      if (action.value === 0) {
+        if (styles[key]) delete styles[key];
+      } else if (action.value === 1) {
+        if (!styles[key]) styles[key] = 'full';
+      }
+      return { ...state, grid: newGrid, cellStyles: styles };
     }
 
     case A.CLEAR_GRID:
@@ -185,6 +203,18 @@ export function dungeonReducer(state, action) {
 
     case A.SET_WALLS: {
       return { ...state, walls: action.walls || [] };
+    }
+
+    case A.CYCLE_CELL_STYLE: {
+      const key = `${action.x},${action.y}`;
+      const styles = { ...(state.cellStyles || {}) };
+  // New order: full -> diag1 -> diag2 -> diag3 -> diag4 -> round1 -> round2 -> round3 -> round4
+  const order = ['full', 'diag1', 'diag2', 'diag3', 'diag4', 'round1', 'round2', 'round3', 'round4'];
+      const current = styles[key] || 'full';
+      const idx = Math.max(0, order.indexOf(current));
+      const next = order[(idx + 1) % order.length];
+      styles[key] = next;
+      return { ...state, cellStyles: styles };
     }
 
     case A.SET_DOORS: {

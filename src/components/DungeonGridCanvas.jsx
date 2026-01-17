@@ -15,6 +15,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   roomMarkers,
   showMarkers,
   cellSize,
+  cellStyles = {},
   shouldRotate,
   selectedTile = null,
   onCellClick,
@@ -37,6 +38,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   contextMenuOpen = false,
   onContextDismiss = null,
 }) {
+
   const canvasRef = useRef(null);
   const pressedKeysRef = useRef(new Set()); // Track currently pressed arrow keys for continuous movement
   const gameLoopRef = useRef(null); // Track the animation frame ID for pawn movement
@@ -54,21 +56,59 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const draggedCellsRef = useRef(new Set()); // Track which cells we've already filled during this drag
   const rectStartRef = useRef(null); // {x,y} when cmd/meta rectangle drag starts
   const [rectPreview, setRectPreview] = useState(null); // {x1,y1,x2,y2,value}
+  const hasMovedRef = useRef(false);
+  const pendingStartRef = useRef(null);
 
   // When placing a template from the Room Designer, we keep a local, transformable
   // copy so the player can rotate/mirror it with keyboard shortcuts (Q/E/W).
   const [transformedPlacementTemplate, setTransformedPlacementTemplate] = useState(null);
+  // Pan & zoom state (for smooth panning and zooming like a photo editor)
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const isTKeyPanningRef = useRef(false);
+  const isPointerOverRef = useRef(false);
+  const _prevOverscrollRef = useRef({ html: '', body: '' });
+  const _prevTouchActionRef = useRef({ html: '', body: '' });
+
+  const handlePointerEnterCanvas = useCallback(() => {
+    isPointerOverRef.current = true;
+    try {
+      const html = document.documentElement;
+      const body = document.body;
+      _prevOverscrollRef.current.html = html.style.overscrollBehavior || '';
+      _prevOverscrollRef.current.body = body.style.overscrollBehavior || '';
+      _prevTouchActionRef.current.html = html.style.touchAction || '';
+      _prevTouchActionRef.current.body = body.style.touchAction || '';
+      // disable overscroll/navigation and touch actions while over canvas
+      html.style.overscrollBehavior = 'none';
+      body.style.overscrollBehavior = 'none';
+      html.style.touchAction = 'none';
+      body.style.touchAction = 'none';
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  const handlePointerLeaveCanvas = useCallback(() => {
+    isPointerOverRef.current = false;
+    try {
+      const html = document.documentElement;
+      const body = document.body;
+      html.style.overscrollBehavior = _prevOverscrollRef.current.html || '';
+      body.style.overscrollBehavior = _prevOverscrollRef.current.body || '';
+      html.style.touchAction = _prevTouchActionRef.current.html || '';
+      body.style.touchAction = _prevTouchActionRef.current.body || '';
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   const cols = grid[0]?.length || 0;
   const rows = grid.length;
 
-  // If the party composition changes such that no alive member carries an equipped
-  // light source, cancel the light animation and force an immediate redraw so the
-  // glow disappears without requiring the user to alt-tab. (Effect is added later
-  // after drawGrid is available; see below.)
-
   // Party members array (from parent) - used to detect if an alive member still carries a light
-  // ...existing code...
 
   // Initialize currentStateRef on first render
   if (!currentStateRef.current) {
@@ -123,15 +163,16 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d', { alpha: false });
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.fillStyle = '#0f172a'; // slate-900
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  const ctx = canvas.getContext('2d', { alpha: false });
+  if (!ctx) return;
+  // Reset transform and clear in screen space, then apply pan/zoom transform
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+  // apply scale then pan so drawing uses logical coordinates
+  ctx.setTransform(scale, 0, 0, scale, pan.x, pan.y);
 
     // Draw cells
-    if (shouldRotate) {
+  if (shouldRotate) {
       // Rotate the drawing so the logical grid is displayed rotated 90deg clockwise
       ctx.save();
       ctx.translate(canvasWidth, 0);
@@ -140,26 +181,117 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     // Collect wall edges to draw after the cell loop so they are rendered on top
     const wallEdges = [];
     for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        const cell = grid[y][x];
-        const px = x * cellSize;
-        const py = y * cellSize;
+        for (let x = 0; x < cols; x++) {
+    // compute convenient per-cell values
+    const px = x * cellSize;
+    const py = y * cellSize;
+    const cell = (grid[y] && grid[y][x]) || 0;
+    const isHovered = hoveredCell?.x === x && hoveredCell?.y === y;
 
-        // Cell color
-        if (cell === 1) {
-          // Room cells: render as true black
-          ctx.fillStyle = '#000000';
+  // Cell base/background (lighter than before to increase contrast with black fills)
+  ctx.fillStyle = '#0b2b56'; // lighter navy-blue for improved contrast
+  ctx.fillRect(px, py, cellSize, cellSize);
+  // If logical cell is a room (1), draw fills according to cellStyles
+  if (cell === 1) {
+          const key = `${x},${y}`;
+          const style = (cellStyles && cellStyles[key]) || 'full';
+          const fillColor = isHovered ? '#111111' : '#000000';
+          ctx.fillStyle = fillColor;
+          if (style === 'full') {
+            ctx.fillRect(px, py, cellSize, cellSize);
+          } else if (style === 'diag1') {
+            // triangle top-left -> bottom-right
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px + cellSize, py);
+            ctx.lineTo(px, py + cellSize);
+            ctx.closePath();
+            ctx.fill();
+          } else if (style === 'diag2') {
+            // triangle bottom-right -> top-left
+            ctx.beginPath();
+            ctx.moveTo(px + cellSize, py + cellSize);
+            ctx.lineTo(px + cellSize, py);
+            ctx.lineTo(px, py + cellSize);
+            ctx.closePath();
+            ctx.fill();
+          } else if (style === 'diag3') {
+            // triangle top-right -> bottom-left
+            ctx.beginPath();
+            ctx.moveTo(px + cellSize, py);
+            ctx.lineTo(px + cellSize, py + cellSize);
+            ctx.lineTo(px, py);
+            ctx.closePath();
+            ctx.fill();
+          } else if (style === 'diag4') {
+            // triangle bottom-left -> top-right
+            ctx.beginPath();
+            ctx.moveTo(px, py + cellSize);
+            ctx.lineTo(px, py);
+            ctx.lineTo(px + cellSize, py + cellSize);
+            ctx.closePath();
+            ctx.fill();
+          } else if (style === 'round1') {
+            // simpler rounded corner: draw a quarter-circle anchored at the top-left corner
+            // Clip to the cell rect to guarantee containment and then draw a circle
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(px, py, cellSize, cellSize);
+            ctx.clip();
+            ctx.beginPath();
+            // center at top-left corner; a full circle clipped to the rect leaves a quarter-circle
+            ctx.arc(px, py, cellSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          } else if (style === 'round2') {
+            // complementary rounded corner: draw a quarter-circle anchored at the bottom-right corner
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(px, py, cellSize, cellSize);
+            ctx.clip();
+            ctx.beginPath();
+            // center at bottom-right corner
+            ctx.arc(px + cellSize, py + cellSize, cellSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          } else if (style === 'round3') {
+            // rounded corner anchored at top-right corner
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(px, py, cellSize, cellSize);
+            ctx.clip();
+            ctx.beginPath();
+            // center at top-right corner
+            ctx.arc(px + cellSize, py, cellSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          } else if (style === 'round4') {
+            // rounded corner anchored at bottom-left corner
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(px, py, cellSize, cellSize);
+            ctx.clip();
+            ctx.beginPath();
+            // center at bottom-left corner
+            ctx.arc(px, py + cellSize, cellSize, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          } else {
+            ctx.fillRect(px, py, cellSize, cellSize);
+          }
         } else if (cell === 2) {
-          ctx.fillStyle = '#1d4ed8'; // blue-700
-        } else {
-          ctx.fillStyle = '#0f172a'; // slate-900
-        }
-        ctx.fillRect(px, py, cellSize, cellSize);
-
-        // Hover highlight
-        if (hoveredCell?.x === x && hoveredCell?.y === y) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+          ctx.fillStyle = '#1d4ed8'; // corridor blue
           ctx.fillRect(px, py, cellSize, cellSize);
+        }
+
+        // Hover highlight - draw only a faint outline so cycling visuals remain visible
+        if (isHovered) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.16)';
+          ctx.lineWidth = Math.max(1, Math.floor(cellSize * 0.06));
+          // inset the stroke slightly so it doesn't clip on the grid lines
+          ctx.strokeRect(px + 1, py + 1, cellSize - 2, cellSize - 2);
+          ctx.restore();
         }
 
         // Collect wall edges for later drawing (avoid being overdrawn by subsequent cells)
@@ -246,11 +378,39 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
   // Draw walls (collected earlier) on top of cells and doors
     if (wallEdges.length > 0) {
-      ctx.fillStyle = '#ffffff';
       const wt = Math.max(1, Math.floor(cellSize * 0.08));
       wallEdges.forEach(w => {
         const px = w.x * cellSize;
         const py = w.y * cellSize;
+        // Decide color by wall source tag (if present) so designer-placed walls
+        // keep the template's room/corridor color. Fallback to inspecting the
+        // cell value at the wall's origin, then the neighbor across the edge.
+        let edgeColor = '#ffffff';
+        try {
+          // If wall object contains srcTag (set when merging template walls), use it
+          if (w.srcTag && typeof w.srcTag === 'string') {
+            const t = w.srcTag.toLowerCase();
+            if (t === 'room') edgeColor = '#B45309';
+            else if (t === 'corridor') edgeColor = '#1D4ED8';
+          } else {
+            const originVal = (grid[w.y] && grid[w.y][w.x]) || 0;
+            let lookup = originVal;
+            if (!lookup) {
+              // inspect neighbor across the edge
+              if (w.edge === 'N') lookup = (grid[w.y - 1] && grid[w.y - 1][w.x]) || 0;
+              else if (w.edge === 'S') lookup = (grid[w.y + 1] && grid[w.y + 1][w.x]) || 0;
+              else if (w.edge === 'E') lookup = (grid[w.y] && grid[w.y][w.x + 1]) || 0;
+              else if (w.edge === 'W') lookup = (grid[w.y] && grid[w.y][w.x - 1]) || 0;
+            }
+            // Map cell types to colors: room -> amber, corridor -> blue
+            if (lookup === 1) edgeColor = '#B45309'; // room (amber-ish)
+            else if (lookup === 2) edgeColor = '#1D4ED8'; // corridor (blue)
+          }
+        } catch (e) {
+          edgeColor = '#ffffff';
+        }
+
+        ctx.fillStyle = edgeColor;
         if (w.edge === 'N') {
           ctx.fillRect(px, py - Math.floor(wt/2), cellSize, wt);
         } else if (w.edge === 'S') {
@@ -428,7 +588,25 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
       // Draw wall edges (solid) on top of inner edges
       if (tplWallEdges.length > 0) {
-        ctx.fillStyle = '#ffffff';
+        // Determine template type (Room vs Corridor) by inspecting tpl cells.
+        // Use the same palette as the placement cell fills so walls match the tag color.
+        try {
+          let countRoom = 0; let countCorridor = 0;
+          for (let ry = 0; ry < tpl.length; ry++) {
+            for (let rx = 0; rx < tpl[ry].length; rx++) {
+              const v = tpl[ry][rx];
+              if (v === 1) countRoom++;
+              if (v === 2) countCorridor++;
+            }
+          }
+          // Default colors follow the placement cell fill mapping:
+          // Room (1) -> amber-ish '#B45309' (rgba(180,83,9))
+          // Corridor (2) -> blue '#1D4ED8' (rgba(29,78,216))
+          const wallColor = countRoom >= countCorridor ? '#B45309' : '#1D4ED8';
+          ctx.fillStyle = wallColor;
+        } catch (e) {
+          ctx.fillStyle = '#ffffff';
+        }
         const wt = Math.max(1, Math.floor(cellSize * 0.08));
         tplWallEdges.forEach(w => {
           const px = w.x * cellSize;
@@ -840,7 +1018,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       ctx.fillText('P', screenCx, screenCy + 1);
     }
 
-  }, [grid, doors, walls, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected, shouldRotate, canvasWidth, partyHasLight, transformedPlacementTemplate, placementTemplate, autoPlacedRoom]);
+  }, [grid, doors, walls, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected, shouldRotate, canvasWidth, partyHasLight, transformedPlacementTemplate, placementTemplate, autoPlacedRoom, cellStyles, scale, pan.x, pan.y]);
 
   // Keep a stable ref to the latest drawGrid implementation so other effects
   // can call it without referencing the function before it's initialized.
@@ -913,17 +1091,36 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
+    // Update last mouse pos for T-key panning
+    const screenX = e.clientX;
+    const screenY = e.clientY;
+    if (isTKeyPanningRef.current) {
+      const last = lastMousePosRef.current;
+      if (last) {
+        const dx = screenX - last.x;
+        const dy = screenY - last.y;
+        // apply pan delta directly (screen-space)
+        setPan(p => ({ x: p.x + dx, y: p.y + dy }));
+      }
+      lastMousePosRef.current = { x: screenX, y: screenY };
+      // while panning with T, don't process hover interactions
+      return;
+    }
+
     // Map mouse coordinates to logical canvas coordinates.
     // When drawing rotated (we set canvas width/height swapped and applied
     // ctx.translate(canvasWidth,0); ctx.rotate(+90deg)), the forward mapping is:
     // sx = -ly + canvasWidth, sy = lx  (where lx,ly are logical pixel coords)
     // Inverse mapping therefore is:
     // lx = sy, ly = canvasWidth - sx
-    let logicalX = mouseX;
-    let logicalY = mouseY;
+    // account for pan/zoom transform: convert screen pixel -> transformed coords
+    let logicalX = (mouseX - pan.x) / scale;
+    let logicalY = (mouseY - pan.y) / scale;
     if (shouldRotate) {
-      logicalX = mouseY;
-      logicalY = canvasWidth - mouseX;
+      const lx = logicalX;
+      const ly = logicalY;
+      logicalX = ly;
+      logicalY = canvasWidth - lx;
     }
 
     const x = Math.floor(logicalX / cellSize);
@@ -940,14 +1137,28 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         }
 
   // If we're dragging to paint, fill this cell (disabled while placing a template)
-  if (!(placementTemplate || autoPlacedRoom) && isDragging && dragFillValue !== null && onCellSet && !rectStartRef.current) {
-          const cellKey = `${x},${y}`;
-          // Only fill if we haven't already filled this cell in this drag session
-          if (!draggedCellsRef.current.has(cellKey)) {
-            draggedCellsRef.current.add(cellKey);
-            onCellSet(x, y, dragFillValue);
+    if (!(placementTemplate || autoPlacedRoom) && isDragging && dragFillValue !== null && onCellSet && !rectStartRef.current) {
+      const cellKey = `${x},${y}`;
+      // If this is the first movement in this drag session, apply the pending start cell first
+      if (pendingStartRef.current && !hasMovedRef.current) {
+        const ps = pendingStartRef.current;
+        // Only treat as moved if we've entered a different logical cell; this
+        // prevents tiny pointer jitter inside the same cell from starting a paint.
+        if (x !== ps.x || y !== ps.y) {
+          const pKey = `${ps.x},${ps.y}`;
+          if (!draggedCellsRef.current.has(pKey)) {
+            draggedCellsRef.current.add(pKey);
+            try { onCellSet(ps.x, ps.y, dragFillValue); } catch (e) {}
           }
+          hasMovedRef.current = true;
         }
+      }
+      // Only fill if we haven't already filled this cell in this drag session
+      if (!draggedCellsRef.current.has(cellKey)) {
+        draggedCellsRef.current.add(cellKey);
+        try { onCellSet(x, y, dragFillValue); } catch (e) {}
+      }
+    }
 
         // If we're performing a meta/cmd-rectangle drag, update preview
         if (rectStartRef.current) {
@@ -1001,6 +1212,53 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (hoveredDoor) setHoveredDoor(null);
     }
   }, [cellSize, cols, rows, grid, hoveredCell, hoveredDoor, showDoorMode, isDragging, dragFillValue, onCellSet, isPawnDragging, onPartyMove]);
+
+  // Wheel handler: zoom with Ctrl/Cmd or plain wheel to pan vertically (Shift for horizontal)
+  const handleWheel = useCallback((e) => {
+  // Only handle zoom (ctrl/meta or pinch events). Ignore plain wheel panning.
+  if (!(e.ctrlKey || e.metaKey)) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    if (e.ctrlKey || e.metaKey) {
+      // Zoom around mouse position
+      const delta = -e.deltaY * 0.0015;
+      const newScale = Math.min(3, Math.max(0.5, scale * (1 + delta)));
+      // Adjust pan so zoom centers on mouse
+      const wx = (mouseX - pan.x) / scale;
+      const wy = (mouseY - pan.y) / scale;
+      const nx = mouseX - wx * newScale;
+      const ny = mouseY - wy * newScale;
+      setScale(newScale);
+      setPan({ x: nx, y: ny });
+    } else {
+      // Pan using wheel: vertical unless Shift pressed -> horizontal
+      const panDelta = e.deltaY;
+      if (e.shiftKey) setPan(p => ({ x: p.x - panDelta, y: p.y }));
+      else setPan(p => ({ x: p.x, y: p.y - panDelta }));
+    }
+  }, [scale, pan.x, pan.y]);
+
+  // Track last mouse position to support T-key panning without mouse button
+  const lastMousePosRef = useRef(null);
+
+  const handleMouseDownPan = useCallback((e) => {
+    // start panning on middle mouse button
+    if (e.button !== 1) return;
+    isPanningRef.current = true;
+    panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+    // capture pointer to keep receiving events
+    try { e.target && e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); } catch (e) {}
+  }, [pan.x, pan.y]);
+
+  const handleMouseUpPan = useCallback((e) => {
+    if (e.button !== 1) return;
+    isPanningRef.current = false;
+    try { e.target && e.target.releasePointerCapture && e.target.releasePointerCapture(e.pointerId); } catch (e) {}
+  }, []);
   
 
   const handleMouseLeave = useCallback(() => {
@@ -1040,6 +1298,13 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
       return;
     }
+    // If 'T' panning mode is active (hold T) and left button pressed, start panning
+    if ((e.key === 't' || e.key === 'T' || isTKeyPanningRef.current) && e.button === 0) {
+      // Start T-key panning
+      isPanningRef.current = true;
+      panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+      return;
+    }
     // Don't start drag on other non-left buttons
     if (e.button !== 0) return;
   if (!hoveredCell) return;
@@ -1068,33 +1333,30 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       return;
     }
 
-    // If Meta/Cmd or Ctrl is held, start rectangle-fill mode
+  // If Meta/Cmd or Ctrl is held, start rectangle-fill mode
     if (e.metaKey || e.ctrlKey) {
-      const nextValue = cell === 0 ? 1 : cell === 1 ? 2 : 0;
+      // Rectangle fill: toggle between empty and room (do not create corridor via click)
+      const nextValue = cell === 0 ? 1 : 0;
       rectStartRef.current = { x: hoveredCell.x, y: hoveredCell.y, value: nextValue };
       setRectPreview({ x1: hoveredCell.x, y1: hoveredCell.y, x2: hoveredCell.x, y2: hoveredCell.y, value: nextValue });
       // Set dragging state so visual cursor updates behave consistently
       setIsDragging(true);
-      return;
+  // Track pending start cell for possible rectangle/drag
+  pendingStartRef.current = { x: hoveredCell.x, y: hoveredCell.y };
+  hasMovedRef.current = false;
+  return;
     }
 
-    // Start normal dragging - determine what value to fill
-    // Cycle: 0 -> 1 -> 2 -> 0
-    const nextValue = cell === 0 ? 1 : cell === 1 ? 2 : 0;
-    setDragFillValue(nextValue);
-    setIsDragging(true);
-    draggedCellsRef.current.clear();
-
-    // Add the starting cell
-    const cellKey = `${hoveredCell.x},${hoveredCell.y}`;
-    draggedCellsRef.current.add(cellKey);
-
-    // Use onCellSet if available for consistent drag behavior, otherwise toggle
-    if (onCellSet) {
-      onCellSet(hoveredCell.x, hoveredCell.y, nextValue);
-    } else {
-      onCellClick(hoveredCell.x, hoveredCell.y);
-    }
+  // Start normal dragging - determine what value to fill
+  // New behavior: do not cycle to corridor via dragging; toggle between empty and room
+  const nextValue = cell === 0 ? 1 : 0;
+  setDragFillValue(nextValue);
+  setIsDragging(true);
+  // Prepare pending start cell for later application when movement starts
+  pendingStartRef.current = { x: hoveredCell.x, y: hoveredCell.y };
+  draggedCellsRef.current.clear();
+  hasMovedRef.current = false;
+  // Do not immediately call onCellSet/onCellClick here; handleClick will call onCellClick for single clicks.
   }, [hoveredCell, hoveredDoor, grid, onCellClick, onCellSet, partyPos, onPartyMove, onPartySelect]);
 
   const handleMouseUp = useCallback(() => {
@@ -1115,8 +1377,15 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     // Clear rectangle state
     rectStartRef.current = null;
     setRectPreview(null);
-    // Don't clear draggedCellsRef yet - we need it for the click check
-    // It will be cleared in the next mousedown or mouseup via ref reset
+    // If we never moved (no paint), treat this as a single click on the pending start cell
+    if (!hasMovedRef.current && pendingStartRef.current && onCellClick) {
+      const ps = pendingStartRef.current;
+      try { onCellClick(ps.x, ps.y); } catch (e) {}
+    }
+    // Clear pending and dragged cell refs
+    pendingStartRef.current = null;
+    draggedCellsRef.current.clear();
+    hasMovedRef.current = false;
     try { if (onEditComplete) onEditComplete(); } catch (e) { /* ignore */ }
   }, [rectPreview, onCellSet, cols, rows, onEditComplete]);
 
@@ -1404,16 +1673,23 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
   // Ensure placement key handler is registered before the grid handler so it
   // can take precedence (preventDefault) when placing templates.
-  window.addEventListener('keydown', handlePlacementKeyDown);
+    window.addEventListener('keydown', handlePlacementKeyDown);
   window.addEventListener('keydown', handleGridKeyDown);
   window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keydown', handleArrowDown);
+    // Track 'T' key for panning mode
+  const handleTDown = (ev) => { if (ev.key === 't' || ev.key === 'T') { isTKeyPanningRef.current = true; } };
+  const handleTUp = (ev) => { if (ev.key === 't' || ev.key === 'T') { isTKeyPanningRef.current = false; lastMousePosRef.current = null; } };
+  window.addEventListener('keydown', handleTDown);
+  window.addEventListener('keyup', handleTUp);
     window.addEventListener('keyup', handleArrowUp);
     return () => {
       window.removeEventListener('keydown', handleGridKeyDown);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keydown', handlePlacementKeyDown);
       window.removeEventListener('keydown', handleArrowDown);
+  window.removeEventListener('keydown', handleTDown);
+  window.removeEventListener('keyup', handleTUp);
       window.removeEventListener('keyup', handleArrowUp);
       stopGameLoop();
       pressedKeysRef.current.clear();
@@ -1441,12 +1717,62 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     };
   }, [handleMouseUp]);
 
+  // Global wheel listener (capture) to prevent browser back/forward navigation
+  // when the pointer is over the canvas (e.g., macOS two-finger swipe).
+  useEffect(() => {
+    const onWheelCapture = (ev) => {
+      if (!isPointerOverRef.current) return;
+      // Prevent browser navigation and default scroll when inside canvas
+      ev.preventDefault();
+      try { ev.stopImmediatePropagation(); } catch (e) {}
+      // Forward to our app handler so in-app pan/zoom still works
+      try { handleWheel(ev); } catch (e) {}
+    };
+    window.addEventListener('wheel', onWheelCapture, { passive: false, capture: true });
+    // Attach touch handlers and gesture preventers on the canvas
+    const canvas = canvasRef.current;
+    let onTouchStart, onTouchMove, prevent;
+    if (canvas) {
+      onTouchStart = (ev) => {
+        if (!isPointerOverRef.current) return;
+        if ((ev.touches && ev.touches.length > 1) || (ev.targetTouches && ev.targetTouches.length > 1)) {
+          ev.preventDefault();
+        }
+      };
+      onTouchMove = (ev) => {
+        if (!isPointerOverRef.current) return;
+        if ((ev.touches && ev.touches.length > 1) || (ev.targetTouches && ev.targetTouches.length > 1)) {
+          ev.preventDefault();
+        }
+      };
+      canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+      prevent = (ev) => { ev.preventDefault(); };
+      canvas.addEventListener('gesturestart', prevent, { passive: false });
+      canvas.addEventListener('gesturechange', prevent, { passive: false });
+      canvas.addEventListener('gestureend', prevent, { passive: false });
+    }
+    return () => {
+      window.removeEventListener('wheel', onWheelCapture, { capture: true });
+      if (canvas) {
+        try { canvas.removeEventListener('touchstart', onTouchStart); } catch (e) {}
+        try { canvas.removeEventListener('touchmove', onTouchMove); } catch (e) {}
+        try { canvas.removeEventListener('gesturestart', prevent); } catch (e) {}
+        try { canvas.removeEventListener('gesturechange', prevent); } catch (e) {}
+        try { canvas.removeEventListener('gestureend', prevent); } catch (e) {}
+      }
+    };
+  }, [handleWheel]);
+
   return (
     <div
       style={{
-        position: 'relative',
-        width: 'fit-content',
-        height: 'fit-content',
+  position: 'relative',
+  width: 'fit-content',
+  height: 'fit-content',
+  // Prevent touch/gesture default behaviors and scroll chaining when interacting with the canvas
+  touchAction: 'none',
+  overscrollBehavior: 'contain',
       }}
     >
       <canvas
@@ -1454,12 +1780,26 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         width={canvasWidth}
         height={canvasHeight}
   tabIndex={0}
-        onMouseDown={handleMouseDown}
+  onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
+        onPointerDown={handleMouseDownPan}
+        onPointerUp={handleMouseUpPan}
+        onPointerMove={(e) => {
+          // if middle-button panning, update pan
+          if (isPanningRef.current) {
+            const nx = e.clientX - panStartRef.current.x;
+            const ny = e.clientY - panStartRef.current.y;
+            setPan({ x: nx, y: ny });
+            return;
+          }
+        }}
+  onMouseLeave={(e) => { handleMouseLeave(e); handlePointerLeaveCanvas(); }}
+  onPointerEnter={() => { handlePointerEnterCanvas(); }}
+  onPointerLeave={() => { handlePointerLeaveCanvas(); }}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
+        onWheel={handleWheel}
         style={{
           imageRendering: 'pixelated',
           cursor: isDragging ? 'grabbing' : hoveredDoor ? 'crosshair' : 'pointer',

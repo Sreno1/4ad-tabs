@@ -37,6 +37,7 @@ export const SET_MARCHING_ORDER = 'SET_MARCHING_ORDER';
 // Dungeon grid
 export const TOGGLE_CELL = 'TOGGLE_CELL';
 export const SET_CELL = 'SET_CELL'; // Set cell to specific value (0, 1, or 2)
+export const CYCLE_CELL_STYLE = 'CYCLE_CELL_STYLE'; // Cycle visual style for a filled cell
 export const TOGGLE_DOOR = 'TOGGLE_DOOR';
 export const CLEAR_GRID = 'CLEAR_GRID';
 export const SET_WALLS = 'SET_WALLS';

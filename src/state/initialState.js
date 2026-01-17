@@ -15,6 +15,8 @@ export const createAdventureState = () => ({
   grid: Array(28).fill(null).map(() => Array(20).fill(0)), // 0=empty, 1=room, 2=corridor
   doors: [], // {x, y, edge: 'N'|'S'|'E'|'W', type: 'normal'|'stuck'|'locked'|'trapped'}
   walls: [], // {x, y, edge: 'N'|'S'|'E'|'W'}
+  // Per-cell visual styles (keyed by "x,y"): 'full'|'diag1'|'diag2'|'diag3'|'diag4'|'round1'|'round2'|'round3'|'round4'
+  cellStyles: {},
   
   // Room tracking
   roomsExplored: 0,
@@ -171,6 +173,7 @@ export const initialState = {
   // Grid state (keeping at top level for backward compat)
   grid: Array(28).fill(null).map(() => Array(20).fill(0)),
   doors: [], // {x, y, edge, doorType, opened}
+  cellStyles: {},
   
   // Phase 3: Traps
   traps: [], // {id, x, y, type, detected, disarmed, triggered}

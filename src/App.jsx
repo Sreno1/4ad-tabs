@@ -36,7 +36,7 @@ import { useCombatFlow } from "./hooks/useCombatFlow.js";
 import { useRoomEvents } from "./hooks/useRoomEvents.js";
 import { rollWanderingMonster } from "./utils/gameActions/index.js";
 import { addMonster, logMessage } from './state/actionCreators.js';
-import { TILE_SHAPE_TABLE } from './data/rooms.js';
+import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE } from './data/rooms.js';
 import DungeonHeaderButtons from './components/DungeonHeaderButtons.jsx';
 
 // Constants
@@ -509,15 +509,89 @@ export default function App() {
                       if (templateWalls.length > 0) {
                         const existingWalls = state.walls || [];
                         const union = [...existingWalls];
+                        // Determine template tag (prefer saved tag from library match; fall back to lastTile.isCorridor)
+                        const templateTag = (roomEvents.autoPlacedRoom && roomEvents.autoPlacedRoom.tag) ? roomEvents.autoPlacedRoom.tag : (lastTile && lastTile.isCorridor ? 'Corridor' : 'Room');
                         templateWalls.forEach(w => {
                           const wx = startX + (w.x || 0);
                           const wy = startY + (w.y || 0);
                           if (wy >= 0 && wy < state.grid.length && wx >= 0 && wx < (state.grid[0]?.length||0)) {
-                            if (!union.some(u => u.x === wx && u.y === wy && u.edge === w.edge)) union.push({ x: wx, y: wy, edge: w.edge });
+                            if (!union.some(u => u.x === wx && u.y === wy && u.edge === w.edge)) union.push({ x: wx, y: wy, edge: w.edge, srcTag: templateTag });
                           }
                         });
                         dispatch({ type: 'SET_WALLS', walls: union });
                       }
+                      // If this placement originated from an auto-placed library room and
+                      // we have a recorded 2d6 contents roll for the last generated tile,
+                      // persist a marker/note in localStorage so the placed tile shows
+                      // the 2d6 result on hover. Emit an event so the Dungeon component
+                      // can reload markers immediately.
+                      try {
+                        const autoPlaced = roomEvents.autoPlacedRoom;
+                        const lastTile = roomEvents.tileResult;
+                        if (autoPlaced && lastTile && typeof lastTile.contentsRoll === 'number') {
+                          const tplGrid = templateGrid;
+                          const tplH = tplGrid.length;
+                          const tplW = (tplGrid[0] || []).length || 0;
+                          const centerRX = Math.floor(tplW / 2);
+                          const centerRY = Math.floor(tplH / 2);
+                          const markX = startX + centerRX;
+                          const markY = startY + centerRY;
+                          if (markY >= 0 && markY < state.grid.length && markX >= 0 && markX < (state.grid[0]?.length||0)) {
+                            const key = `${markX},${markY}`;
+                            // Build tooltip from the exact log lines produced during tile generation
+                            let tooltipText = `2d6=${lastTile.contentsRoll}`;
+                            try {
+                              // Determine a cutoff timestamp from recent roomEvents so we only capture
+                              // log entries produced during the last generation (D66/CONTENTS events).
+                              const evts = roomEvents.roomEvents || [];
+                              let cutoff = null;
+                              if (evts && evts.length > 0) {
+                                // Use the earliest timestamp among the last few relevant events
+                                const tsList = evts.filter(e => ['D66_ROLL', 'CONTENTS_ROLL', 'LIBRARY_MATCH'].includes(e.type)).map(e => e.timestamp).filter(Boolean);
+                                if (tsList.length > 0) cutoff = Math.min(...tsList);
+                              }
+                              // If we have a cutoff, collect all log entries with timestamp >= cutoff
+                              const lines = [];
+                              try {
+                                if (cutoff) {
+                                  (state.log || []).forEach(l => {
+                                    try {
+                                      const lt = l.timestamp ? (typeof l.timestamp === 'string' ? (new Date(l.timestamp)).getTime() : l.timestamp) : null;
+                                      if (lt && lt >= cutoff) lines.push(l.message);
+                                    } catch (e) {}
+                                  });
+                                }
+                              } catch (e) {}
+                              // Fallback: if no lines collected, include the most recent 3 log entries
+                              if (lines.length === 0) {
+                                const recent = (state.log || []).slice(0, 3).map(l => l.message).reverse();
+                                tooltipText = recent.join(' \n ');
+                              } else {
+                                tooltipText = lines.join(' \n ');
+                              }
+                            } catch (e) { /* ignore */ }
+                            // Append whether this tile was a Room or Corridor for quick glance
+                            try {
+                              const typeLabel = lastTile.isCorridor ? 'Corridor' : 'Room';
+                              tooltipText = `${tooltipText} (${typeLabel})`;
+                            } catch (e) { /* ignore */ }
+                            try {
+                              const raw = localStorage.getItem('roomMarkers');
+                              const parsed = raw ? JSON.parse(raw) : {};
+                              const existing = parsed[key];
+                              if (existing) {
+                                parsed[key] = { type: existing.type, label: existing.label, tooltip: existing.tooltip && existing.tooltip.length > 0 ? `${existing.tooltip} — ${tooltipText}` : tooltipText };
+                              } else {
+                                parsed[key] = { type: 'note', label: 'Note', tooltip: tooltipText };
+                              }
+                              localStorage.setItem('roomMarkers', JSON.stringify(parsed));
+                              // let Dungeon component know to reload markers
+                              try { window.dispatchEvent(new CustomEvent('roomMarkersUpdated')); } catch (e) {}
+                            } catch (e) { /* ignore storage errors */ }
+                          }
+                        }
+                      } catch (e) { /* ignore */ }
+
                       setPlacementTemplate(null);
                       roomEvents.setAutoPlacedRoom(null);
                     }}
@@ -577,7 +651,11 @@ export default function App() {
                             }
                           } catch (e) { console.error(e); }
                         }}
-                        onClearMap={() => { try { dispatch({ type: 'CLEAR_GRID' }); } catch (e) {} try { roomEvents.clearTile && roomEvents.clearTile(); } catch (e) {} }}
+                        onClearMap={() => {
+                          try { dispatch({ type: 'CLEAR_GRID' }); } catch (e) {}
+                          try { roomEvents.clearTile && roomEvents.clearTile(); } catch (e) {}
+                          try { localStorage.removeItem('roomMarkers'); try { window.dispatchEvent(new CustomEvent('roomMarkersUpdated')); } catch (e) {} } catch (e) {}
+                        }}
                       />
                     </div>
                     <div className="flex-1 overflow-hidden min-h-0">
