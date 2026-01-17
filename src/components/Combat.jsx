@@ -51,6 +51,7 @@ import {
   deleteMonster
 } from '../state/actionCreators.js';
 import { canHeroMeleeAttack } from '../utils/combatLocationHelpers.js';
+import SpellTargetModal from './SpellTargetModal.jsx';
 
 export default function Combat({ state, dispatch, selectedHero, setSelectedHero, handleRollReaction }) {
   // Per-monster levels are used. Global foeLevel removed in favor of each monster.level.
@@ -58,6 +59,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   const [pendingSave, setPendingSave] = useState(null); // { heroIdx, damageSource }
   const [showSpells, setShowSpells] = useState(null); // heroIdx or null
   const [showAbilities, setShowAbilities] = useState(null); // heroIdx or null
+  const [spellTargeting, setSpellTargeting] = useState(null); // { casterIdx, spellKey, spell }
   const [combatInitiative, setCombatInitiative] = useState(null); // Initiative info for current combat
   const [showRangedVolley, setShowRangedVolley] = useState(false);
   const [roundStartsWith, setRoundStartsWith] = useState('attack'); // 'attack' | 'defend'
@@ -429,31 +431,63 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
 
   const handleCastSpell = useCallback((casterIdx, spellKey) => {
     const caster = state.party[casterIdx];
-    const context = {};
-    
-    // For damage spells, target first alive monster
     const spell = SPELLS[spellKey];
-    if (spell.type === 'attack' && state.monsters.length > 0) {
-      const targetIdx = state.monsters.findIndex(m => m.hp > 0);
-      if (targetIdx >= 0) {
-        context.targetMonsterIdx = targetIdx;
-        context.targetMonster = state.monsters[targetIdx];
-      }
+
+    // If spell needs explicit target selection from player, show SpellTargetModal
+    const needTarget = spell && (spell.target === 'single' || spell.target === 'single_ally' || spell.target === 'enemies' || spell.target === 'all_enemies' || spell.type === 'healing' || spell.type === 'attack');
+    if (needTarget && state.monsters && state.monsters.length > 0) {
+      // Use modal for selection (modal will call onConfirm)
+      setSpellTargeting({ casterIdx, spellKey, spell });
+      return;
     }
-    
-    // For healing spells, show target selection (simplified: heal lowest HP ally)
-    if (spell.type === 'healing') {
-      const lowestHP = state.party.reduce((min, h, idx) => 
-        h.hp > 0 && h.hp < h.maxHp && (min === null || h.hp < state.party[min].hp) ? idx : min, null);
-      if (lowestHP !== null) {
-        context.targetHeroIdx = lowestHP;
-        context.targetHero = state.party[lowestHP];
+
+    // Fallback: no modal, build simple context (first alive target)
+    const context = {};
+    if (state.monsters && state.monsters.length > 0) {
+      const targetIdx = state.monsters.findIndex(m => (m.hp > 0 || (m.count !== undefined && m.count > 0)));
+      if (targetIdx >= 0) {
+        const target = state.monsters[targetIdx];
+        context.targetMonsterIdx = targetIdx;
+        context.targetMonster = target;
+        context.targets = [target];
+        context.allMonsters = state.monsters;
+        context.casterIdx = casterIdx;
       }
     }
 
     performCastSpell(dispatch, caster, casterIdx, spellKey, context);
     setShowSpells(null);
   }, [state.party, state.monsters, dispatch]);
+
+  const handleSpellTargetConfirm = useCallback(({ targets, targetHeroIdx, all }) => {
+    if (!spellTargeting) return;
+    const { casterIdx, spellKey } = spellTargeting;
+    const caster = state.party[casterIdx];
+    const context = { casterIdx };
+
+    if (all) {
+      context.allMonsters = state.monsters;
+      context.targets = state.monsters.slice();
+    } else if (targets && targets.length > 0) {
+      // targets passed as array of { index, monster }
+      context.targets = targets.map(t => t.monster || state.monsters[t.index]);
+      context.targetMonsterIdx = targets[0].index;
+      context.targetMonster = state.monsters[targets[0].index];
+      context.allMonsters = state.monsters;
+    } else if (typeof targetHeroIdx === 'number') {
+      context.targetHeroIdx = targetHeroIdx;
+      context.targetHero = state.party[targetHeroIdx];
+    }
+
+    // Special-case Fireball minor group handled in castSpell/performCastSpell now; keep simple here
+    performCastSpell(dispatch, caster, casterIdx, spellKey, context);
+    setSpellTargeting(null);
+    setShowSpells(null);
+  }, [spellTargeting, state.monsters, state.party, dispatch]);
+
+  const handleSpellTargetCancel = useCallback(() => {
+    setSpellTargeting(null);
+  }, []);
 
   // Get ability usage for a hero
   const getAbilityUsage = useCallback((heroIdx) => {
@@ -700,6 +734,18 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
           setCombatInitiative={setCombatInitiative}
           addToCombatLog={addToCombatLog}
           dispatch={dispatch}
+        />
+      )}
+
+      {/* Spell Target Modal */}
+      {spellTargeting && (
+        <SpellTargetModal
+          spell={spellTargeting.spell}
+          caster={state.party[spellTargeting.casterIdx]}
+          party={state.party}
+          monsters={state.monsters}
+          onConfirm={handleSpellTargetConfirm}
+          onCancel={handleSpellTargetCancel}
         />
       )}
 

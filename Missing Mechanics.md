@@ -1,79 +1,93 @@
+# Missing Mechanics
 
-  
-  Missing Combat Mechanics
-   
-    - ❌ ADD CORRECT REACTIONS FOR EACH MONSTER
-    - ❌ Spell targeting (single vs AoE vs Minor Foe groups)
-      Status: Not implemented. Next: Add targeting logic to combat reducer and UI.
-    - ❌ Marching Order in combat (corridor restrictions)
-      Status: Not implemented. Next: Add marching order state and restrict actions in corridor.
-    - Withdraw vs Flee distinction
-      Status: Implemented
-    - Morale checks (50% triggers d6 roll)
-      Status: Implemented.
-    - Major Foe level reduction at half HP
-      Status: Implemented
-    - Surprise system (X-in-6 chance)
-      Status: Implemented.
-    - Ranged attacks striking first
-      Status: Implemented
-    - ❌ Reaction-based initiative
-      Status: Not implemented. Next: Add reaction stat and initiative order to combat reducer.
-    - ❌ environment based treasure tables by type
-      Status: Not implemented. Next: Add environment type lookup and treasure assignment.
-    - ❌ Quest table
-      Status: Not implemented. Next: Add quest data and random assignment on dungeon entry.
-    - ❌ Epic rewards table
-      Status: Not implemented. Next: Add epic reward data and trigger logic.
-    - ❌ Corridor vs Room combat restrictions
-      Status: Not implemented. Next: Add location context to combat reducer and restrict actions.
-    - ❌ Narrow corridor rules (-1 two-handed, no penalty light)
-      Status: Not implemented. Next: Add weapon penalty logic based on location.
+This file tracks mechanics that are still missing or partially implemented, with concrete next steps.
 
-  Party Management Gaps
-    - Campaign save system broken
-      Status: creating new saves doesn't actually save separately from the local storage, games i created are named the same in the upper left corner as long as my session is the same, but the game is saved with a different name. saves i delete keep restoring.
-    - Rogue Outnumbered bonus mechanics
-      Status: implemented.
-    - ❌ Implement Clues system
-    - ❌ XP Rolls
-      Status: Not implemented.
-    - ❌ Equipment bonuses applied to rolls
-      Status: Not implemented. Next: Add equipment stat modifiers to roll logic.
-    - ❌ Character traits application after selected
-      Status: partially implemented. Next: Add more effects and test
-  -   Dwarf Gold Sense ability
-      Status: implemented. test that gold matches if won.
-    - ❌ Stealth modifiers per class
-      Status: Not implemented. Next: Add class-based stealth modifiers to encounter rolls.
+## Overview
+The codebase has made recent progress on spellcasting, MR checks, and status flags (entangle/asleep/bound). Remaining work focuses on UI wiring, edge-case behavior, and a few gameplay systems.
 
-  Dungeon Exploration Gaps
+---
 
-    - ❌ Corridor vs Room distinction affecting combat
-      Status: Not implemented. Next: Track location type and apply combat rules.
-    - ❌ Narrow corridor rules
-      Status: Not implemented. Next: Add corridor width state and restrict actions.
-    - X TRAPS - NOT IMPLEMENTED
-    - ❌ Secret door discovery (1-in-6 shortcut out)
-      Status: Not implemented. Next: Add secret door roll and shortcut logic.
-    - ❌ Secret passage to different environment
-      Status: Not implemented. Next: Add passage event and environment change logic.
-    - ❌ Hidden treasure complications (alarm, trap, ghost)
-      Status: Not implemented. Next: Add complication roll and event triggers.
-    - ❌ Retracing steps wandering monster chance (1-in-6)
-      Status: Not implemented. Next: Add retrace event and monster roll.
-    - ❌ Final Boss trigger needs testing (roll 6+ on d6 + major foes)
-      Status: Not implemented. Next: Add boss trigger logic and test flow.
+## Spells & Magic (recent work done)
+- ✅ `castSpell` now performs MR checks and separate spellcasting rolls; details are returned in `result.details`.
+- ✅ `performCastSpell` and `performCastScrollSpell` now log MR and cast-roll results for visibility.
+- ✅ Scroll casting bonus (+L for spellcasters, +1 for non-spellcasters) is applied to casting rolls.
+- ✅ Trait-based casting bonuses (Specialist, Shadow Adept) wired to casting rolls (via `targets[0].castingBonus`).
+- ✅ AoE and single-damage plumbing applied in `performCastSpell`.
+- ✅ Fireball special-case: Fireball slays minor foes using the d6+L - foe L rule; Fireball does 1 damage to a Major Foe.
+- ✅ Entangle/Bind/Fog/Subdual effects set monster/hero status flags.
 
-  Resource Tracking Gaps
+### Next steps (Spells)
+- Add UI target selection: single-target selector, minor-foe group selector, and AoE confirmation modal.
+- Replace the ad-hoc `targets[0].castingBonus` hack with an explicit `context` parameter for `castSpell` (cleaner API).
+- Implement per-spell immunity/vulnerability rules (undead, elementals, fire-immune monsters, etc.).
+- Ensure status durations (entangleTurns, boundTurns, asleep durations) decrement each round and expire gracefully with log messages.
+- Add automated tests for MR pass/fail, Fireball minor-foe slays, entangle/asleep effects, and scroll casting bonuses.
 
-    - ❌ Food Rations (survival in wilderness)
-      Status: Not implemented. Next: Add ration tracking and survival checks.
-    - Torches/Lanterns
-      Status: Implemented.
-    - ❌ Bandages (1 per PC per adventure)
-      Status: Not implemented. Next: Add bandage item and healing logic.
-    - ❌ Carried treasure weight (200gp max per PC)
-      Status: Not implemented. Next: Add weight tracking and enforce limits.
-    - ❌ Weapon/shield counts (3 weapons, 2 shields max)
-      Status: Not implemented. Next: Add inventory limits and validation.
+---
+
+## Combat Status Effects
+- ✅ Monsters marked `status.asleep` skip attacks during escape and wandering strike resolution.
+- ✅ `entangled` reduces effective monster level by 1 for attack calculations.
+- ✅ `bound` marks monster so heroes get +2 when attacking them (applied via `options.boundTarget`).
+
+### Next steps (Status)
+- Ensure per-turn decrement and expiry of `entangleTurns`/`boundTurns`/`asleep` and log expiry.
+- Integrate these flags into all monster action loops (monster turn, ambush strikes, wandering strikes). Some loops already updated; audit others.
+- Add UI badges for monster status (asleep/entangled/bound) in combat view.
+
+---
+
+## Targeting & UI
+- ❌ Spell targeting UI (selecting target monster or group) is not implemented.
+- ❌ Target-selection confirmation for AoE/minor-group effects.
+
+### Next steps (UI)
+- Implement `SpellTargetModal` component to select targets prior to casting.
+- Wire Combat `handleCastSpell` to present the modal and pass a `context` object to `performCastSpell` that includes `targets`, `allMonsters`, and `casterIdx`.
+
+---
+
+## Traits & Scrolls
+- ✅ Scroll bonus applied to casting rolls via `getScrollCastingBonus`.
+- ✅ Specialist and Shadow Adept trait quick wiring applied.
+
+### Next steps (Traits)
+- Expose `spellCastingBonus` flags from `getTraitRollModifiers` where appropriate.
+- Add trait activation UI where traits require 1x/once-per-adventure usage.
+
+---
+
+## Remaining Major Systems
+- ❌ Reaction-based initiative (per-monster reactions not fully wired)
+  - Next: assign reaction tables to monsters and implement reaction-specific initiative handling.
+- ❌ Retracing steps wandering-monster chance (1-in-6) on re-entering visited tiles
+  - Next: implement `onEnterTile` hook to roll for wandering monster when re-entering.
+- ❌ Final Boss trigger (d6 + major foes defeated threshold)
+  - Next: implement the 4AD rule, enhance boss on trigger (+1 Life, +1 Attack, 3x treasure), and test flow.
+- ❌ Environment-based treasure tables
+  - Next: implement `TREASURE_BY_ENVIRONMENT` and use environment when generating treasure.
+
+---
+
+## Party / Resources
+- ❌ XP roll mechanic needs formalization and testing (XP d6 roll per hero)
+- ❌ Clues system (tracking clue acquisition and triggering events)
+- ❌ Food rations and survival checks
+- ❌ Bandages and limited consumables
+- ❌ Inventory limits (weapon/shield counts, weight limits)
+
+### Next steps (Party)
+- Implement XP roll on Victory and tie to level-up flow.
+- Implement Clue tracking in state and UI.
+- Add ration consumption and starvation checks (daily or per-adventure behavior).
+- Add bandage item and healing rules; add UI to spend bandages.
+- Enforce inventory limits in store and UI.
+
+---
+
+If you'd like, I can (pick one):
+- Implement the `SpellTargetModal` and wire the combat UI to pass a clean `context` object to `castSpell`/`performCastSpell`.
+- Replace `targets[0].castingBonus` with a proper `context` parameter for `castSpell` and migrate callers.
+- Add per-turn status expiry logic and UI badges for monster status.
+
+Pick a next task and I'll implement it and run quick validation/build tests.

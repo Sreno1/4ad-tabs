@@ -19,6 +19,14 @@ import {
   getEquippedMeleeWeapon
 } from "../combatLocationHelpers.js";
 
+// Helper: effective monster level after status effects
+const getEffectiveMonsterLevel = (monster) => {
+  if (!monster) return 1;
+  let lvl = monster.level || 1;
+  if (monster.entangled) lvl = Math.max(1, lvl - 1);
+  return lvl;
+};
+
 /**
  * Calculate basic attack result (for simple attacks)
  * @param {object} hero - Hero object
@@ -75,6 +83,12 @@ export const calculateEnhancedAttack = (hero, foeLevel, options = {}) => {
   if (traitMods.attackMod) {
     mod += traitMods.attackMod;
     modifiers.push(`+${traitMods.attackMod} (trait)`);
+  }
+
+  // Bonus vs bound targets
+  if (options.boundTarget) {
+    mod += 2;
+    modifiers.push('+2 (bound target)');
   }
 
   // Darkness penalty (-2 if no light and character lacks darkvision)
@@ -164,6 +178,12 @@ export const calculateEnhancedAttack = (hero, foeLevel, options = {}) => {
   if (options.swornEnemy && hero.key === "ranger") {
     mod += 2;
     modifiers.push("+2 (sworn enemy)");
+  }
+
+  // Bonus vs bound targets
+  if (options.boundTarget) {
+    mod += 2;
+    modifiers.push('+2 (bound target)');
   }
 
   // Assassin hide in shadows (3x damage = +2L to attack)
@@ -713,14 +733,21 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
       target = aliveHeroes[targetIdx];
     }
 
+    // Skip asleep monsters
+    if (monster.status && monster.status.asleep) {
+      dispatch({ type: 'LOG', t: `😴 ${monster.name} is asleep and does not attack.` });
+      return;
+    }
+
     // Roll d6 for monster attack
     const roll = d6();
     const targetDefense = isWithdraw ? target.lvl + 1 : target.lvl; // +1 Defense when withdrawing
     const defenseMod = isWithdraw ? 1 : 0;
 
-    // Monster hits if roll + monster level > target defense
-  const monsterAttack = roll + monster.level;
-  const hits = monsterAttack > targetDefense;
+    // Monster hits if roll + effective monster level > target defense
+    const effectiveLevel = getEffectiveMonsterLevel(monster);
+    const monsterAttack = roll + effectiveLevel;
+    const hits = monsterAttack > targetDefense;
 
     if (hits) {
       totalDamage += 1;
@@ -784,9 +811,15 @@ export const initialWanderingStrikes = (dispatch, state) => {
   const resolveAttack = (monster, heroIdx) => {
     const hero = party[heroIdx];
     if (!hero || hero.hp <= 0) return false;
+    // Skip asleep monsters
+    if (monster.status && monster.status.asleep) {
+      dispatch({ type: 'LOG', t: `😴 ${monster.name} is asleep and does not attack.` });
+      return false;
+    }
     const roll = d6();
     const defense = hero.lvl; // no withdraw modifier here
-    const hits = (roll + (monster.level || 0)) > defense;
+    const effectiveLevel = getEffectiveMonsterLevel(monster);
+    const hits = (roll + effectiveLevel) > defense;
     if (hits) {
       dispatch({ type: 'LOG', t: `❌ ${monster.name} hits ${hero.name}! (${roll}+${monster.level} vs ${defense})` });
       dispatch({ type: 'UPD_HERO', i: heroIdx, u: { hp: Math.max(0, hero.hp - 1) } });
@@ -1039,6 +1072,8 @@ export const processMinorFoeAttack = (
   foeIdx,
   options = {},
 ) => {
+  // If foe is bound, inform attack routine to apply +2
+  if (foe && foe.bound) options.boundTarget = true;
   // Perform the attack
   const attackResult = attackMinorFoe(hero, foe, options);
 
@@ -1116,6 +1151,8 @@ export const processMajorFoeAttack = (
   foeIdx,
   options = {},
 ) => {
+  // If foe is bound, inform attack routine to apply +2
+  if (foe && foe.bound) options.boundTarget = true;
   // Use existing enhanced attack
   const attackResult = calculateEnhancedAttack(hero, foe.level, options);
 

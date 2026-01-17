@@ -10,13 +10,16 @@ import MARKER_STYLES from '../constants/markerStyles.js';
 const DungeonGridCanvas = memo(function DungeonGridCanvas({
   grid,
   doors,
+  walls = [],
   roomMarkers,
   showMarkers,
   cellSize,
   shouldRotate,
+  selectedTile = null,
   onCellClick,
   onCellSet,
   onCellRightClick,
+  suppressContextAction = false,
   onDoorToggle,
   partyPos,
   onPartyMove,
@@ -30,6 +33,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   onCommitPlacement = null,
   onEditComplete = null,
   partyHasLight = false,
+  contextMenuOpen = false,
+  onContextDismiss = null,
 }) {
   const canvasRef = useRef(null);
   const pressedKeysRef = useRef(new Set()); // Track currently pressed arrow keys for continuous movement
@@ -39,6 +44,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const currentStateRef = useRef(null); // Keep current state accessible
   const [hoveredCell, setHoveredCell] = useState(null);
   const [hoveredDoor, setHoveredDoor] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState(null);
+  const [tooltipText, setTooltipText] = useState(null);
   const [showDoorMode, setShowDoorMode] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragFillValue, setDragFillValue] = useState(null); // 0, 1, or 2
@@ -72,6 +79,40 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     currentStateRef.current = { partyPos, onPartyMove, cols, rows };
   }, [partyPos, onPartyMove, cols, rows]);
 
+  // Update tooltip position when hoveredCell changes and there is a marker tooltip
+  useEffect(() => {
+    if (!hoveredCell) {
+      setTooltipText(null);
+      setTooltipPos(null);
+      return;
+    }
+    const key = `${hoveredCell.x},${hoveredCell.y}`;
+    const marker = roomMarkers && roomMarkers[key];
+    if (!marker || !marker.tooltip) {
+      setTooltipText(null);
+      setTooltipPos(null);
+      return;
+    }
+
+    // compute screen-space center for the logical cell
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const crect = canvas.getBoundingClientRect();
+    const logicalCx = hoveredCell.x * cellSize + cellSize / 2;
+    const logicalCy = hoveredCell.y * cellSize + cellSize / 2;
+    let screenCx = logicalCx;
+    let screenCy = logicalCy;
+    if (shouldRotate) {
+      screenCx = canvasWidth - logicalCy;
+      screenCy = logicalCx;
+    }
+
+    const left = crect.left + screenCx;
+    const top = crect.top + screenCy;
+    setTooltipText(marker.tooltip);
+    setTooltipPos({ left, top });
+  }, [hoveredCell, roomMarkers, cellSize, shouldRotate, canvasWidth]);
+
   // Draw the entire grid
   const drawGrid = useCallback(() => {
     const canvas = canvasRef.current;
@@ -91,6 +132,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       ctx.translate(canvasWidth, 0);
       ctx.rotate(Math.PI / 2);
     }
+    // Collect wall edges to draw after the cell loop so they are rendered on top
+    const wallEdges = [];
     for (let y = 0; y < rows; y++) {
       for (let x = 0; x < cols; x++) {
         const cell = grid[y][x];
@@ -114,10 +157,25 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           ctx.fillRect(px, py, cellSize, cellSize);
         }
 
+        // Collect wall edges for later drawing (avoid being overdrawn by subsequent cells)
+        if (walls && walls.length > 0) {
+          if (walls.some(w => w.x === x && w.y === y && w.edge === 'N')) wallEdges.push({ x, y, edge: 'N' });
+          if (walls.some(w => w.x === x && w.y === y && w.edge === 'S')) wallEdges.push({ x, y, edge: 'S' });
+          if (walls.some(w => w.x === x && w.y === y && w.edge === 'E')) wallEdges.push({ x, y, edge: 'E' });
+          if (walls.some(w => w.x === x && w.y === y && w.edge === 'W')) wallEdges.push({ x, y, edge: 'W' });
+        }
+
         // Cell border
         ctx.strokeStyle = '#334155'; // slate-700
         ctx.lineWidth = 1;
         ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
+
+        // Highlight selected tile (editing)
+        if (selectedTile && selectedTile.x === x && selectedTile.y === y) {
+          ctx.strokeStyle = '#34d399'; // green-400
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+        }
 
         // Markers
         if (showMarkers && roomMarkers[`${x},${y}`]) {
@@ -159,6 +217,25 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         ctx.fillRect(px - 1, py, 3, cellSize);
       }
     });
+
+  // Draw walls (collected earlier) on top of cells and doors
+    if (wallEdges.length > 0) {
+      ctx.fillStyle = '#ffffff';
+      const wt = Math.max(1, Math.floor(cellSize * 0.08));
+      wallEdges.forEach(w => {
+        const px = w.x * cellSize;
+        const py = w.y * cellSize;
+        if (w.edge === 'N') {
+          ctx.fillRect(px, py - Math.floor(wt/2), cellSize, wt);
+        } else if (w.edge === 'S') {
+          ctx.fillRect(px, py + cellSize - Math.floor(wt/2), cellSize, wt);
+        } else if (w.edge === 'E') {
+          ctx.fillRect(px + cellSize - Math.floor(wt/2), py, wt, cellSize);
+        } else if (w.edge === 'W') {
+          ctx.fillRect(px - Math.floor(wt/2), py, wt, cellSize);
+        }
+      });
+    }
 
   // Draw door placement guides - always show on room cells (but not while dragging)
     if (hoveredCell && !isDragging) {
@@ -539,7 +616,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       ctx.fillText('P', screenCx, screenCy + 1);
     }
 
-  }, [grid, doors, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected, shouldRotate, canvasWidth, partyHasLight]);
+  }, [grid, doors, walls, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected, shouldRotate, canvasWidth, partyHasLight]);
 
   // Keep a stable ref to the latest drawGrid implementation so other effects
   // can call it without referencing the function before it's initialized.
@@ -710,7 +787,34 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   }, []);
 
   const handleMouseDown = useCallback((e) => {
-    // Don't start drag on right click
+    // If the application context menu is open elsewhere, clicks should dismiss it and not act on the map
+    if (contextMenuOpen && typeof onContextDismiss === 'function') {
+      onContextDismiss();
+      return;
+    }
+    // Handle right-click explicitly (some environments block contextmenu)
+    if (e.button === 2) {
+  if (suppressContextAction) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      let mouseX = e.clientX - rect.left;
+      let mouseY = e.clientY - rect.top;
+      let logicalX = mouseX;
+      let logicalY = mouseY;
+      if (shouldRotate) {
+        logicalX = mouseY;
+        logicalY = canvasWidth - mouseX;
+      }
+      const cx = Math.floor(logicalX / cellSize);
+      const cy = Math.floor(logicalY / cellSize);
+      if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) {
+        setHoveredCell({ x: cx, y: cy });
+  try { console.debug('mouseDown right-click cell', cx, cy); if (typeof onCellContextMenu === 'function') onCellContextMenu(cx, cy, e); else if (typeof onCellRightClick === 'function') onCellRightClick(cx, cy, e); } catch (err) { console.error(err); }
+      }
+      return;
+    }
+    // Don't start drag on other non-left buttons
     if (e.button !== 0) return;
   if (!hoveredCell) return;
 
@@ -838,10 +942,35 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   }, [hoveredCell, hoveredDoor, grid, onDoorToggle, onPartyMove, onPartySelect, partyPos, partySelected]);
 
   const handleContextMenu = useCallback((e) => {
-    e.preventDefault();
-    if (!hoveredCell) return;
-    onCellRightClick(hoveredCell.x, hoveredCell.y, e);
-  }, [hoveredCell, onCellRightClick]);
+  e.preventDefault();
+  try { console.debug('canvas contextmenu event'); } catch (err) {}
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    let mouseX = e.clientX - rect.left;
+    let mouseY = e.clientY - rect.top;
+
+    // Inverse mapping for rotated canvas
+    let logicalX = mouseX;
+    let logicalY = mouseY;
+    if (shouldRotate) {
+      logicalX = mouseY;
+      logicalY = canvasWidth - mouseX;
+    }
+
+    const x = Math.floor(logicalX / cellSize);
+    const y = Math.floor(logicalY / cellSize);
+    if (x >= 0 && x < cols && y >= 0 && y < rows) {
+      // Update hoveredCell to reflect where the user right-clicked
+      setHoveredCell({ x, y });
+      try {
+        console.debug('computed ctx cell', x, y);
+  if (typeof onCellContextMenu === 'function') onCellContextMenu(x, y, e); else if (typeof onCellRightClick === 'function') onCellRightClick(x, y, e);
+      } catch (err) { console.error('onCellRightClick error', err); }
+    } else {
+      try { console.debug('ctx outside grid', x, y); } catch (e) {}
+    }
+  }, [onCellRightClick, cellSize, cols, rows, shouldRotate, canvasWidth]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'd' || e.key === 'D') {
@@ -1004,6 +1133,22 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           style={{ zIndex: 9999, pointerEvents: 'none' }}
         >
           Shift+Click to add the party pawn
+        </div>
+      )}
+      {tooltipText && tooltipPos && (
+        <div
+          style={{
+            position: 'fixed',
+            left: tooltipPos.left + 12,
+            top: tooltipPos.top - 28,
+            transform: 'translate(-50%, -100%)',
+            pointerEvents: 'none',
+            zIndex: 99999
+          }}
+        >
+          <div className="bg-slate-800 text-slate-200 text-xs px-2 py-1 rounded shadow">
+            {tooltipText}
+          </div>
         </div>
       )}
     </div>

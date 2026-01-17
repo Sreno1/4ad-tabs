@@ -14,6 +14,7 @@ export const createAdventureState = () => ({
   // Dungeon grid state (20x28)
   grid: Array(28).fill(null).map(() => Array(20).fill(0)), // 0=empty, 1=room, 2=corridor
   doors: [], // {x, y, edge: 'N'|'S'|'E'|'W', type: 'normal'|'stuck'|'locked'|'trapped'}
+  walls: [], // {x, y, edge: 'N'|'S'|'E'|'W'}
   
   // Room tracking
   roomsExplored: 0,

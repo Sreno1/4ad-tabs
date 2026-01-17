@@ -277,16 +277,15 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
     setRoomEvents(newEvents);
   };
 
-  // List of d66 values that should be treated as corridors (explicit per user)
-  const CORRIDOR_D66 = new Set([11,12,13,14,26,32,33,42,45,51,53,55,62,63,65]);
+  // Determine corridor vs room from TILE_SHAPE_TABLE shape string to keep behavior consistent
 
   // Combined tile generation - rolls both shape and contents at once
   // generateTile optionally accepts overrides: { shapeRoll, contentsRoll }
   const generateTile = (opts = {}) => {
     const shapeRoll = (opts && typeof opts.shapeRoll === 'number') ? opts.shapeRoll : d66();
-    const shapeResult = TILE_SHAPE_TABLE[shapeRoll];
-    // Determine corridor purely from the d66 roll (explicit list) - do NOT rely on coordinates
-    const isCorridor = CORRIDOR_D66.has(shapeRoll);
+  const shapeResult = TILE_SHAPE_TABLE[shapeRoll];
+  // Determine corridor from the TILE_SHAPE_TABLE mapping (type field)
+  const isCorridor = !!(shapeResult && String(shapeResult.type || '').toLowerCase() === 'corridor');
 
     // Notify reducers of combat location type (derived from d66 only)
     try {
@@ -297,7 +296,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
 
     const newEvents = [{
       type: 'D66_ROLL',
-      data: { roll: shapeRoll, shape: shapeResult?.shape },
+      data: { roll: shapeRoll, type: shapeResult?.type },
       timestamp: Date.now()
     }];
 
@@ -473,7 +472,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
     // ignore
   }
 
-  // Helper: Check if tile is a corridor
+  // Helper: Check if tile is a corridor (backwards compatible)
   const isCorridor = () => {
     if (!tileResult) return false;
 
@@ -482,11 +481,11 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       return tileResult.isCorridor;
     }
 
-    // Otherwise check shape structure
-    const shapeStr = tileResult?.shape?.shape;
-    if (!shapeStr || typeof shapeStr !== 'string') return false;
-
-    return shapeStr.includes('corridor') || shapeStr === 'corridor_dead_end';
+    // Check new `type` field first
+    const t = tileResult?.type || tileResult?.shape?.type || tileResult?.shape?.shape;
+    if (!t || typeof t !== 'string') return false;
+    const s = t.toLowerCase();
+    return s === 'corridor' || s.includes('corridor') || s === 'corridor_dead_end';
   };
 
   return {

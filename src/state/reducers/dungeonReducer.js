@@ -46,12 +46,47 @@ export function dungeonReducer(state, action) {
 
     // ========== Door Management ==========
     case A.TOGGLE_DOOR: {
-      const exists = state.doors.findIndex(
+      // Check if a door already exists on this exact cell and edge
+      const existsIdx = state.doors.findIndex(
         d => d.x === action.x && d.y === action.y && d.edge === action.edge
       );
-      const newDoors = exists >= 0
-        ? state.doors.filter((_, i) => i !== exists)
-        : [...state.doors, { x: action.x, y: action.y, edge: action.edge }];
+
+      if (existsIdx >= 0) {
+        // Door exists on this edge - remove it
+        return { ...state, doors: state.doors.filter((_, i) => i !== existsIdx) };
+      }
+
+      // Determine the adjacent cell and opposite edge that shares this edge
+      let adjacentX = action.x;
+      let adjacentY = action.y;
+      let oppositeEdge = null;
+
+      if (action.edge === 'N') {
+        adjacentY = action.y - 1;
+        oppositeEdge = 'S';
+      } else if (action.edge === 'S') {
+        adjacentY = action.y + 1;
+        oppositeEdge = 'N';
+      } else if (action.edge === 'E') {
+        adjacentX = action.x + 1;
+        oppositeEdge = 'W';
+      } else if (action.edge === 'W') {
+        adjacentX = action.x - 1;
+        oppositeEdge = 'E';
+      }
+
+      // Check if there's a conflicting door on the adjacent cell's opposite edge
+      const conflictIdx = state.doors.findIndex(
+        d => d.x === adjacentX && d.y === adjacentY && d.edge === oppositeEdge
+      );
+
+      // Remove conflicting door (if any) and add the new door
+      let newDoors = state.doors;
+      if (conflictIdx >= 0) {
+        newDoors = newDoors.filter((_, i) => i !== conflictIdx);
+      }
+      newDoors = [...newDoors, { x: action.x, y: action.y, edge: action.edge }];
+
       return { ...state, doors: newDoors };
     }
 
@@ -144,6 +179,10 @@ export function dungeonReducer(state, action) {
         ...state,
         searchedTiles: [...state.searchedTiles, tileKey]
       };
+    }
+
+    case A.SET_WALLS: {
+      return { ...state, walls: action.walls || [] };
     }
 
     default:

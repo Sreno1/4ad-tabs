@@ -7,13 +7,26 @@ import {
 import { performSearch, rollWanderingMonster } from "../utils/gameActions/index.js";
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
+import ContextMenu from './ContextMenu.jsx';
 import { getEquipment, hasEquipment } from '../data/equipment.js';
 import RadialMenu from './RadialMenu.jsx';
 
 export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, sidebarCollapsed = false, placementTemplate = null, onCommitPlacement = null, autoPlacedRoom = null, setAutoPlacedRoom = null, onShowRoomDesigner = null, onToggleShowLog = null, showLogMiddle = false }) {
   const [showMarkers, setShowMarkers] = useState(true); // Toggle markers visibility
   const [roomMarkers, setRoomMarkers] = useState({}); // {cellKey: {type, label, tooltip}}  const [hoveredCell, setHoveredCell] = useState(null); // For showing tooltip
+  // Load persisted markers (notes) from localStorage
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem('roomMarkers');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') setRoomMarkers(parsed);
+      }
+    } catch (e) {}
+  }, []);
   const [radialMenu, setRadialMenu] = useState(null); // {xPx,yPx,cellX,cellY}
+  const [contextMenu, setContextMenu] = useState(null); // {xPx,yPx,cellX,cellY}
+  const [contextSelectedTile, setContextSelectedTile] = useState(null); // {x,y}
   const [cellSize, setCellSize] = useState(20); // Dynamic cell size
   const [shouldRotate, setShouldRotate] = useState(false); // Whether to rotate based on aspect ratio
   const [partyPos, setPartyPos] = useState(() => {
@@ -43,10 +56,11 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   // Add marker to a cell
   const addMarker = useCallback((x, y, type, label, tooltip) => {
     const key = `${x},${y}`;
-    setRoomMarkers(prev => ({
-      ...prev,
-      [key]: { type, label, tooltip }
-    }));
+    setRoomMarkers(prev => {
+      const next = { ...prev, [key]: { type, label, tooltip } };
+      try { localStorage.setItem('roomMarkers', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
   }, []);
 
   // Remove marker from a cell
@@ -55,6 +69,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     setRoomMarkers(prev => {
       const newMarkers = { ...prev };
       delete newMarkers[key];
+      try { localStorage.setItem('roomMarkers', JSON.stringify(newMarkers)); } catch (e) {}
       return newMarkers;
     });
   }, []);
@@ -73,14 +88,43 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     dispatch({ type: 'SET_CELL', x, y, value });
   }, [dispatch]);
 
-  // Right-click opens radial menu for markers
+  // Right-click opens context menu for actions
   const handleCellRightClick = useCallback((x, y, e) => {
     e.preventDefault();
-    // Compute pixel position for menu from event
-    const rect = gridContainerRef.current?.getBoundingClientRect();
+    // If our in-app context menu is already open, a right-click should close it and clear the highlight
+    if (contextMenu) {
+      setContextMenu(null);
+      setContextSelectedTile(null);
+      return;
+    }
     const xPx = e.clientX;
     const yPx = e.clientY;
-    setRadialMenu({ xPx, yPx, cellX: x, cellY: y });
+    // Compute menu position so it doesn't cover the tile: offset by 16px in the direction away from the tile center
+    const rect = gridContainerRef.current?.getBoundingClientRect();
+    const canvas = rect && gridContainerRef.current.querySelector('canvas');
+    let menuX = xPx;
+    let menuY = yPx;
+    try {
+      if (canvas) {
+        const crect = canvas.getBoundingClientRect();
+        const cellPxX = crect.left + x * cellSize + cellSize / 2;
+        const cellPxY = crect.top + y * cellSize + cellSize / 2;
+        // If menu would overlap the cell, nudge it to the nearest side
+        const dx = xPx - cellPxX;
+        const dy = yPx - cellPxY;
+        const minDist = Math.max(8, cellSize / 2 + 8);
+        if (Math.abs(dx) < minDist && Math.abs(dy) < minDist) {
+          // push menu away along the larger axis
+          if (Math.abs(dx) > Math.abs(dy)) {
+            menuX = cellPxX + (dx > 0 ? minDist : -minDist);
+          } else {
+            menuY = cellPxY + (dy > 0 ? minDist : -minDist);
+          }
+        }
+      }
+    } catch (e) {}
+    setContextSelectedTile({ x, y });
+    setContextMenu({ xPx: menuX, yPx: menuY, cellX: x, cellY: y });
   }, []);
 
   const closeRadial = useCallback(() => setRadialMenu(null), []);
@@ -114,6 +158,8 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     }
     setRadialMenu(null);
   }, [radialMenu, getMarker, addMarker, removeMarker]);
+
+  const closeContext = useCallback(() => { setContextMenu(null); setContextSelectedTile(null); }, []);
 
   // Party pawn handlers
   const movePartyTo = useCallback((x, y) => {
@@ -245,6 +291,52 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
       isCalculatingRef.current = false;
     };
   }, [state.grid, sidebarCollapsed]);
+
+  // Intercept right-clicks inside the dungeon grid container to cancel the browser menu
+  React.useEffect(() => {
+    const container = gridContainerRef.current;
+    if (!container) return;
+
+  const handler = (e) => {
+      try {
+        const canvas = container.querySelector('canvas');
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        let mouseX = e.clientX - rect.left;
+        let mouseY = e.clientY - rect.top;
+
+        const cols = state.grid[0]?.length || 0;
+        const rows = state.grid.length || 0;
+        const width = cols * cellSize;
+        const height = rows * cellSize;
+        const canvasWidth = shouldRotate ? height : width;
+
+        // Inverse mapping for rotated canvas (match DungeonGridCanvas logic)
+        let logicalX = mouseX;
+        let logicalY = mouseY;
+        if (shouldRotate) {
+          logicalX = mouseY;
+          logicalY = canvasWidth - mouseX;
+        }
+
+        const x = Math.floor(logicalX / cellSize);
+        const y = Math.floor(logicalY / cellSize);
+
+        if (x >= 0 && x < cols && y >= 0 && y < rows) {
+          // Prevent the browser context menu and open our menu; also highlight the tile
+          e.preventDefault();
+          e.stopPropagation();
+          setContextSelectedTile({ x, y });
+          setContextMenu({ xPx: e.clientX, yPx: e.clientY, cellX: x, cellY: y });
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    container.addEventListener('contextmenu', handler);
+    return () => container.removeEventListener('contextmenu', handler);
+  }, [cellSize, shouldRotate, state.grid]);
   return (
   <section id="dungeon_section" className="space-y-2 h-full flex flex-col">
       {/* Dungeon Grid - No extra outline/container, never scrolls */}
@@ -293,10 +385,13 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             id="dungeon_grid_canvas"
             grid={state.grid}
             doors={state.doors}
+            walls={state.walls || []}
             roomMarkers={roomMarkers}
             showMarkers={showMarkers}
             cellSize={cellSize}
             shouldRotate={shouldRotate}
+            contextMenuOpen={!!contextMenu}
+            onContextDismiss={() => { setContextMenu(null); setContextSelectedTile(null); }}
             onCellClick={handleCellClick}
             onCellSet={handleCellSet}
             onCellRightClick={handleCellRightClick}
@@ -311,6 +406,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             autoPlacedRoom={autoPlacedRoom}
             setAutoPlacedRoom={setAutoPlacedRoom}
             onCommitPlacement={onCommitPlacement}
+            selectedTile={contextSelectedTile}
             onEditComplete={() => {
               try {
                 const data = {
@@ -329,6 +425,105 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
               } catch (e) { /* ignore */ }
             }}
           />
+          {contextMenu && (
+            <ContextMenu
+              x={contextMenu.xPx}
+              y={contextMenu.yPx}
+              onClose={closeContext}
+              items={[
+                { key: 'marker', label: 'Place marker', submenu: markerOptions.map(m => ({
+                  key: m.key,
+                  label: m.label || (m.key === 'clear' ? 'Clear' : (m.key.charAt(0).toUpperCase() + m.key.slice(1))),
+                  onClick: () => {
+                    const existing = getMarker(contextMenu.cellX, contextMenu.cellY);
+                    if (m.key === 'clear') {
+                      if (existing) removeMarker(contextMenu.cellX, contextMenu.cellY);
+                    } else if (!existing) {
+                      addMarker(contextMenu.cellX, contextMenu.cellY, m.key, m.key.charAt(0).toUpperCase() + m.key.slice(1), `${m.key} marker`);
+                    } else if (existing && existing.type === m.key) {
+                      removeMarker(contextMenu.cellX, contextMenu.cellY);
+                    } else {
+                      addMarker(contextMenu.cellX, contextMenu.cellY, m.key, m.key.charAt(0).toUpperCase() + m.key.slice(1), `${m.key} marker`);
+                    }
+                  }
+                })), },
+                { key: 'door', label: 'Door...', submenu: [
+                  { key: 'N', label: 'North', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'N' }) },
+                  { key: 'S', label: 'South', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'S' }) },
+                  { key: 'E', label: 'East', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'E' }) },
+                  { key: 'W', label: 'West', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'W' }) }
+                ] },
+                { key: 'wall', label: 'Wall off room', onClick: () => {
+                    try {
+                      const gridEl = state.grid;
+                      const cols = gridEl[0]?.length || 0;
+                      const rows = gridEl.length;
+                      const sx = contextMenu.cellX; const sy = contextMenu.cellY;
+                      if (!(sy >= 0 && sy < rows && sx >= 0 && sx < cols)) return;
+                      if (gridEl[sy][sx] !== 1) return;
+                      const toVisit = [{x: sx, y: sy}];
+                      const region = new Set();
+                      const key = (a,b) => `${a},${b}`;
+                      while (toVisit.length) {
+                        const c = toVisit.pop();
+                        const k = key(c.x, c.y);
+                        if (region.has(k)) continue;
+                        if (!(c.y >= 0 && c.y < rows && c.x >= 0 && c.x < cols)) continue;
+                        if (gridEl[c.y][c.x] !== 1) continue;
+                        region.add(k);
+                        toVisit.push({x: c.x+1, y: c.y}); toVisit.push({x: c.x-1, y: c.y}); toVisit.push({x: c.x, y: c.y+1}); toVisit.push({x: c.x, y: c.y-1});
+                      }
+                      const perimeter = [];
+                      region.forEach(k => {
+                        const [rx, ry] = k.split(',').map(Number);
+                        const neighbors = [
+                          {edge: 'N', nx: rx, ny: ry-1},
+                          {edge: 'S', nx: rx, ny: ry+1},
+                          {edge: 'E', nx: rx+1, ny: ry},
+                          {edge: 'W', nx: rx-1, ny: ry}
+                        ];
+                        neighbors.forEach(n => {
+                          if (!(n.ny >= 0 && n.ny < rows && n.nx >= 0 && n.nx < cols) || gridEl[n.ny][n.nx] !== 1) {
+                            perimeter.push({ x: rx, y: ry, edge: n.edge });
+                          }
+                        });
+                      });
+                      try {
+                        const existingWalls = state.walls || [];
+                        const allExist = perimeter.every(pe => existingWalls.some(w => w.x === pe.x && w.y === pe.y && w.edge === pe.edge));
+                        if (allExist) {
+                          // remove perimeter edges from existing walls
+                          const newWalls = existingWalls.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === w.edge));
+                          dispatch({ type: 'SET_WALLS', walls: newWalls });
+                        } else {
+                          // Remove any conflicting doors on these edges
+                          (state.doors || []).forEach(d => {
+                            if (perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === d.edge)) {
+                              dispatch({ type: 'TOGGLE_DOOR', x: d.x, y: d.y, edge: d.edge });
+                            }
+                          });
+
+                          // Merge perimeter edges into existing walls without duplicating
+                          const union = [...existingWalls];
+                          perimeter.forEach(pe => {
+                            if (!union.some(u => u.x === pe.x && u.y === pe.y && u.edge === pe.edge)) union.push(pe);
+                          });
+                          dispatch({ type: 'SET_WALLS', walls: union });
+                        }
+                      } catch (err) { /* ignore */ }
+                    } catch (e) { /* ignore */ }
+                } },
+                { key: 'note', label: 'Add Note', onClick: () => {
+                    const txt = window.prompt('Enter note for this tile:');
+                    if (txt && txt.trim()) {
+                      // add as a marker with custom tooltip
+                      addMarker(contextMenu.cellX, contextMenu.cellY, 'note', 'Note', txt.trim());
+                    }
+                  }
+                }
+              ]}
+            />
+          )}
           {radialMenu && (
             <div id="dungeon_radial_menu">
               <RadialMenu

@@ -2,6 +2,7 @@ import React from 'react';
 import { Scroll } from 'lucide-react';
 import Log from '../Log.jsx';
 import MarchingOrder from '../MarchingOrder.jsx';
+import audioPlayer from '../../utils/audioPlayer.js';
 
 export default function LogBar({ state, dispatch, collapsed, onToggle, selectedHero, onSelectHero }) {
   return (
@@ -25,6 +26,12 @@ export default function LogBar({ state, dispatch, collapsed, onToggle, selectedH
             </span>
           )}
         </div>
+        {/* show collapsed music info on the far-right next to the toggle */}
+        {collapsed && audioPlayer.getCurrentTrack() && (
+          <div className="text-xs text-amber-300 truncate mr-3 max-w-[28ch]" title={audioPlayer.getCurrentTrack().title || ''}>
+            {audioPlayer.isPlaying() ? '⏵' : '⏸'} {audioPlayer.getCurrentTrack().title}
+          </div>
+        )}
         <button className="text-slate-400 hover:text-white flex-shrink-0 ml-2">
           {collapsed ? '▲' : '▼'}
         </button>

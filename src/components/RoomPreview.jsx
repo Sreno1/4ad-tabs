@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
  * RoomPreview - Renders a compact thumbnail of a room template
  * Shows grid layout with rooms (filled), corridors (lines), and doors
  */
-export default function RoomPreview({ grid, doors, cellSize = 20 }) {
+export default function RoomPreview({ grid, doors, walls = [], cellSize = 20 }) {
   const width = grid[0]?.length || 7;
   const height = grid.length || 7;
   const total = width * height;
@@ -24,14 +24,15 @@ export default function RoomPreview({ grid, doors, cellSize = 20 }) {
 
   return (
     <div className="flex flex-col gap-1">
-      {/* Mini grid preview */}
+      {/* Mini grid preview with wall overlays */}
       <div
         className="bg-slate-900 border border-slate-600 rounded"
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${width}, ${cellSize}px)`,
           gap: '1px',
-          padding: '2px'
+          padding: '2px',
+          position: 'relative'
         }}
       >
         {grid.map((row, y) =>
@@ -48,39 +49,36 @@ export default function RoomPreview({ grid, doors, cellSize = 20 }) {
               style={{
                 width: `${cellSize}px`,
                 height: `${cellSize}px`,
+                position: 'relative',
+                // door markers as small amber borders
                 borderRight:
                   doors.some(
                     (d) => d.x === x && d.y === y && d.edge === 'E'
                   ) && x < width - 1
-                    ? '1px solid amber'
+                    ? '1px solid #f59e0b'
                     : 'none',
                 borderBottom:
                   doors.some(
                     (d) => d.x === x && d.y === y && d.edge === 'S'
                   ) && y < height - 1
-                    ? '1px solid amber'
+                    ? '1px solid #f59e0b'
                     : 'none'
               }}
               title={`(${x},${y}) ${['Empty', 'Room', 'Corridor'][cell]}`}
             />
           ))
         )}
-      </div>
 
-      {/* Stats */}
-      <div className="text-xs text-slate-400 grid grid-cols-3 gap-1">
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-blue-600 rounded" />
-          <span>{stats.rooms}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-slate-600 rounded" />
-          <span>{stats.corridors}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="text-amber-400">🚪</span>
-          <span>{doors.length}</span>
-        </div>
+        {/* Wall overlays: absolutely positioned inside the grid container */}
+        {walls.map((w, i) => {
+          const px = w.x * cellSize + 2;
+          const py = w.y * cellSize + 2;
+          if (w.edge === 'N') return <div key={i} style={{ position: 'absolute', left: px, top: py - 1, width: cellSize, height: 2, background: '#ffffff' }} />;
+          if (w.edge === 'S') return <div key={i} style={{ position: 'absolute', left: px, top: py + cellSize - 1, width: cellSize, height: 2, background: '#ffffff' }} />;
+          if (w.edge === 'E') return <div key={i} style={{ position: 'absolute', left: px + cellSize - 1, top: py, width: 2, height: cellSize, background: '#ffffff' }} />;
+          if (w.edge === 'W') return <div key={i} style={{ position: 'absolute', left: px - 1, top: py, width: 2, height: cellSize, background: '#ffffff' }} />;
+          return null;
+        })}
       </div>
     </div>
   );

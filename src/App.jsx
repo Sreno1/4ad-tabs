@@ -453,6 +453,20 @@ export default function App() {
                           dispatch({ type: 'TOGGLE_DOOR', x, y, edge: d.edge });
                         }
                       });
+                      // Merge walls from template (if any)
+                      const templateWalls = tpl.walls || [];
+                      if (templateWalls.length > 0) {
+                        const existingWalls = state.walls || [];
+                        const union = [...existingWalls];
+                        templateWalls.forEach(w => {
+                          const wx = startX + (w.x || 0);
+                          const wy = startY + (w.y || 0);
+                          if (wy >= 0 && wy < state.grid.length && wx >= 0 && wx < (state.grid[0]?.length||0)) {
+                            if (!union.some(u => u.x === wx && u.y === wy && u.edge === w.edge)) union.push({ x: wx, y: wy, edge: w.edge });
+                          }
+                        });
+                        dispatch({ type: 'SET_WALLS', walls: union });
+                      }
                       setPlacementTemplate(null);
                       roomEvents.setAutoPlacedRoom(null);
                     }}

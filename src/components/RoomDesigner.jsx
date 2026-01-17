@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { X, Download, Upload, Save, PlusSquare, Trash2 } from 'lucide-react';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
+import ContextMenu from './ContextMenu.jsx';
 import RoomPreview from './RoomPreview.jsx';
 import roomLibrary from '../utils/roomLibrary.js';
 
@@ -9,9 +10,38 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
   const blank = Array(7).fill(null).map(() => Array(7).fill(0));
   const [grid, setGrid] = useState(() => (initialTemplate && initialTemplate.grid) || blank);
   const [doors, setDoors] = useState(() => (initialTemplate && initialTemplate.doors) || []);
+  const [walls, setWalls] = useState(() => (initialTemplate && initialTemplate.walls) || []);
   const [name, setName] = useState((initialTemplate && initialTemplate.name) || 'Untitled Room');
   const [d66Number, setD66Number] = useState((initialTemplate && initialTemplate.d66Number) || '');
   const [library, setLibrary] = useState(() => roomLibrary.loadAll());
+  const [designerContextMenu, setDesignerContextMenu] = useState(null); // {xPx,yPx,cellX,cellY}
+  const designerGridRef = useRef(null);
+  // Native contextmenu handler for designer
+  useEffect(() => {
+    const container = designerGridRef.current;
+    if (!container) return;
+    const handler = (e) => {
+      try {
+        const canvas = container.querySelector('canvas');
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        let mouseX = e.clientX - rect.left;
+        let mouseY = e.clientY - rect.top;
+        // no rotation in designer, so mapping is direct
+        const x = Math.floor(mouseX / 28);
+        const y = Math.floor(mouseY / 28);
+        if (x >= 0 && x < 7 && y >= 0 && y < 7 && grid[y][x] === 1) {
+          e.preventDefault();
+          e.stopPropagation();
+          setDesignerContextMenu({ xPx: e.clientX, yPx: e.clientY, cellX: x, cellY: y });
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    container.addEventListener('contextmenu', handler);
+    return () => container.removeEventListener('contextmenu', handler);
+  }, [designerGridRef, grid]);
 
   const onCellSet = useCallback((x, y, value) => {
     setGrid(g => {
@@ -35,21 +65,44 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
       if (exists >= 0) {
         return d.filter((_, i) => i !== exists);
       }
+      // Remove any wall on this edge first
+      const newWalls = walls.filter(w => !(w.x === x && w.y === y && w.edge === edge));
+      setWalls(newWalls);
       return [...d, { x, y, edge }];
     });
-  }, []);
+  }, [walls]);
 
-  const clearGrid = useCallback(() => { setGrid(blank); setDoors([]); }, [blank]);
+  const onWallToggle = useCallback((x, y, edge, isAdding) => {
+    setWalls(w => {
+      const exists = w.findIndex(ww => ww.x === x && ww.y === y && ww.edge === edge);
+      if (isAdding) {
+        if (exists >= 0) return w; // Wall already exists
+        // Remove any door on this edge first
+        const newDoors = doors.filter(d => !(d.x === x && d.y === y && d.edge === edge));
+        setDoors(newDoors);
+        return [...w, { x, y, edge }];
+      } else {
+        // Removing wall
+        if (exists >= 0) {
+          return w.filter((_, i) => i !== exists);
+        }
+        return w;
+      }
+    });
+  }, [doors]);
+
+  const clearGrid = useCallback(() => { setGrid(blank); setDoors([]); setWalls([]); }, [blank]);
 
   const saveToLibrary = useCallback(() => {
     roomLibrary.save({
       name: name || 'Untitled',
       grid,
       doors,
+      walls,
       d66Number: d66Number ? parseInt(d66Number) : null
     });
     setLibrary(roomLibrary.loadAll());
-  }, [grid, doors, name, d66Number]);
+  }, [grid, doors, walls, name, d66Number]);
 
   const deleteFromLibrary = useCallback((id) => {
     roomLibrary.remove(id);
@@ -116,27 +169,109 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
         <div className="flex gap-4">
           <div>
             <div className="bg-slate-900 p-2 rounded">
+              <div ref={designerGridRef}>
               <DungeonGridCanvas
                 grid={grid}
                 doors={doors}
+                walls={walls}
                 roomMarkers={{}}
                 showMarkers={false}
                 cellSize={28}
                 shouldRotate={false}
+                suppressContextAction={true}
                 showPawnHint={false}
                 onCellClick={(x,y)=>onCellClick(x,y)}
                 onCellSet={(x,y,val)=>onCellSet(x,y,val)}
-                onCellRightClick={()=>{}}
+                onCellContextMenu={(x,y,e)=>{
+                  // Only open context menu for room cells
+                  try { e.preventDefault(); } catch (err) {}
+                  if (!grid[y] || grid[y][x] !== 1) return;
+                  setDesignerContextMenu({ xPx: e.clientX, yPx: e.clientY, cellX: x, cellY: y });
+                }}
+                onCellContextMenu={(x,y,e)=>{
+                  // compute menu position relative to click
+                  e.preventDefault();
+                  setDesignerContextMenu({ xPx: e.clientX, yPx: e.clientY, cellX: x, cellY: y });
+                }}
                 onDoorToggle={(x,y,edge)=>onDoorToggle(x,y,edge)}
                 partyPos={null}
                 onPartyMove={null}
                 partySelected={false}
                 onPartySelect={null}
               />
+              {designerContextMenu && (
+                <ContextMenu
+                  x={designerContextMenu.xPx}
+                  y={designerContextMenu.yPx}
+                  onClose={()=>setDesignerContextMenu(null)}
+                  items={[
+                    { key: 'wall', label: 'Wall off room', onClick: () => {
+                        const { cellX: sx, cellY: sy } = designerContextMenu;
+                        if (!(sy >= 0 && sy < grid.length && sx >= 0 && sx < (grid[0]?.length || 0))) return;
+                        if (grid[sy][sx] !== 1) return;
+                        // Flood-fill region
+                        const cols = grid[0]?.length || 0;
+                        const rows = grid.length;
+                        const toVisit = [{x: sx, y: sy}];
+                        const region = new Set();
+                        const key = (a,b)=>`${a},${b}`;
+                        while (toVisit.length) {
+                          const c = toVisit.pop();
+                          const k = key(c.x, c.y);
+                          if (region.has(k)) continue;
+                          if (!(c.y >= 0 && c.y < rows && c.x >= 0 && c.x < cols)) continue;
+                          if (grid[c.y][c.x] !== 1) continue;
+                          region.add(k);
+                          toVisit.push({x: c.x+1, y: c.y}); toVisit.push({x: c.x-1, y: c.y}); toVisit.push({x: c.x, y: c.y+1}); toVisit.push({x: c.x, y: c.y-1});
+                        }
+                        const perimeter = [];
+                        region.forEach(k => {
+                          const [rx, ry] = k.split(',').map(Number);
+                          const neighbors = [
+                            {edge: 'N', nx: rx, ny: ry-1},
+                            {edge: 'S', nx: rx, ny: ry+1},
+                            {edge: 'E', nx: rx+1, ny: ry},
+                            {edge: 'W', nx: rx-1, ny: ry}
+                          ];
+                          neighbors.forEach(n => {
+                            if (!(n.ny >= 0 && n.ny < rows && n.nx >= 0 && n.nx < cols) || grid[n.ny][n.nx] !== 1) {
+                              perimeter.push({ x: rx, y: ry, edge: n.edge });
+                            }
+                          });
+                        });
+                        if (perimeter.length === 0) return;
+                        const allExist = perimeter.every(pe => walls.some(w => w.x === pe.x && w.y === pe.y && w.edge === pe.edge));
+                        if (allExist) {
+                          setWalls(prev => prev.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === w.edge)));
+                        } else {
+                          setDoors(prev => prev.filter(d => !perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === d.edge)));
+                          setWalls(prev => {
+                            const kept = prev.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === w.edge));
+                            return [...kept, ...perimeter];
+                          });
+                        }
+                        setDesignerContextMenu(null);
+                      } },
+                    { key: 'note', label: 'Add Note', onClick: () => {
+                        const txt = window.prompt('Note for this tile:');
+                        if (txt && txt.trim()) {
+                          // no global markers here - could be extended later
+                        }
+                        setDesignerContextMenu(null);
+                      } }
+                  ]}
+                />
+              )}
+              </div>
+
+              {/* Native contextmenu listener on the designer container to ensure right-click works inside modal */}
+              <>
+                {/* attach listener via effect below */}
+              </>
             </div>
             <div className="mt-2 flex gap-2">
               <button onClick={clearGrid} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">Clear</button>
-              <button onClick={()=>onPlaceTemplate({ name, grid, doors })} className="px-2 py-1 bg-amber-600 hover:bg-amber-500 rounded text-sm">Place to map</button>
+              <button onClick={()=>onPlaceTemplate({ name, grid, doors, walls })} className="px-2 py-1 bg-amber-600 hover:bg-amber-500 rounded text-sm">Place to map</button>
             </div>
           </div>
 
@@ -149,7 +284,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                   <div className="flex gap-2">
                     {/* Preview */}
                     <div className="flex-shrink-0">
-                      <RoomPreview grid={item.grid} doors={item.doors || []} cellSize={16} />
+                      <RoomPreview grid={item.grid} doors={item.doors || []} walls={item.walls || []} cellSize={16} />
                     </div>
                     {/* Info & Actions */}
                     <div className="flex-1 flex flex-col justify-between">
@@ -157,6 +292,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                         <div className="flex items-center gap-2">
                           <div className="font-bold text-sm text-amber-400">{item.name}</div>
                           {item.d66Number && <div className="text-xs bg-blue-700 px-1.5 py-0.5 rounded">d66: {item.d66Number}</div>}
+                          {item.tag && <div className="text-xs bg-slate-700 px-1.5 py-0.5 rounded">{item.tag}</div>}
                         </div>
                         <div className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()}</div>
                       </div>

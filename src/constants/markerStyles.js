@@ -8,6 +8,7 @@ const MARKER_STYLES = {
   entrance: { char: '⌂', color: '#06b6d4' },
   exit: { char: '⛨', color: '#10b981' }
   , clear: { char: '✖', color: '#ef4444' }
+  , note: { char: '✎', color: '#f59e0b' }
 };
 
 export default MARKER_STYLES;

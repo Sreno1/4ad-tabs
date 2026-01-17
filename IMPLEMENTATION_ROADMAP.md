@@ -249,9 +249,12 @@ This document provides a complete audit of the Four Against Darkness companion a
   - Spell definitions with target types: `src/data/spells.js`
   - Target types: 'all_enemies', 'single', 'single_ally'
 - **What's Missing:**
+  - ✅ Core cast logic implemented in `src/data/spells.js` with MR and casting roll handling
+  - ✅ performCastSpell and performCastScrollSpell apply most spell effects and log MR/cast details
+  - ✅ AoE damage and single-target damage plumbing in `src/utils/gameActions/spellActions.js`
   - ❌ UI for target selection
-  - ❌ AoE vs single-target damage application
-  - ❌ Minor Foe group targeting rules
+  - ❌ Per-spell exact targeting/edge cases still need to be hardened (e.g., fire immunities, elementals, undead exceptions)
+  - ❌ Minor Foe group targeting rules UI (selection) and group-resolution edge cases
 - **Rule Reference:** Magic.txt
 - **Architecture Needed:**
   ```javascript
@@ -362,6 +365,23 @@ This document provides a complete audit of the Four Against Darkness companion a
   }
   ```
 - **Priority:** MEDIUM
+
+### Recent Spell/Status Integration (work completed 2026-01-16)
+- Implemented MR two-stage checks (MR roll then casting roll) and exposed both rolls in combat log via `performCastSpell` and `performCastScrollSpell`.
+- Implemented passing of casting bonuses from traits and scrolls into `castSpell` (via `targets[0].castingBonus`). Currently wired: Specialist (hero.specialistChoice), Shadow Adept, and scroll +L/+1 bonuses.
+- Implemented entangle/bound/asleep effects being applied as monster status flags and updating combat behavior:
+  - asleep: monsters skip attacks
+  - entangled: monsters attack with effective level -1
+  - bound: attackers receive +2 vs bound targets
+- Implemented Fireball minor-foe exact slay rule in the combat handler and Fireball=1 vs Major Foe handling in `castSpell`.
+
+### Remaining Spell/Combat Tasks (high priority)
+- Wire trait effect flags into `getTraitRollModifiers` (expose `spellCastingBonus` from trait effects consistently).
+- Replace `targets[0].castingBonus` usage with explicit `castSpell(spellKey, caster, targets, context)` signature for clarity.
+- Implement UI target selection for: single target, minor-foe group target, and AoE confirmation.
+- Implement edge-case resistances/vulnerabilities (fire-immune, undead vs healing-like effects, elementals) in `castSpell` and `performCastSpell`.
+- Ensure per-turn expiry of status flags (entangleTurns/boundTurns/asleep duration) and visual/log expiry messages.
+- Add tests for MR fail/pass, Fireball minor-foe slay, entangle/asleep behavior, and bound target +2 damage.
 
 #### **Environment-Based Treasure Tables**
 - **Status:** ❌ NOT IMPLEMENTED

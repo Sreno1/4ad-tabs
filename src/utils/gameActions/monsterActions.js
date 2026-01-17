@@ -203,6 +203,7 @@ export const checkLevelUp = (dispatch, hero, heroIdx) => {
  */
 export const processMonsterRoundStart = (dispatch, monsters) => {
   monsters.forEach((monster, idx) => {
+    // Handle per-round monster abilities (regen, etc.)
     if (monster.hp > 0 && monster.special) {
       const result = applyMonsterAbility(monster, 'round_start', {});
       if (result) {
@@ -211,6 +212,46 @@ export const processMonsterRoundStart = (dispatch, monsters) => {
           dispatch({ type: 'APPLY_MONSTER_ABILITY', monsterIdx: idx, effect: 'heal', value: result.value });
         }
       }
+    }
+
+    // Decrement and expire temporary status effects applied by spells
+    try {
+      // Entangle
+      if (monster.entangled && typeof monster.entangleTurns === 'number') {
+        const newTurns = monster.entangleTurns - 1;
+        if (newTurns <= 0) {
+          dispatch({ type: 'UPD_MONSTER', i: idx, u: { entangled: false, entangleTurns: 0 } });
+          dispatch({ type: 'LOG', t: `🕸️ ${monster.name} is no longer entangled.` });
+        } else {
+          dispatch({ type: 'UPD_MONSTER', i: idx, u: { entangleTurns: newTurns } });
+        }
+      }
+
+      // Bound
+      if (monster.bound && typeof monster.boundTurns === 'number') {
+        const newTurns = monster.boundTurns - 1;
+        if (newTurns <= 0) {
+          dispatch({ type: 'UPD_MONSTER', i: idx, u: { bound: false, boundTurns: 0 } });
+          dispatch({ type: 'LOG', t: `🔗 ${monster.name} is no longer bound.` });
+        } else {
+          dispatch({ type: 'UPD_MONSTER', i: idx, u: { boundTurns: newTurns } });
+        }
+      }
+
+      // Asleep
+      if (monster.status && monster.status.asleep && typeof monster.asleepTurns === 'number') {
+        const newTurns = monster.asleepTurns - 1;
+        if (newTurns <= 0) {
+          const newStatus = { ...(monster.status || {}) };
+          delete newStatus.asleep;
+          dispatch({ type: 'UPD_MONSTER', i: idx, u: { status: newStatus, asleepTurns: 0 } });
+          dispatch({ type: 'LOG', t: `😴 ${monster.name} wakes up.` });
+        } else {
+          dispatch({ type: 'UPD_MONSTER', i: idx, u: { asleepTurns: newTurns } });
+        }
+      }
+    } catch (e) {
+      // Ignore per-turn status errors
     }
   });
 };

@@ -30,8 +30,7 @@ const EventCard = memo(function EventCard({ event, index }) {
       return (
         <div key={index} className="bg-slate-700/50 rounded p-2 text-xs border-l-2 border-blue-400">
           <div className="text-blue-400 font-bold">Tile Generated</div>
-          <div className="text-slate-300">{event.data.shape?.description}</div>
-          <div className="text-slate-400">Doors: {event.data.shape?.doors}</div>
+          <div className="text-slate-300">Type: {event.data.type || (event.data.shape && event.data.shape.type) || 'Unknown'}</div>
         </div>
       );
 

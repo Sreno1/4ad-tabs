@@ -376,47 +376,200 @@ export const getSpellSlots = (classKey, level) => {
  * @param {array} targets - Target(s) of the spell
  * @returns {object} Spell result
  */
-export const castSpell = (spellKey, caster, targets = []) => {
+export const castSpell = (spellKey, caster, context = {}) => {
   const spell = SPELLS[spellKey];
   if (!spell) return { success: false, message: 'Unknown spell' };
-  
+
+  const targets = context.targets || [];
+  const castingBonus = (typeof context.castingBonus === 'number') ? context.castingBonus : (targets[0]?.castingBonus || 0);
+
   const result = {
     spell: spellKey,
     spellName: spell.name,
-    caster: caster.name,
+    caster: caster?.name || 'Unknown',
     type: spell.type,
     effect: spell.effect,
     success: true,
-    targets: [],
-    message: `${caster.name} casts ${spell.name}!`
+    targets: targets,
+    details: {},
+    message: `${caster?.name || 'Someone'} casts ${spell.name}!`
   };
-  
-  // Calculate damage/healing based on effect
-  if (spell.damage) {
-    const [dice, sides] = spell.damage.split('d').map(Number);
-    let total = 0;
-    for (let i = 0; i < dice; i++) {
-      total += Math.floor(Math.random() * sides) + 1;
+
+  // Helper: roll XdY string or number
+  const roll = (expr) => {
+    if (!expr) return 0;
+    if (typeof expr === 'number') return expr;
+    if (typeof expr === 'string' && expr.includes('d')) {
+      const [dice, sides] = expr.split('d').map(Number);
+      let t = 0;
+      for (let i = 0; i < dice; i++) t += Math.floor(Math.random() * sides) + 1;
+      return t;
     }
-    result.value = total;
-    result.message += ` Deals ${total} damage!`;
-  }
-  
-  if (spell.healing) {
-    const [dice, sides] = spell.healing.split('d').map(Number);
-    let total = 0;
-    for (let i = 0; i < dice; i++) {
-      total += Math.floor(Math.random() * sides) + 1;
+    const n = Number(expr);
+    return isNaN(n) ? 0 : n;
+  };
+
+  // Helper: resolve simple duration expressions (numbers, 'tier', 'encounter')
+  const resolveDuration = (val) => {
+    if (!val) return null;
+    if (typeof val === 'number') return val;
+    if (val === 'encounter' || val === 'adventure' || val === 'timed') return null;
+    const tierVal = (caster && (caster.tier || caster.lvl)) || 1;
+    try {
+      let s = String(val).replace(/tier/g, String(tierVal)).replace(/_?turns?/g, '');
+      const n = Number(s);
+      return isNaN(n) ? null : n;
+    } catch (e) {
+      return null;
     }
-    result.value = total;
-    result.message += ` Heals ${total} HP!`;
+  };
+
+  // Helper: perform MR check. Returns {passed: bool, message}
+  const checkMR = (target) => {
+    const hasMR = target && ( (Array.isArray(target.special) && target.special.includes('magic_resist')) || target.special === 'magic_resist');
+    const mr = hasMR ? (target.mr || 5) : (target.mr || 0);
+    if (!mr) return { passed: true };
+    // caster performs spellcasting roll: d6 + caster.lvl (+ trait/specialist/scroll bonus) vs MR
+    const r = Math.floor(Math.random() * 6) + 1;
+    const bonus = castingBonus || 0;
+    const total = r + (caster?.lvl || 0) + bonus;
+    return { passed: total >= mr, roll: r, total, mr, bonus };
+  };
+
+  // Helper: perform spellcasting roll vs target Level. Returns {hit: bool, roll, total}
+  const spellcastRollVsLevel = (targetLevel) => {
+    const r = Math.floor(Math.random() * 6) + 1;
+    const bonus = castingBonus || 0;
+    const total = r + (caster?.lvl || 0) + bonus;
+    return { hit: total >= (targetLevel || 1), roll: r, total, bonus };
+  };
+
+  // Single-target damage
+  if (spell.effect === 'single_damage') {
+    const target = targets && targets[0];
+    // Check MR first
+    if (target) {
+      const hasMR = (Array.isArray(target.special) && target.special.includes('magic_resist')) || target.special === 'magic_resist';
+      if (hasMR) {
+        const mrRes = checkMR(target);
+        result.details.mr = mrRes;
+        if (!mrRes.passed) {
+          result.success = false;
+          result.message = `${caster.name} fails to penetrate Magic Resistance (MR${mrRes.mr}). Spell wasted.`;
+          return result;
+        }
+      }
+      // Now perform spellcasting roll vs target level for spells that require a hit
+      const castRes = spellcastRollVsLevel(target.level || 1);
+      result.details.cast = castRes;
+      result.hit = castRes.hit;
+      result.roll = castRes.roll;
+      result.total = castRes.total;
+      if (!result.hit) {
+        result.message += ` The spell fails to affect the target (roll ${result.roll}+${caster?.lvl||0}+${castingBonus} vs L${target.level||1}).`;
+        return result;
+      }
+    }
+    const dmg = roll(spell.damage);
+    result.value = dmg;
+    result.message += ` Deals ${dmg} damage to target.`;
   }
-  
-  if (spell.bonus) {
-    result.bonus = spell.bonus;
-    result.message += ` +${spell.bonus} bonus applied!`;
+
+  // AoE damage (applies to groups or all monsters)
+  if (spell.effect === 'aoe_damage') {
+    // For AoE spells, some foes (minor vs major) behave differently (e.g., Fireball)
+    const dmg = roll(spell.damage);
+    result.value = dmg;
+    result.message += ` Deals ${dmg} damage to enemies.`;
   }
-  
+
+  // Fireball exact rules vs Major Foes: inflicts 1 damage on Major Foe (not d6)
+  if (spellKey === 'fireball' && targets && targets[0] && targets[0].count === undefined) {
+    // single major target
+    result.effect = 'single_damage';
+    result.value = 1;
+    result.message = `${caster.name} hurls a Fireball dealing 1 damage to the Major Foe.`;
+    return result;
+  }
+
+  // Apply trait-based and other casting modifiers into result.details if caller passes 'castingBonus' in targets[0]
+  // Note: performCastSpell will set result.details.castingBonus from scrolls/traits
+  if (!result.details) result.details = {};
+
+  // Sleep: number of minor foes or single major
+  if (spell.effect === 'sleep') {
+    // d6 + caster L. Does not work on Unliving, elementals, most dragons or L11+
+    const d6v = Math.floor(Math.random() * 6) + 1;
+    const number = d6v + (caster?.lvl || 0);
+    result.value = number;
+    result.duration = resolveDuration(1);
+    result.message += ` Attempts to put ${number} Minor Foes to sleep or one Major Foe.`;
+  }
+
+  // Protection/defense buffs
+  if (spell.effect === 'defense_buff') {
+  result.bonus = spell.bonus || 0;
+  result.duration = resolveDuration(spell.duration || 'encounter');
+  result.message += ` Grants +${result.bonus} to Defense until ${result.duration || 'end of encounter'}.`;
+  }
+
+  // Summon companion
+  if (spell.effect === 'summon_companion') {
+    result.summon = {
+      name: spell.name === 'Summon Beast' ? 'Summoned Beast' : spell.name,
+      life: spell.life || 5,
+      attack: spell.attack || 1,
+      damage: spell.damageAmount || 1,
+  duration: resolveDuration(spell.duration || 'encounter')
+    };
+    result.message += ` Summons ${result.summon.name}.`;
+  }
+
+  // Entangle / webbing: number or single
+  if (spell.effect === 'entangle') {
+    result.debuff = spell.debuff || -1;
+    result.duration = resolveDuration(spell.duration || 'encounter');
+    result.message += ` Targets suffer ${result.debuff} to L for ${result.duration || 'the encounter'}.`;
+  }
+
+  // Bind (phantasmal binding)
+  if (spell.effect === 'bind') {
+    result.duration = resolveDuration(spell.duration || (caster?.tier || caster?.lvl || 1));
+    result.message += ` Attempts to bind target for ${result.duration || 'the encounter'} turns.`;
+  }
+
+  // Fog
+  if (spell.effect === 'fog') {
+    result.bonus = spell.bonus || 0;
+    result.duration = resolveDuration(spell.duration || 'encounter');
+    result.message += ` Creates fog: ranged/gaze suspended, +${result.bonus} when fleeing.`;
+  }
+
+  // Dispel illusions
+  if (spell.effect === 'dispel_illusions') {
+    result.message += ` Dispels illusions and reveals invisible foes.`;
+  }
+
+  // Subdual buff
+  if (spell.effect === 'subdual_buff') {
+    result.duration = resolveDuration(spell.duration || 'encounter');
+    result.message += ` Allies ignore -1 Subdual penalty this encounter.`;
+  }
+
+  // Food / banquet
+  if (spell.effect === 'food') {
+    result.amount = spell.amount || ((caster?.tier || caster?.lvl || 1) + 3);
+    result.message += ` Creates ${result.amount} illusionary rations (7 days safe).`;
+  }
+
+  // Shadow strike / subdual damage
+  if (spell.effect === 'subdual_damage') {
+    // damage is in 'damage' field as numeric or 'tier' placeholder
+    const base = spell.damage === 'tier' ? (caster?.tier || caster?.lvl || 1) : roll(spell.damage);
+    result.value = base;
+    result.message += ` Deals ${base} subdual damage on hit.`;
+  }
+
   return result;
 };
 

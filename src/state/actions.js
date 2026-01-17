@@ -36,6 +36,7 @@ export const TOGGLE_CELL = 'TOGGLE_CELL';
 export const SET_CELL = 'SET_CELL'; // Set cell to specific value (0, 1, or 2)
 export const TOGGLE_DOOR = 'TOGGLE_DOOR';
 export const CLEAR_GRID = 'CLEAR_GRID';
+export const SET_WALLS = 'SET_WALLS';
 
 // Environment
 export const CHANGE_ENVIRONMENT = 'CHANGE_ENVIRONMENT';

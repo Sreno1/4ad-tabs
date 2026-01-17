@@ -3,6 +3,8 @@
  */
 import { SPELLS, getSpellSlots, castSpell } from '../../data/spells.js';
 import { getScrollSpell, canUseScroll, getScrollCastingBonus } from '../../data/scrolls.js';
+import { getTier } from '../../data/classes.js';
+import { getTraitRollModifiers } from '../traitEffects.js';
 
 /**
  * Cast a spell
@@ -23,25 +25,179 @@ export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context 
   // Use a spell slot
   dispatch({ type: 'USE_SPELL', heroIdx: casterIdx });
 
-  const result = castSpell(spellKey, caster, context.targets || []);
-  dispatch({ type: 'LOG', t: `✨ ${result.message}` });
-
-  // Apply spell effects
-  if (spell.effect === 'single_damage' && context.targetMonsterIdx !== undefined) {
-    dispatch({
-      type: 'UPD_MONSTER',
-      i: context.targetMonsterIdx,
-      u: { hp: Math.max(0, context.targetMonster.hp - result.value) }
-    });
+  // Determine casting bonus from traits (Specialist) and context
+  let castingBonus = 0;
+  try {
+    const traitMods = getTraitRollModifiers(caster, {});
+    // Specialist trait handled directly: hero.specialistChoice should contain spell key
+    if (caster?.trait) {
+      const t = caster.trait;
+      if (t === 'specialist' && caster.specialistChoice === spellKey) {
+        // use Tier from level
+        castingBonus += getTier(caster.lvl);
+      }
+    }
+    // Other trait effects (like Shadow Adept for Shadow Strike) add Tier to specific spells
+    if (caster?.trait === 'shadowAdept' && spellKey === 'shadow_strike') {
+      castingBonus += getTier(caster.lvl);
+    }
+    if (traitMods && traitMods.flags && traitMods.flags.spellCastingBonus) {
+      castingBonus += traitMods.flags.spellCastingBonus;
+    }
+  } catch (e) {
+    // ignore trait errors
   }
 
-  if (spell.effect === 'heal' && context.targetHeroIdx !== undefined) {
-    const targetHero = context.targetHero;
-    dispatch({
-      type: 'UPD_HERO',
-      i: context.targetHeroIdx,
-      u: { hp: Math.min(targetHero.maxHp, targetHero.hp + result.value) }
-    });
+  // Provide castingBonus to castSpell via explicit context.castingBonus
+  const ctx = { ...context, targets: context.targets || [], castingBonus };
+  const result = castSpell(spellKey, caster, ctx);
+  // Log main message
+  dispatch({ type: 'LOG', t: `✨ ${result.message}` });
+
+  // If MR check details were recorded, log them for visibility
+  if (result.details && result.details.mr) {
+    const mr = result.details.mr;
+    dispatch({ type: 'LOG', t: `🛡️ MR Roll: d6=${mr.roll} + L${caster.lvl} = ${mr.total} vs MR${mr.mr} → ${mr.passed ? 'Pass' : 'Fail'}` });
+  }
+  if (result.details && result.details.cast) {
+    const c = result.details.cast;
+    dispatch({ type: 'LOG', t: `🎲 Cast Roll: d6=${c.roll} + L${caster.lvl} + ${castingBonus} = ${c.total} vs target` });
+  }
+
+  // Prefer the computed result.effect (some spells override behavior), else use definition
+  const eff = result.effect || spell.effect;
+  // Apply spell effects by effect type
+  switch (eff) {
+    case 'single_damage':
+      if (context.targetMonsterIdx !== undefined && result.success && (typeof result.hit === 'undefined' || result.hit)) {
+        dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { hp: Math.max(0, context.targetMonster.hp - (result.value || 0)) } });
+      }
+      break;
+
+    case 'aoe_damage':
+      // Damage all active monsters
+      (context.allMonsters || []).forEach((m, idx) => {
+        if (!m) return;
+        const newHp = Math.max(0, (m.hp || 0) - (result.value || 0));
+        dispatch({ type: 'UPD_MONSTER', i: idx, u: { hp: newHp } });
+      });
+      break;
+
+    case 'sleep':
+      // Sleep affects minor foes (reduce count) or a single major (set status)
+      if (context.targetMonsterIdx !== undefined) {
+        const m = context.targetMonster;
+        if (m.count !== undefined) {
+          // minor foes: put number to sleep (reduce count)
+          const toSleep = Math.min(m.count, result.value || 0);
+          const remaining = Math.max(0, m.count - toSleep);
+          dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { count: remaining } });
+        } else {
+          // major foe: mark asleep with numeric turns
+          const turns = (typeof result.duration === 'number') ? result.duration : 1;
+          dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { status: { ...(m.status||{}), asleep: true }, asleepTurns: turns } });
+          dispatch({ type: 'LOG', t: `😴 ${m.name} is put to sleep for ${turns} turn(s).` });
+        }
+      }
+      break;
+
+    case 'defense_buff':
+      // Apply protection/barkskin to a hero
+      if (context.targetHeroIdx !== undefined) {
+        dispatch({ type: 'SET_HERO_STATUS', heroIdx: context.targetHeroIdx, statusKey: 'protected', value: true });
+        // record bonus if present
+        if (result.bonus) {
+          dispatch({ type: 'SET_HERO_STATUS', heroIdx: context.targetHeroIdx, statusKey: 'protectBonus', value: result.bonus });
+        }
+      } else {
+        // apply to caster by default
+        dispatch({ type: 'SET_HERO_STATUS', heroIdx: casterIdx, statusKey: 'protected', value: true });
+        if (result.bonus) dispatch({ type: 'SET_HERO_STATUS', heroIdx: casterIdx, statusKey: 'protectBonus', value: result.bonus });
+      }
+      break;
+
+    case 'entangle':
+      if (context.targetMonsterIdx !== undefined) {
+        const turns = (typeof result.duration === 'number') ? result.duration : 0;
+        dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { entangled: true, entangleTurns: turns } });
+        dispatch({ type: 'LOG', t: `🕸️ ${context.targetMonster.name} is entangled for ${turns || 'the encounter'} turn(s).` });
+      } else if (context.multipleTargetIdxs) {
+        const turns = (typeof result.duration === 'number') ? result.duration : 0;
+        (context.multipleTargetIdxs || []).forEach(i => {
+          const m = (context.allMonsters || [])[i];
+          dispatch({ type: 'UPD_MONSTER', i, u: { entangled: true, entangleTurns: turns } });
+          dispatch({ type: 'LOG', t: `🕸️ ${m?.name || 'Target'} is entangled for ${turns || 'the encounter'} turn(s).` });
+        });
+      }
+      break;
+
+    case 'bind':
+      if (context.targetMonsterIdx !== undefined) {
+        const turnsB = (typeof result.duration === 'number') ? result.duration : 1;
+        dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { bound: true, boundTurns: turnsB } });
+        dispatch({ type: 'LOG', t: `🔗 ${context.targetMonster.name} is bound for ${turnsB} turn(s).` });
+      }
+      break;
+
+    case 'summon_companion':
+      // Add a simple monster representing the summoned creature
+      const summon = result.summon || {};
+      const monster = {
+        id: `summon_${Date.now()}`,
+        name: summon.name || 'Summon',
+        level: 3,
+        hp: summon.life || 5,
+        maxHp: summon.life || 5,
+        special: null
+      };
+      dispatch({ type: 'ADD_MONSTER', m: monster });
+      break;
+
+    case 'mirror_images':
+      // Set hero status with mirror image copies
+      if (context.casterIdx !== undefined) {
+        dispatch({ type: 'SET_HERO_STATUS', heroIdx: context.casterIdx, statusKey: 'mirrorImages', value: result.copies || spell.copies || 1 });
+      } else {
+        dispatch({ type: 'SET_HERO_STATUS', heroIdx: casterIdx, statusKey: 'mirrorImages', value: result.copies || spell.copies || 1 });
+      }
+      break;
+
+    case 'dispel_illusions':
+      // Reveal invisible or remove illusion flags on monsters
+      (context.allMonsters || []).forEach((m, idx) => {
+        if (!m) return;
+        if (m.status && (m.status.invisible || m.status.illusion)) {
+          const newStatus = { ...(m.status || {}) };
+          delete newStatus.invisible;
+          delete newStatus.illusion;
+          dispatch({ type: 'UPD_MONSTER', i: idx, u: { status: newStatus } });
+        }
+      });
+      break;
+
+    case 'fog':
+      // Set a global combat meta or hero status to indicate fog; keep simple: set caster status
+      dispatch({ type: 'SET_HERO_STATUS', heroIdx: casterIdx, statusKey: 'illusionFog', value: true });
+      break;
+
+    case 'subdual_buff':
+      // Mark party-wide subdual-friendly flag in combat meta if available; fallback: hero status
+      dispatch({ type: 'SET_HERO_STATUS', heroIdx: casterIdx, statusKey: 'subdualBuff', value: true });
+      break;
+
+    case 'food':
+      // Add an inventory item or party status; keep simple: log amount in details
+      dispatch({ type: 'LOG', t: `🍽️ ${caster.name} conjures ${result.amount} illusory rations.` });
+      break;
+
+    case 'subdual_damage':
+      if (context.targetMonsterIdx !== undefined && result.success && (typeof result.hit === 'undefined' || result.hit)) {
+        dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { hp: Math.max(0, context.targetMonster.hp - (result.value || 0)) } });
+      }
+      break;
+
+    default:
+      break;
   }
 
   return result;
@@ -88,14 +244,22 @@ export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, c
   const bonus = getScrollCastingBonus(caster, spell);
 
   // Cast the spell (reuse existing spell logic, but don't consume spell slot)
-  const result = castSpell(spell.key || Object.keys(SPELLS).find(key => SPELLS[key] === spell), caster, context.targets || []);
 
-  // Add the scroll bonus to the result
+  const spellKey = spell.key || Object.keys(SPELLS).find(key => SPELLS[key] === spell);
+  const ctx = { ...context, targets: context.targets || [], castingBonus: (context.castingBonus || 0) + bonus };
+  const result = castSpell(spellKey, caster, ctx);
   result.scrollBonus = bonus;
   result.message = `${caster.name} reads ${scrollKey.replace('scroll_', '')} scroll and casts it (+${bonus} bonus)! ${result.message}`;
-
-  // Log the scroll usage
   dispatch({ type: 'LOG', t: `✨ ${result.message}` });
+
+  if (result.details && result.details.mr) {
+    const mr = result.details.mr;
+    dispatch({ type: 'LOG', t: `🛡️ MR Roll: d6=${mr.roll} + L${caster.lvl} = ${mr.total} vs MR${mr.mr} → ${mr.passed ? 'Pass' : 'Fail'}` });
+  }
+  if (result.details && result.details.cast) {
+    const c = result.details.cast;
+    dispatch({ type: 'LOG', t: `🎲 Cast Roll: d6=${c.roll} + L${caster.lvl} = ${c.total} vs L${c.total ? c.total : 'target'}` });
+  }
 
   // Remove scroll from inventory
   const scrollIdx = caster.inventory?.indexOf(scrollKey);
@@ -108,22 +272,85 @@ export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, c
   }
 
   // Apply spell effects (same as memorized spell)
-  if (spell.effect === 'single_damage' && context.targetMonsterIdx !== undefined) {
-    const damageAmount = result.value || 0;
-    dispatch({
-      type: 'UPD_MONSTER',
-      i: context.targetMonsterIdx,
-      u: { hp: Math.max(0, context.targetMonster.hp - damageAmount) }
-    });
-  }
-
-  if (spell.effect === 'heal' && context.targetHeroIdx !== undefined) {
-    const targetHero = context.targetHero;
-    dispatch({
-      type: 'UPD_HERO',
-      i: context.targetHeroIdx,
-      u: { hp: Math.min(targetHero.maxHp, targetHero.hp + result.value) }
-    });
+  // Reuse the same effect application logic as performCastSpell
+  switch (spell.effect) {
+    case 'single_damage':
+      if (context.targetMonsterIdx !== undefined) {
+        dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { hp: Math.max(0, context.targetMonster.hp - (result.value || 0)) } });
+      }
+      break;
+    case 'aoe_damage':
+      (context.allMonsters || []).forEach((m, idx) => {
+        if (!m) return;
+        const newHp = Math.max(0, (m.hp || 0) - (result.value || 0));
+        dispatch({ type: 'UPD_MONSTER', i: idx, u: { hp: newHp } });
+      });
+      break;
+    case 'sleep':
+      if (context.targetMonsterIdx !== undefined) {
+        const m = context.targetMonster;
+        if (m.count !== undefined) {
+          const toSleep = Math.min(m.count, result.value || 0);
+          const remaining = Math.max(0, m.count - toSleep);
+          dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { count: remaining } });
+        } else {
+          const turns = (typeof result.duration === 'number') ? result.duration : 1;
+          dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { status: { ...(m.status||{}), asleep: true }, asleepTurns: turns } });
+          dispatch({ type: 'LOG', t: `😴 ${m.name} is put to sleep for ${turns} turn(s).` });
+        }
+      }
+      break;
+    case 'defense_buff':
+      if (context.targetHeroIdx !== undefined) {
+        dispatch({ type: 'SET_HERO_STATUS', heroIdx: context.targetHeroIdx, statusKey: 'protected', value: true });
+        if (result.bonus) dispatch({ type: 'SET_HERO_STATUS', heroIdx: context.targetHeroIdx, statusKey: 'protectBonus', value: result.bonus });
+      } else {
+        dispatch({ type: 'SET_HERO_STATUS', heroIdx: casterIdx, statusKey: 'protected', value: true });
+        if (result.bonus) dispatch({ type: 'SET_HERO_STATUS', heroIdx: casterIdx, statusKey: 'protectBonus', value: result.bonus });
+      }
+      break;
+    case 'entangle':
+      if (context.targetMonsterIdx !== undefined) {
+        const turns = (typeof result.duration === 'number') ? result.duration : 0;
+        dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { entangled: true, entangleTurns: turns } });
+        dispatch({ type: 'LOG', t: `🕸️ ${context.targetMonster.name} is entangled for ${turns || 'the encounter'} turn(s).` });
+      } else if (context.multipleTargetIdxs) {
+        const turns = (typeof result.duration === 'number') ? result.duration : 0;
+        (context.multipleTargetIdxs || []).forEach(i => {
+          const m = (context.allMonsters || [])[i];
+          dispatch({ type: 'UPD_MONSTER', i, u: { entangled: true, entangleTurns: turns } });
+          dispatch({ type: 'LOG', t: `🕸️ ${m?.name || 'Target'} is entangled for ${turns || 'the encounter'} turn(s).` });
+        });
+      }
+      break;
+    case 'summon_companion':
+      const summon = result.summon || {};
+      const monster = { id: `summon_${Date.now()}`, name: summon.name || 'Summon', level: 3, hp: summon.life || 5, maxHp: summon.life || 5, special: null };
+      dispatch({ type: 'ADD_MONSTER', m: monster });
+      break;
+    case 'dispel_illusions':
+      (context.allMonsters || []).forEach((m, idx) => {
+        if (!m) return;
+        if (m.status && (m.status.invisible || m.status.illusion)) {
+          const newStatus = { ...(m.status || {}) };
+          delete newStatus.invisible;
+          delete newStatus.illusion;
+          dispatch({ type: 'UPD_MONSTER', i: idx, u: { status: newStatus } });
+        }
+      });
+      break;
+    case 'bind':
+      if (context.targetMonsterIdx !== undefined) {
+        const turnsB = (typeof result.duration === 'number') ? result.duration : 1;
+        dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { bound: true, boundTurns: turnsB } });
+        dispatch({ type: 'LOG', t: `🔗 ${context.targetMonster.name} is bound for ${turnsB} turn(s).` });
+      }
+      break;
+    case 'fog':
+      dispatch({ type: 'SET_HERO_STATUS', heroIdx: casterIdx, statusKey: 'illusionFog', value: true });
+      break;
+    default:
+      break;
   }
 
   return result;
