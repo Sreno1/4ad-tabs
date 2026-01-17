@@ -45,6 +45,8 @@ export const CHANGE_ENVIRONMENT = 'CHANGE_ENVIRONMENT';
 export const LOG = 'LOG';
 export const CLEAR_LOG = 'CLEAR_LOG';
 export const ARCHIVE_LOG = 'ARCHIVE_LOG'; // Archive current log and clear it
+export const SHOW_MODAL = 'SHOW_MODAL'; // Show a transient modal message
+export const HIDE_MODAL = 'HIDE_MODAL'; // Hide modal
 // Story beats / narrative
 export const ADD_STORY_BEAT = 'ADD_STORY_BEAT';
 export const DEL_STORY_BEAT = 'DEL_STORY_BEAT';

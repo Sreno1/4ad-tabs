@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { performStealthSave } from '../utils/gameActions/stealthActions.js';
+import { selectParty } from '../state/selectors.js';
 
 // Simple draggable party tracker overlay that can be moved inside a provided container
 export default function PartyTracker({ state, dispatch, containerRef }) {
@@ -98,6 +100,8 @@ export default function PartyTracker({ state, dispatch, containerRef }) {
 
   if (!state || !state.party) return null;
 
+  const party = state.party || [];
+
   return (
     <div
       id="party_tracker"
@@ -117,7 +121,7 @@ export default function PartyTracker({ state, dispatch, containerRef }) {
         <div id="party_tracker_drag_handle" className="text-slate-400">☰</div>
       </div>
       <div id="party_tracker_list" className="space-y-1">
-        {state.party.map((h, i) => (
+  {party.map((h, i) => (
           <div id={`party_tracker_hero_${i}`} key={h.id || i} className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div id={`party_tracker_hero_${i}_avatar`} className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center text-amber-300 font-bold">{(h.name||'H').slice(0,1)}</div>
@@ -126,7 +130,20 @@ export default function PartyTracker({ state, dispatch, containerRef }) {
                 <div id={`party_tracker_hero_${i}_info`} className="text-slate-400 text-[11px]">L{h.lvl} • {h.key}</div>
               </div>
             </div>
-            <div id={`party_tracker_hero_${i}_hp`} className="text-red-400 text-xs">{h.hp}/{h.maxHp}</div>
+            <div className="flex items-center gap-2">
+              <div id={`party_tracker_hero_${i}_hp`} className="text-red-400 text-xs">{h.hp}/{h.maxHp}</div>
+              <button
+                title="Stealth Save"
+                onClick={() => {
+                  const foeLevelRaw = window.prompt('Enter foe level to Stealth against (e.g., 3):', '1');
+                  const foeLevel = parseInt(foeLevelRaw, 10) || 1;
+                  performStealthSave(dispatch, h, foeLevel, { environment: 'dungeon', applyTraits: true });
+                }}
+                className="bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 px-2 py-0.5 rounded"
+              >
+                🕶️
+              </button>
+            </div>
           </div>
         ))}
       </div>

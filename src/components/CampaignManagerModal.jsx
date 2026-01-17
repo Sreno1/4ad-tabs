@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trophy, ArrowRight, CheckCircle, XCircle, RotateCcw, X } from 'lucide-react';
+import { clearAllCampaigns } from '../utils/campaignStorage';
 
 export default function CampaignManagerModal({ isOpen, onClose, state, dispatch }) {
   if (!isOpen) return null;
@@ -200,9 +201,14 @@ export default function CampaignManagerModal({ isOpen, onClose, state, dispatch 
               id="campaign_manager_reset_button"
               onClick={() => {
                 if (confirm('Are you sure? This will delete all campaign progress!')) {
+                  // Fully clear persisted campaign storage first
+                  clearAllCampaigns();
+                  // Reset in-memory state
                   dispatch({ type: 'RESET_CAMPAIGN' });
                   dispatch({ type: 'LOG', t: '🔄 Campaign reset. Starting fresh.' });
                   onClose();
+                  // Reload so the app starts in campaign manager with no active campaign
+                  setTimeout(() => window.location.reload(), 50);
                 }
               }}
               className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex items-center justify-center gap-2 transition-colors"

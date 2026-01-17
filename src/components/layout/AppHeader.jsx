@@ -46,8 +46,9 @@ export default function AppHeader({
             <h1 className="text-lg font-bold text-amber-400">
               Four Against Darkness
             </h1>
-            {state?.name && (
-              <p className="text-xs text-slate-400">{state.name}</p>
+            {/* Prefer campaign name if present, fallback to legacy state.name */}
+            {((state && state.campaign && state.campaign.campaignName) || state?.name) && (
+              <p className="text-xs text-slate-400">{state.campaign?.campaignName || state.name}</p>
             )}
           </div>
           <h1 className="text-lg font-bold text-amber-400 sm:hidden">4AD</h1>

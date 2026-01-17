@@ -12,7 +12,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
   const [grid, setGrid] = useState(() => (initialTemplate && initialTemplate.grid) || blank);
   const [doors, setDoors] = useState(() => (initialTemplate && initialTemplate.doors) || []);
   const [walls, setWalls] = useState(() => (initialTemplate && initialTemplate.walls) || []);
-  const [name, setName] = useState((initialTemplate && initialTemplate.name) || 'Untitled Room');
+  const [name, setName] = useState((initialTemplate && initialTemplate.name) || '');
   const [d66Number, setD66Number] = useState((initialTemplate && initialTemplate.d66Number) || '');
   const [library, setLibrary] = useState(() => roomLibrary.loadAll());
   const [designerContextMenu, setDesignerContextMenu] = useState(null); // {xPx,yPx,cellX,cellY}
@@ -116,7 +116,9 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${(tpl.name||'room').replace(/[^a-z0-9-_]/gi,'_')}.json`;
+    // Prefer internal id for filename to avoid exposing editable names; fall back to tpl.name
+    const safeName = tpl.id ? String(tpl.id) : (tpl.name || 'room');
+    a.download = `${safeName.replace(/[^a-z0-9-_.]/gi,'_')}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -131,7 +133,8 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
         if (Array.isArray(parsed.grid)) {
           setGrid(parsed.grid);
           setDoors(parsed.doors || []);
-          setName(parsed.name || 'Imported Room');
+          // Keep imported template name internal-only; do not surface it in the editor UI
+          setName(parsed.name || '');
         }
       } catch (err) {
         // ignore
@@ -146,8 +149,8 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
       <div className="relative bg-slate-800 border border-slate-700 rounded p-4 w-[900px] max-w-full max-h-[90vh] overflow-auto">
         <div className="flex items-center justify-between mb-3">
           <div className="text-amber-400 font-bold">Room Designer (7×7)</div>
-          <div className="flex items-center gap-2">
-            <input className="bg-slate-700 px-2 py-1 rounded text-sm" placeholder="Room name" value={name} onChange={(e)=>setName(e.target.value)} />
+            <div className="flex items-center gap-2">
+            {/* Room naming removed from UI - templates keep internal ids for export/import */}
             <input
               type="number"
               min="11"
@@ -290,15 +293,15 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                     {/* Info & Actions */}
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
-                        <div className="flex items-center gap-2">
-                          <div className="font-bold text-sm text-amber-400">{item.name}</div>
-                          {item.d66Number && <div className="text-xs bg-blue-700 px-1.5 py-0.5 rounded">d66: {item.d66Number}</div>}
-                          {item.tag && <div className="text-xs bg-slate-700 px-1.5 py-0.5 rounded">{item.tag}</div>}
-                        </div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-bold text-sm text-amber-400">Template</div>
+                            {item.d66Number && <div className="text-xs bg-blue-700 px-1.5 py-0.5 rounded">d66: {item.d66Number}</div>}
+                            {item.tag && <div className="text-xs bg-slate-700 px-1.5 py-0.5 rounded">{item.tag}</div>}
+                          </div>
                         <div className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()}</div>
                       </div>
                       <div className="flex items-center gap-1 flex-wrap">
-                        <button onClick={()=>{ setGrid(item.grid); setDoors(item.doors || []); setName(item.name); setD66Number(item.d66Number || ''); }} className="px-2 py-0.5 bg-slate-600 hover:bg-slate-500 rounded text-xs">Edit</button>
+                        <button onClick={()=>{ setGrid(item.grid); setDoors(item.doors || []); setD66Number(item.d66Number || ''); }} className="px-2 py-0.5 bg-slate-600 hover:bg-slate-500 rounded text-xs">Edit</button>
                         <button onClick={()=>{ try { sfx.play('select2', { volume: 0.8 }); } catch(e){}; onPlaceTemplate(item); }} className="px-2 py-0.5 bg-amber-600 hover:bg-amber-500 rounded text-xs">Place</button>
                         <button onClick={()=>exportTemplate(item)} className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-xs">Export</button>
                         <button onClick={()=>deleteFromLibrary(item.id)} className="px-2 py-0.5 bg-red-700 hover:bg-red-600 rounded text-xs"><Trash2 size={12}/></button>

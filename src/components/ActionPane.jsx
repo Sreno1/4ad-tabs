@@ -71,6 +71,43 @@ export default function ActionPane({
   const activeMonsters = getActiveMonsters();
   const hasActiveMonsters = activeMonsters.length > 0;
   const combatWon = isCombatWon();
+  // Build a human-readable summary of defeated monsters for the victory banner
+  const defeatedMonsters = (state.monsters || []).filter(m => {
+    return (m.hp !== undefined && m.hp <= 0) || (m.count !== undefined && m.count === 0);
+  });
+
+  const victoryMessage = (() => {
+    if (!defeatedMonsters || defeatedMonsters.length === 0) return 'You defeated the foes! You may exit the room safely.';
+    const parts = defeatedMonsters.map((m) => {
+      // Minor foe group (uses initialCount when available)
+      if (m.count !== undefined) {
+        const total = m.initialCount || m._initialCount || m.count || 0;
+        const plural = total > 1 ? 'minions' : 'minion';
+        return `${total} level ${m.level} ${m.name} ${plural}`;
+      }
+      // Major/unique foe
+      return `level ${m.level} ${m.name}`;
+    });
+    const joined = parts.join(' and ');
+    return `You defeated ${joined}! You may exit the room safely.`;
+  })();
+
+  // Minion XP threshold: 10 kills per XP roll (project header/documentation)
+  const MINION_XP_THRESHOLD = 10;
+
+  // Only consider minion progress if this victory involved minions
+  const victoryIncludedMinions = defeatedMonsters.some(m => (typeof m.count !== 'undefined') || m.isMinorFoe);
+
+  // Count defeated minion GROUPS (not individual minions). A group counts as defeated if
+  // its `count` reached 0 or it fled. Use this to track progress toward the GROUP threshold.
+  const totalMinionGroupsDefeated = (state.monsters || []).reduce((sum, m) => {
+    if (typeof m.count === 'undefined') return sum;
+    if (m.count === 0 || m.fled) return sum + 1;
+    return sum;
+  }, 0);
+
+  const groupsRemainder = totalMinionGroupsDefeated % MINION_XP_THRESHOLD;
+  const remainingMinionGroups = totalMinionGroupsDefeated === 0 ? MINION_XP_THRESHOLD : (groupsRemainder === 0 ? 0 : MINION_XP_THRESHOLD - groupsRemainder);
   const corridor = isCorridor();
   const [hasSavedTile, setHasSavedTile] = useState(false);
 
@@ -400,7 +437,7 @@ export default function ActionPane({
               )}
 
               {actionMode === ACTION_MODES.TREASURE && (
-                <div className="bg-amber-900/30 rounded p-3"><div className="text-amber-400 font-bold">💰 Treasure!</div><div className="text-slate-300 text-sm mt-1">Check the log for details of what you found.</div></div>
+                <div className="bg-amber-900/30 rounded p-3"><div className="text-amber-400 font-bold">💰 Treasure!</div></div>
               )}
 
               {actionMode === ACTION_MODES.QUEST && (
@@ -429,6 +466,22 @@ export default function ActionPane({
             </div>
           )}
           {/* Bottom action buttons: Withdraw, Flee (only during combat), and Exit room (always) */}
+          {combatWon && (
+            <div className="mb-2">
+              <div className="bg-emerald-900/30 rounded p-3 text-center border-2 border-emerald-500/30">
+                <div className="text-emerald-300 font-bold text-lg">VICTORY</div>
+                <div className="text-slate-300 text-sm">{victoryMessage}</div>
+                {victoryIncludedMinions && totalMinionGroupsDefeated >= 0 && (
+                  <div className="text-slate-400 text-xs mt-1">
+                    {remainingMinionGroups === 0
+                      ? `Minion XP ready to roll (every ${MINION_XP_THRESHOLD} groups).`
+                      : `${totalMinionGroupsDefeated}/${MINION_XP_THRESHOLD} minion groups — ${remainingMinionGroups} more until XP roll.`}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-2 mt-2">
             {hasActiveMonsters && (
               <>
@@ -487,6 +540,7 @@ export default function ActionPane({
         <SearchModal
           searchResult={searchResult}
           state={state}
+          dispatch={dispatch}
           onChoice={(choice) => {
             // Handle user's search choice
             if (choice === 'clue') {
@@ -520,6 +574,7 @@ export default function ActionPane({
           treasure={hiddenTreasureResult.treasure}
           complication={hiddenTreasureResult.complication}
           state={state}
+          dispatch={dispatch}
           onResolve={(action) => {
             if (action === 'alarm') {
               // Alarm from hidden treasure triggers an ambush

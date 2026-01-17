@@ -4,8 +4,9 @@
  */
 
 import React from 'react';
+import { addToInventory } from '../state/actionCreators.js';
 
-export function SearchModal({ searchResult, onChoice, onClose, state }) {
+export function SearchModal({ searchResult, onChoice, onClose, state, dispatch }) {
   if (!searchResult) return null;
 
   const { type, message, choices, roll, total } = searchResult;
@@ -127,7 +128,7 @@ export function SearchModal({ searchResult, onChoice, onClose, state }) {
   );
 }
 
-export function HiddenTreasureModal({ treasure, complication, onResolve, onClose, state }) {
+export function HiddenTreasureModal({ treasure, complication, onResolve, onClose, state, dispatch }) {
   if (!treasure) return null;
 
   return (
@@ -221,12 +222,30 @@ export function HiddenTreasureModal({ treasure, complication, onResolve, onClose
 
         {/* Continue Button (after resolving complication) */}
         {!complication && (
-          <button
-            onClick={onClose}
-            className="w-full bg-green-700 hover:bg-green-600 text-white py-2 rounded font-bold"
-          >
-            Take Treasure & Continue
-          </button>
+          <>
+            <div className="mb-3 text-slate-300 text-sm">Assign treasure to a hero:</div>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+                    {state.party.map((hero, idx) => (
+                <button
+                  key={hero.id || idx}
+                  onClick={() => {
+                    const itemKey = treasure.itemKey || 'treasure_item';
+                    try { dispatch(addToInventory(idx, itemKey)); } catch (e) {}
+                  }}
+                  disabled={hero.hp <= 0}
+                  className={`w-full p-2 rounded text-sm ${hero.hp <= 0 ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-500 text-black'}`}
+                >
+                  {hero.name}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={onClose}
+              className="w-full bg-green-700 hover:bg-green-600 text-white py-2 rounded font-bold"
+            >
+              Take Treasure & Continue
+            </button>
+          </>
         )}
       </div>
     </div>

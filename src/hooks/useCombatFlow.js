@@ -81,6 +81,9 @@ export function useCombatFlow(state, dispatch) {
   const handleCombatVictory = () => {
     setCombatPhase(COMBAT_PHASES.VICTORY);
     dispatch(logMessage(`🎉 Combat Victory!`, 'combat'));
+    try {
+      dispatch({ type: 'SHOW_MODAL', message: '🎉 Combat Victory! Roll for treasure.', msgType: 'success', autoClose: 3500 });
+    } catch (e) {}
 
     // Award XP for all defeated monsters
     state.monsters?.forEach((monster) => {

@@ -4,6 +4,7 @@ import React, { useState, useCallback } from 'react';
 import { Plus, X, Heart, Star, Target } from 'lucide-react';
 import { CLASSES, getMaxHP, getSpellSlots, getLuckPoints } from '../data/classes.js';
 import { d6 } from '../utils/dice.js';
+import { performStealthSave } from '../utils/gameActions/stealthActions.js';
 import { getXPForNextLevel, canLevelUp } from '../data/monsters.js';
 import { hasTraits, getTrait } from '../data/traits.js';
 import TraitSelector from './TraitSelector.jsx';
@@ -324,6 +325,19 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 aria-label={`Increase ${hero.name} HP`}
                 aria-describedby={`party_card_${i}_hp_display`}
               >+</button>
+              {/* Stealth Save button (prompts for foe level) */}
+              <button
+                id={`party_card_${i}_stealth_button`}
+                onClick={() => {
+                  const foeLevelRaw = window.prompt('Enter foe level to Stealth against (e.g., 3):', '1');
+                  const foeLevel = parseInt(foeLevelRaw, 10) || 1;
+                  performStealthSave(dispatch, hero, foeLevel, { environment: 'dungeon', applyTraits: true });
+                }}
+                title="Stealth Save"
+                className="ml-1 bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 px-2 py-0.5 rounded"
+              >
+                🕶️
+              </button>
             </div>
           </div>
 

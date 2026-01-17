@@ -68,6 +68,11 @@ export function createCampaign(name, initialData) {
     lastPlayedAt: new Date().toISOString(),
     heroNames: initialData.party?.map((h) => h.name) || [],
     roomsExplored: 0,
+    // Ensure campaign metadata (campaignName) exists on the nested campaign object
+    campaign: {
+      ...(initialData.campaign || {}),
+      campaignName: name,
+    },
     ...initialData,
   };
   saveCampaign(newCampaign);
@@ -85,6 +90,25 @@ export function deleteCampaign(campaignId) {
   // Clear active campaign if this was the active one
   if (localStorage.getItem(ACTIVE_CAMPAIGN_KEY) === campaignId) {
     localStorage.removeItem(ACTIVE_CAMPAIGN_KEY);
+  }
+}
+
+/**
+ * Clear all campaign-related data from localStorage (all slots + active pointer)
+ * Also clears legacy single-state key so resets are complete.
+ */
+export function clearAllCampaigns() {
+  try {
+    const keys = Object.keys(localStorage);
+    keys.forEach((k) => {
+      if (k.startsWith(CAMPAIGN_PREFIX)) localStorage.removeItem(k);
+    });
+    localStorage.removeItem(ACTIVE_CAMPAIGN_KEY);
+    // Also clear legacy storage key used by older saves
+    const LEGACY_KEY = "4ad-state";
+    localStorage.removeItem(LEGACY_KEY);
+  } catch (e) {
+    console.error('Failed to clear campaign storage:', e);
   }
 }
 

@@ -21,6 +21,7 @@ import ActionPane from "./components/ActionPane.jsx";
 import FloatingDice from "./components/FloatingDice.jsx";
 import RoomDesigner from "./components/RoomDesigner.jsx";
 import GoldSenseModal from "./components/GoldSenseModal.jsx";
+import ResultModal from './components/ResultModal.jsx';
 
 // Layout Components
 import AppHeader from "./components/layout/AppHeader.jsx";
@@ -339,6 +340,8 @@ export default function App() {
 
   return (
     <div id="app_root" className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
+  {/* Global result modal for success/failure/treasure messages */}
+  <ResultModal state={state} dispatch={dispatch} />
       {/* Header */}
       <AppHeader
         state={state}

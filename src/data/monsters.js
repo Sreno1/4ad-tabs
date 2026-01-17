@@ -569,7 +569,46 @@ export const createMonsterFromTable = (key, hcl = 1) => {
     special: specialAbilities.length > 0 ? specialAbilities[0] : null, // Primary ability for display
     abilities: specialAbilities, // All abilities
     xp: template.xp,
-    count: template.count,
+    // Evaluate count expressions (like 'd6', 'd6+2', 'd6-2', 'd3', or numeric strings)
+    count: (function() {
+      const c = template.count;
+      if (c === undefined || c === null) return undefined;
+      if (typeof c === 'number') return c;
+      if (typeof c === 'string') {
+        // Plain number string
+        if (/^\d+$/.test(c)) return parseInt(c, 10);
+        // Dice expressions like d6, d3, d6+2, d6-2
+        const m = c.match(/^d(\d+)([+-]\d+)?$/);
+        if (m) {
+          const sides = parseInt(m[1], 10);
+          const roll = Math.floor(Math.random() * sides) + 1;
+          const adj = m[2] ? parseInt(m[2], 10) : 0;
+          const val = roll + adj;
+          return Math.max(1, val);
+        }
+      }
+      // Fallback: undefined
+      return undefined;
+    })(),
+    // initialCount: if we produced a numeric count, set initialCount for minor groups
+    initialCount: (function() {
+      const c = template.count;
+      // Determine numeric count using same logic
+      if (c === undefined || c === null) return undefined;
+      if (typeof c === 'number') return c;
+      if (typeof c === 'string') {
+        if (/^\d+$/.test(c)) return parseInt(c, 10);
+        const m = c.match(/^d(\d+)([+-]\d+)?$/);
+        if (m) {
+          const sides = parseInt(m[1], 10);
+          const roll = Math.floor(Math.random() * sides) + 1;
+          const adj = m[2] ? parseInt(m[2], 10) : 0;
+          const val = roll + adj;
+          return Math.max(1, val);
+        }
+      }
+      return undefined;
+    })(),
     reactionTable: template.reactionTable || DEFAULT_REACTION_TABLE, // Monster-specific reactions
     reaction: null, // Set when rolled
     statuses: []

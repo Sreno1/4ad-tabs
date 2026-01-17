@@ -5,6 +5,7 @@ import { Trash2, Download, Upload } from "lucide-react";
 import {
   getAllCampaigns,
   deleteCampaign,
+  getActiveCampaignId,
   exportCampaign,
   importCampaign,
 } from "../utils/campaignStorage";
@@ -23,7 +24,14 @@ export default function CampaignManager({ onLoadCampaign, onNewCampaign }) {
   }, []);
 
   const handleDelete = (campaignId) => {
+    const active = getActiveCampaignId();
     deleteCampaign(campaignId);
+    // If we deleted the active campaign, reload to ensure app returns to manager
+    if (active === campaignId) {
+      // Small delay to ensure localStorage updates
+      setTimeout(() => window.location.reload(), 50);
+      return;
+    }
     setCampaigns(getAllCampaigns());
   };
 

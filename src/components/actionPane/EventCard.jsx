@@ -46,7 +46,6 @@ const EventCard = memo(function EventCard({ event, index }) {
       return (
         <div key={index} className="bg-amber-900/30 rounded p-2 text-xs border-l-2 border-amber-400">
           <div className="text-amber-400 font-bold">💰 Treasure Found!</div>
-          <div className="text-slate-300">Check the log for details.</div>
         </div>
       );
 

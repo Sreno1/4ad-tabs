@@ -3,7 +3,7 @@
  */
 import { d6, r2d6 } from '../dice.js';
 import { TREASURE_TABLE } from '../../data/treasure.js';
-import { ASSIGN_TREASURE } from '../../state/actions.js';
+import { ASSIGN_TREASURE, SHOW_MODAL } from '../../state/actions.js';
 
 /**
  * Roll on treasure table and award result
@@ -22,10 +22,13 @@ export const rollTreasure = (dispatch, options = {}) => {
   // Assign treasure respecting per-hero carry limits; leftover goes to party gold
   dispatch({ type: ASSIGN_TREASURE, amount: gold });
 
-    const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
-    const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
-    dispatch({ type: 'LOG', t: `Treasure: Found ${gold} gold!${multiplierText}${minText}` });
-    return { roll, type: 'gold', amount: gold, multiplier };
+  const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
+  const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
+  const logText = `Treasure: Found ${gold} gold!${multiplierText}${minText}`;
+  dispatch({ type: 'LOG', t: logText });
+  // Show modal for treasure
+  dispatch({ type: SHOW_MODAL, message: logText, msgType: 'success', autoClose: 4000 });
+  return { roll, type: 'gold', amount: gold, multiplier };
   }
 
   if (result.includes('Gold (2d6)')) {
@@ -34,19 +37,26 @@ export const rollTreasure = (dispatch, options = {}) => {
   // Assign treasure respecting per-hero carry limits; leftover goes to party gold
   dispatch({ type: ASSIGN_TREASURE, amount: gold });
 
-    const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
-    const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
-    dispatch({ type: 'LOG', t: `Treasure: Found ${gold} gold!${multiplierText}${minText}` });
-    return { roll, type: 'gold', amount: gold, multiplier };
+  const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
+  const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
+  const logText = `Treasure: Found ${gold} gold!${multiplierText}${minText}`;
+  dispatch({ type: 'LOG', t: logText });
+  dispatch({ type: SHOW_MODAL, message: logText, msgType: 'success', autoClose: 4000 });
+  return { roll, type: 'gold', amount: gold, multiplier };
   }
 
   if (result.includes('Clue')) {
-    dispatch({ type: 'CLUE', n: 1 });
-    dispatch({ type: 'LOG', t: 'Treasure: Found a Clue!' });
-    return { roll, type: 'clue' };
+  const logText = 'Treasure: Found a Clue!';
+  dispatch({ type: 'CLUE', n: 1 });
+  dispatch({ type: 'LOG', t: logText });
+  dispatch({ type: SHOW_MODAL, message: logText, msgType: 'success', autoClose: 3500 });
+  return { roll, type: 'clue' };
   }
 
-  dispatch({ type: 'LOG', t: `Treasure: ${result}` });
+  const logText = `Treasure: ${result}`;
+  dispatch({ type: 'LOG', t: logText });
+  // Show non-gold treasure entries as info modal
+  dispatch({ type: SHOW_MODAL, message: logText, msgType: 'info', autoClose: 3500 });
   return { roll, type: result.toLowerCase() };
 };
 

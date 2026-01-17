@@ -9,6 +9,7 @@ import { partyReducer } from './partyReducer.js';
 import { combatReducer } from './combatReducer.js';
 import { dungeonReducer } from './dungeonReducer.js';
 import { inventoryReducer } from './inventoryReducer.js';
+import { uiReducer } from './uiReducer.js';
 import { logReducer } from './logReducer.js';
 import { campaignReducer } from './campaignReducer.js';
 
@@ -56,5 +57,6 @@ export const composedReducer = combineReducers([
   combatReducer,
   dungeonReducer,
   inventoryReducer,
+  uiReducer,
   logReducer
 ]);

@@ -63,6 +63,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   const [spellTargeting, setSpellTargeting] = useState(null); // { casterIdx, spellKey, spell }
   const [combatInitiative, setCombatInitiative] = useState(null); // Initiative info for current combat
   const [showRangedVolley, setShowRangedVolley] = useState(false);
+  const [attackedThisRound, setAttackedThisRound] = useState({}); // { heroIdx: true }
   const [roundStartsWith, setRoundStartsWith] = useState('attack'); // 'attack' | 'defend'
   const [showCombatModule, setShowCombatModule] = useState(false); // hide both until player/initiative decides
   const [targetMonsterIdx, setTargetMonsterIdx] = useState(null); // Selected target monster
@@ -103,6 +104,37 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     setCombatLog(prev => [message, ...prev].slice(0, 20));
     dispatch({ type: 'LOG', t: message });
   }, [dispatch]);
+
+  // Ensure new encounters always start at the InitiativePhase: if monsters were 0 and now >0,
+  // reset combat module visibility and initiative so player can choose.
+  const prevMonsterCountRef = React.useRef((state.monsters || []).length);
+  useEffect(() => {
+    const prev = prevMonsterCountRef.current || 0;
+    const now = (state.monsters || []).length;
+    if (prev === 0 && now > 0) {
+      // New encounter started
+      setShowCombatModule(false);
+      setCombatInitiative(null);
+      setShowRangedVolley(false);
+      setRoundStartsWith('attack');
+      setAttackedThisRound({});
+  // Clear any wandering encounter metadata that might force ambush/monster-first
+  try { dispatch({ type: 'CLEAR_WANDERING_ENCOUNTER' }); } catch (e) {}
+      addToCombatLog('🔔 New encounter started — choose initiative.');
+    }
+    prevMonsterCountRef.current = now;
+  }, [state.monsters, addToCombatLog]);
+
+  // If at any time there are monsters but no initiative chosen, ensure the InitiativePhase is shown
+  useEffect(() => {
+    const hasMonsters = (state.monsters || []).length > 0;
+    if (hasMonsters && !combatInitiative && showCombatModule) {
+      // Hide the combat module and prompt for initiative
+      setShowCombatModule(false);
+      setShowRangedVolley(false);
+      addToCombatLog('🔎 Initiative not set — choose initiative to begin combat.');
+    }
+  }, [state.monsters, combatInitiative, showCombatModule, addToCombatLog]);
 
   const clearCombatLog = useCallback(() => {
     setCombatLog([]);
@@ -152,10 +184,18 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     const hero = state.party[heroIndex];
     if (!hero || hero.hp <= 0) return;
 
+    // Determine if rear-line heroes should be allowed to melee because the party attacks first
+    const allowRearWhenPartyFirst = combatInitiative && !combatInitiative.monsterFirst && (showRangedVolley || roundStartsWith === 'attack');
     // Check if hero can melee attack based on location and marching order
-    const meleeCheck = canHeroMeleeAttack(state, heroIndex);
+    const meleeCheck = canHeroMeleeAttack(state, heroIndex, { allowRearWhenPartyFirst });
     if (!meleeCheck.canMelee) {
       addToCombatLog(`❌ ${hero.name} cannot melee attack: ${meleeCheck.reason}`);
+      return;
+    }
+
+    // Prevent multiple melee attacks per hero per round
+    if (attackedThisRound[heroIndex]) {
+      addToCombatLog(`⚔️ ${hero.name} has already attacked this round.`);
       return;
     }
 
@@ -201,6 +241,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
       // Major Foe: Use standard attack with level reduction check
       processMajorFoeAttack(dispatch, hero, heroIndex, monster, monsterIdx, options);
     }
+  // Mark hero as having attacked this round (melee)
+  setAttackedThisRound(prev => ({ ...prev, [heroIndex]: true }));
     
     // Clear blessed status after use
     if (hero.status?.blessed) {
@@ -282,27 +324,54 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   // Process monster round start (regeneration, etc.)
   const handleNewRound = useCallback(() => {
     processMonsterRoundStart(dispatch, state.monsters);
-    // If modules are not yet visible, initialize based on combatInitiative (surprise/attack)
+    // If modules are not yet visible, only initialize if initiative was already chosen.
     if (!showCombatModule) {
-      const start = combatInitiative && typeof combatInitiative.monsterFirst !== 'undefined' ?
-        (combatInitiative.monsterFirst ? 'defend' : 'attack') : 'attack';
-      setRoundStartsWith(start);
-      setShowCombatModule(true);
+      if (combatInitiative && typeof combatInitiative.monsterFirst !== 'undefined') {
+        const start = combatInitiative.monsterFirst ? 'defend' : 'attack';
+        setRoundStartsWith(start);
+        setShowCombatModule(true);
+      } else {
+        // No initiative set: leave InitiativePhase visible so player can choose.
+        addToCombatLog('🔎 Choose initiative before starting the round.');
+        return;
+      }
     } else {
       // Alternate attack/defend each new round
       setRoundStartsWith(prev => (prev === 'attack' ? 'defend' : 'attack'));
     }
-    addToCombatLog('--- New Round ---');
+  // Reset per-round attack markers
+  setAttackedThisRound({});
+  addToCombatLog('--- New Round ---');
   }, [state.monsters, dispatch, addToCombatLog, combatInitiative, showCombatModule]);
 
-  // If initiative is set externally (InitiativePhase), reveal the appropriate module automatically
+  // If initiative is set externally (InitiativePhase), reveal the appropriate module automatically.
+  // However, if the party attacks first and there are ranged heroes, defer showing the main combat module
+  // and show the pre-initiative ranged volley instead to avoid flicker/toggle.
   useEffect(() => {
     if (combatInitiative && typeof combatInitiative.monsterFirst !== 'undefined') {
       const start = combatInitiative.monsterFirst ? 'defend' : 'attack';
       setRoundStartsWith(start);
+
+      if (combatInitiative.monsterFirst === false) {
+        // Check for any alive heroes with ranged weapons
+        const rangedHeroes = state.party
+          .map((h, idx) => ({ h, idx }))
+          .filter(({ h }) => h && h.hp > 0 && Array.isArray(h.equipment) && h.equipment.some(k => {
+            const it = getEquipment(k);
+            return it && it.type === 'ranged';
+          }));
+
+        if (rangedHeroes.length > 0) {
+          setShowRangedVolley(true);
+          // Defer showing regular combat module until after volley resolved
+          setShowCombatModule(false);
+          return;
+        }
+      }
+
       setShowCombatModule(true);
     }
-  }, [combatInitiative]);
+  }, [combatInitiative, state.party]);
 
   // Respond to wandering encounter metadata (set by rollWanderingMonster)
   useEffect(() => {
@@ -329,26 +398,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     }
   }, [state?.combatMeta, dispatch]);
 
-  // When initiative is set to Party attacks first, if any alive hero has a ranged weapon
-  // show the ranged-volley modal so they can fire before regular combat starts.
-  useEffect(() => {
-    if (!combatInitiative) return;
-    // Only trigger when party attacks first
-    if (combatInitiative.monsterFirst === false) {
-      const rangedHeroes = state.party
-        .map((h, idx) => ({ h, idx }))
-        .filter(({ h }) => h && h.hp > 0 && Array.isArray(h.equipment) && h.equipment.some(k => {
-          const it = getEquipment(k);
-          return it && it.type === 'ranged';
-        }));
-
-      if (rangedHeroes.length > 0) {
-        setShowRangedVolley(true);
-        // Defer showing regular combat module until after volley resolved
-        setShowCombatModule(false);
-      }
-    }
-  }, [combatInitiative, state.party]);
+  
 
   // Flee attempt
   const handleFlee = useCallback(() => {
@@ -845,9 +895,11 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
                       const atk = calculateEnhancedAttack(hero, computedFoeLevel, options);
                       const modLabel = atk.mod >= 0 ? `+${atk.mod}` : `${atk.mod}`;
 
-                      // Check if hero can melee attack
-                      const meleeCheck = canHeroMeleeAttack(state, index);
-                      const canMelee = meleeCheck.canMelee;
+                      // Determine if rear-line heroes should be allowed to melee because the party attacks first
+                      const allowRearWhenPartyFirst = combatInitiative && !combatInitiative.monsterFirst && (showRangedVolley || roundStartsWith === 'attack');
+                      // Check if hero can melee attack (respect party-first allowance)
+                      const meleeCheck = canHeroMeleeAttack(state, index, { allowRearWhenPartyFirst });
+                      const canMelee = meleeCheck.canMelee && !attackedThisRound[index];
 
                       return (
                         <button
@@ -862,7 +914,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
                           title={!canMelee ? meleeCheck.reason : ''}
                         >
                           <span className="font-bold">{hero.name}</span>
-                          {!canMelee && <span className="text-xs ml-2 text-amber-400">🏹 Ranged Only</span>}
+                          {!meleeCheck.canMelee && <span className="text-xs ml-2 text-amber-400">🏹 Ranged Only</span>}
+                          {attackedThisRound[index] && <span className="text-xs ml-2 text-rose-300">⚔️ Attacked</span>}
                           {canMelee && <span className="text-xs ml-2 text-slate-300">{weaponName}</span>}
                           <span className="text-xs ml-2">({modLabel})</span>
                           {abilities.rageActive && <span className="ml-1 text-red-300">😤</span>}

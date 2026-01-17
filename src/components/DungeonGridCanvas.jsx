@@ -55,6 +55,10 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const rectStartRef = useRef(null); // {x,y} when cmd/meta rectangle drag starts
   const [rectPreview, setRectPreview] = useState(null); // {x1,y1,x2,y2,value}
 
+  // When placing a template from the Room Designer, we keep a local, transformable
+  // copy so the player can rotate/mirror it with keyboard shortcuts (Q/E/W).
+  const [transformedPlacementTemplate, setTransformedPlacementTemplate] = useState(null);
+
   const cols = grid[0]?.length || 0;
   const rows = grid.length;
 
@@ -298,7 +302,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   // rotation is restored (see below).
 
     // Draw placement preview centered on hoveredCell when placementTemplate or autoPlacedRoom present
-  const activeTemplate = placementTemplate || autoPlacedRoom;
+    // Prefer the locally transformed placement template (keyboard-rotated/mirrored) when available
+    const activeTemplate = transformedPlacementTemplate || placementTemplate || autoPlacedRoom;
     if (activeTemplate && hoveredCell) {
       const tpl = activeTemplate.grid || activeTemplate;
       const tplDoors = activeTemplate.doors || [];
@@ -617,7 +622,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       ctx.fillText('P', screenCx, screenCy + 1);
     }
 
-  }, [grid, doors, walls, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected, shouldRotate, canvasWidth, partyHasLight]);
+  }, [grid, doors, walls, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected, shouldRotate, canvasWidth, partyHasLight, transformedPlacementTemplate, placementTemplate, autoPlacedRoom]);
 
   // Keep a stable ref to the latest drawGrid implementation so other effects
   // can call it without referencing the function before it's initialized.
@@ -903,7 +908,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
     // If placementTemplate or autoPlacedRoom active: commit placement centered on hoveredCell
     if ((placementTemplate || autoPlacedRoom) && onCommitPlacement && hoveredCell) {
-      const activeTemplate = placementTemplate || autoPlacedRoom;
+      // Prefer transformed template when placing from the designer
+      const activeTemplate = transformedPlacementTemplate || placementTemplate || autoPlacedRoom;
       const tpl = activeTemplate.grid || activeTemplate;
       const startX = hoveredCell.x - Math.floor(tpl[0].length / 2);
       const startY = hoveredCell.y - Math.floor(tpl.length / 2);
@@ -976,6 +982,63 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     }
   }, [onCellRightClick, cellSize, cols, rows, shouldRotate, canvasWidth]);
 
+  // Helpers to clone and transform placement templates (grid + doors + walls)
+  const cloneTemplate = useCallback((tpl) => {
+    if (!tpl) return null;
+    const grid = tpl.grid ? tpl.grid.map(r => r.slice()) : (Array.isArray(tpl) ? tpl.map(r => r.slice()) : null);
+    const doors = (tpl.doors || []).map(d => ({ ...d }));
+    const walls = (tpl.walls || []).map(w => ({ ...w }));
+    return { grid, doors, walls };
+  }, []);
+
+  const rotateCWOnce = useCallback((tpl) => {
+    if (!tpl || !tpl.grid) return tpl;
+    const g = tpl.grid;
+    const H = g.length;
+    const W = g[0]?.length || 0;
+    const ng = Array.from({ length: W }, () => Array(H).fill(0));
+    for (let r = 0; r < W; r++) {
+      for (let c = 0; c < H; c++) {
+        ng[r][c] = g[H - 1 - c][r];
+      }
+    }
+    const edgeMap = { N: 'E', E: 'S', S: 'W', W: 'N' };
+  // Map original (x,y) -> rotated coordinates: x' = H-1 - y, y' = x
+  const ndoors = (tpl.doors || []).map(d => ({ x: (H - 1) - d.y, y: d.x, edge: edgeMap[d.edge] || d.edge }));
+  const nwalls = (tpl.walls || []).map(w => ({ x: (H - 1) - w.y, y: w.x, edge: edgeMap[w.edge] || w.edge }));
+  // Preserve other metadata (id/name) if present
+  return { ...(tpl || {}), grid: ng, doors: ndoors, walls: nwalls };
+  }, []);
+
+  const rotateCCW = useCallback((tpl) => {
+    // rotate CCW = rotate CW three times
+    let cur = cloneTemplate(tpl) || tpl;
+    cur = rotateCWOnce(cur);
+    cur = rotateCWOnce(cur);
+    cur = rotateCWOnce(cur);
+  return cur;
+  }, [cloneTemplate, rotateCWOnce]);
+
+  const mirrorHorizontal = useCallback((tpl) => {
+    if (!tpl || !tpl.grid) return tpl;
+    const g = tpl.grid;
+    const H = g.length;
+    const W = g[0]?.length || 0;
+    const ng = g.map(row => row.slice().reverse());
+    const ndoors = (tpl.doors || []).map(d => ({ x: (W - 1) - d.x, y: d.y, edge: d.edge === 'E' ? 'W' : d.edge === 'W' ? 'E' : d.edge }));
+    const nwalls = (tpl.walls || []).map(w => ({ x: (W - 1) - w.x, y: w.y, edge: w.edge === 'E' ? 'W' : w.edge === 'W' ? 'E' : w.edge }));
+    return { ...(tpl || {}), grid: ng, doors: ndoors, walls: nwalls };
+  }, []);
+
+  // Ensure the canvas redraws immediately when the transformed template changes
+  useEffect(() => {
+    try {
+      if (drawGridRef.current) drawGridRef.current();
+    } catch (e) {
+      // ignore
+    }
+  }, [transformedPlacementTemplate]);
+
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'd' || e.key === 'D') {
       setShowDoorMode(true);
@@ -990,6 +1053,26 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
   // Add keyboard listeners
   useEffect(() => {
+    // Placement transform keys: Q = rotate CCW, E = rotate CW, W = mirror
+    const handlePlacementKeyDown = (e) => {
+      if (!placementTemplate) return; // only active while placing a designer template
+      if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        setTransformedPlacementTemplate(prev => rotateCWOnce(prev || cloneTemplate(placementTemplate)));
+        try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
+      }
+      if (e.key === 'q' || e.key === 'Q') {
+        e.preventDefault();
+        setTransformedPlacementTemplate(prev => rotateCCW(prev || cloneTemplate(placementTemplate)));
+        try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
+      }
+      if (e.key === 'w' || e.key === 'W') {
+        e.preventDefault();
+        setTransformedPlacementTemplate(prev => mirrorHorizontal(prev || cloneTemplate(placementTemplate)));
+        try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
+      }
+    };
+
     const handleGridKeyDown = (e) => {
       if (!hoveredCell) return;
       let edge = null;
@@ -1087,19 +1170,35 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
     };
 
-    window.addEventListener('keydown', handleGridKeyDown);
-    window.addEventListener('keydown', handleKeyDown);
+  // Ensure placement key handler is registered before the grid handler so it
+  // can take precedence (preventDefault) when placing templates.
+  window.addEventListener('keydown', handlePlacementKeyDown);
+  window.addEventListener('keydown', handleGridKeyDown);
+  window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keydown', handleArrowDown);
     window.addEventListener('keyup', handleArrowUp);
     return () => {
       window.removeEventListener('keydown', handleGridKeyDown);
       window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handlePlacementKeyDown);
       window.removeEventListener('keydown', handleArrowDown);
       window.removeEventListener('keyup', handleArrowUp);
       stopGameLoop();
       pressedKeysRef.current.clear();
     };
-  }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle, partyPos, onPartyMove, cols, rows]);
+  }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle, partyPos, onPartyMove, cols, rows, placementTemplate, cloneTemplate, rotateCWOnce, rotateCCW, mirrorHorizontal]);
+
+  // Sync transformed placement when the incoming placementTemplate changes.
+  useEffect(() => {
+    if (placementTemplate) {
+      // Initialize transformed copy
+      setTransformedPlacementTemplate(cloneTemplate(placementTemplate));
+  // Focus the canvas so keyboard shortcuts work immediately
+  try { canvasRef.current && canvasRef.current.focus(); } catch (e) {}
+    } else {
+      setTransformedPlacementTemplate(null);
+    }
+  }, [placementTemplate, cloneTemplate]);
 
   // Add global mouseup listener to handle drag ending outside canvas
   useEffect(() => {
@@ -1121,6 +1220,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         ref={canvasRef}
         width={canvasWidth}
         height={canvasHeight}
+  tabIndex={0}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
@@ -1140,6 +1240,17 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           style={{ zIndex: 9999, pointerEvents: 'none' }}
         >
           Shift+Click to add the party pawn
+        </div>
+      )}
+      {/* Placement shortcuts hint */}
+      {(placementTemplate || autoPlacedRoom) && (
+        <div
+          className="absolute top-2 right-2 bg-black/70 text-white px-3 py-2 rounded text-xs font-semibold"
+          style={{ zIndex: 9999 }}
+        >
+          <div className="font-bold text-amber-300">Placement Shortcuts</div>
+          <div className="text-slate-200 text-xs mt-1">E: rotate → &nbsp; Q: rotate ← &nbsp; W: mirror</div>
+          <div className="text-slate-400 text-xs mt-1">Focus map or click to enable keys</div>
         </div>
       )}
       {tooltipText && tooltipPos && (

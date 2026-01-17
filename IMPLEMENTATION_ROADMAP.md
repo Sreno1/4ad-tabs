@@ -345,6 +345,8 @@ This document provides a complete audit of the Four Against Darkness companion a
 
 ### Combat System
 
+- Remove "Room Combat" or "Corridor Combat" sections from under roll results in action pane. add room/corridor tag to top right of "Active Monsters" panel. When hovering it should show the corridor affects
+
 #### **Corridor vs Room Combat Restrictions**
 
 #### **Narrow Corridor Rules**
@@ -476,26 +478,6 @@ This document provides a complete audit of the Four Against Darkness companion a
   };
   ```
  - **Priority:** MEDIUM
-
-#### **Bandages (1 per PC per adventure)**
-#### **Bandages (1 per PC per adventure)**
-- **Status:** ✅ IMPLEMENTED
-- **Rule:** Each PC can use 1 bandage per adventure (Equipment.txt)
-- **Implementation:** Added per-hero `bandagesUsed` tracking and enforced the consumable limit in the Equipment UI; using a bandage increments the hero's bandage counter and heals per the item definition.
-- **Files Changed:**
-  - `src/state/initialState.js` - added `bandagesUsed` to hero abilities
-  - `src/state/actions.js` - added `USE_BANDAGE` action
-  - `src/state/actionCreators.js` - added `useBandage()` action creator
-  - `src/state/reducers/combatReducer.js` - handle `USE_BANDAGE` to increment counter
-  - `src/components/Equipment.jsx` - enforce limit, dispatch bandage use, and apply heal
-- **Architecture Needed:**
-  ```javascript
-  // Add to hero abilities:
-  {
-    bandagesUsed: number // reset per adventure, max 1
-  }
-  ```
-- **Priority:** LOW
 
 #### **Food Rations**
 - **Status:** ❌ NOT IMPLEMENTED
@@ -695,59 +677,6 @@ export const awardXPRoll = (dispatch, monster, party, heroIndex) => {
 - `src/utils/gameActions/combatActions.js` - Replace awardXP() calls
 - `src/components/Combat.jsx` - Show XP roll UI
 - `src/components/combat/VictoryPhase.jsx` - Trigger XP rolls
-
-### 4.5 Campaign Save System Fix
-
-**Problem:** Save names don't persist correctly between sessions
-
-**Solution:** Implement proper save slot management
-
-```javascript
-// src/hooks/useGameState.js
-
-const SAVE_SLOTS_KEY = 'fourAgainstDarkness_saveSlots';
-const MAX_SAVE_SLOTS = 10;
-
-export const useSaveSlots = () => {
-  const [saveSlots, setSaveSlots] = useState(() => {
-    const saved = localStorage.getItem(SAVE_SLOTS_KEY);
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const createSave = (name, gameState) => {
-    const newSave = {
-      id: Date.now(),
-      name,
-      timestamp: new Date().toISOString(),
-      state: gameState
-    };
-
-    const updated = [...saveSlots, newSave].slice(-MAX_SAVE_SLOTS);
-    localStorage.setItem(SAVE_SLOTS_KEY, JSON.stringify(updated));
-    setSaveSlots(updated);
-
-    return newSave.id;
-  };
-
-  const loadSave = (saveId) => {
-    const save = saveSlots.find(s => s.id === saveId);
-    return save?.state || null;
-  };
-
-  const deleteSave = (saveId) => {
-    const updated = saveSlots.filter(s => s.id !== saveId);
-    localStorage.setItem(SAVE_SLOTS_KEY, JSON.stringify(updated));
-    setSaveSlots(updated);
-  };
-
-  return { saveSlots, createSave, loadSave, deleteSave };
-};
-```
-
-**Files to Modify:**
-- `src/hooks/useGameState.js` - Implement save slot system
-- `src/components/SaveLoadModal.jsx` - Create save/load UI
-- `src/App.jsx` - Integrate save system
 
 ---
 

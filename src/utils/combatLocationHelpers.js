@@ -14,7 +14,7 @@
  * @param {number} heroIdx - Hero index in party array
  * @returns {object} { canMelee: boolean, reason: string }
  */
-export const canHeroMeleeAttack = (state, heroIdx) => {
+export const canHeroMeleeAttack = (state, heroIdx, options = {}) => {
   const location = state.currentCombatLocation;
 
   // If no location set, assume room (all can fight)
@@ -33,6 +33,11 @@ export const canHeroMeleeAttack = (state, heroIdx) => {
 
     // If hero not in marching order, assume they can fight (fallback)
     if (position === -1) {
+      return { canMelee: true, reason: null };
+    }
+
+    // If caller requested to allow rear PCs when party attacks first (pre-initiative), honor that
+    if (options.allowRearWhenPartyFirst) {
       return { canMelee: true, reason: null };
     }
 
