@@ -16,6 +16,7 @@ import {
   deleteHero,
   adjustGold
 } from '../state/actionCreators.js';
+import { addHeroClue, removeHeroClue } from '../state/actionCreators.js';
 
 export default function Party({ state, dispatch, selectedHero = 0, onSelectHero }) {
   const [showClassPicker, setShowClassPicker] = useState(false);
@@ -195,7 +196,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
   };
 
   return (
-    <div className="p-3 space-y-2">
+    <section id="party_section" className="p-3 space-y-2">
   {/* Marching Order UI moved to Action Pane */}
       {/* Active Hero Info */}
       {state.party[selectedHero] && (
@@ -205,12 +206,13 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
         </div>
       )}
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <span className="font-bold text-amber-400">
+      <div id="party_header" className="flex justify-between items-center">
+        <span id="party_header_title" className="font-bold text-amber-400">
           Party ({state.party.length}/4) · HCL {state.hcl}
         </span>
         {!isPartyFull && (
           <button
+            id="party_add_hero_button"
             onClick={() => setShowClassPicker(!showClassPicker)}
             className="bg-amber-600 px-2 py-1 rounded text-sm"
             aria-label="Add hero to party"
@@ -223,7 +225,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
 
       {/* Class Picker */}
       {showClassPicker && (
-        <div className="grid grid-cols-2 gap-1" role="menu" aria-label="Character class selection">
+        <div id="party_controls" className="grid grid-cols-2 gap-1" role="menu" aria-label="Character class selection">
           {Object.entries(CLASSES).map(([key, classData]) => (
             <button
               key={key}
@@ -240,16 +242,18 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
       )}
 
       {/* Hero Cards */}
+      <div id="party_cards">
       {party.map((hero, i) => {
         const xpNeeded = getXPForNextLevel(hero.lvl);
         const currentXP = hero.xp || 0;
         const readyToLevel = canLevelUp(hero);
 
         return (
-        <div key={hero.id || i} className={`bg-slate-700 rounded p-2 text-sm ${readyToLevel ? 'ring-2 ring-yellow-400' : ''}`}>
-          <div className="flex justify-between">
+        <div key={hero.id || i} id={`party_card_${i}`} className={`party_card bg-slate-700 rounded p-2 text-sm ${readyToLevel ? 'ring-2 ring-yellow-400' : ''}`}>
+          <div id={`party_card_${i}_header`} className="flex justify-between">
             <div className="flex items-center gap-2">
               <input
+                id={`party_card_${i}_name`}
                 value={hero.name}
                 onChange={e => dispatch(updateHero(i, { name: e.target.value }))}
                 className="bg-transparent text-amber-400 font-bold w-24 outline-none"
@@ -261,6 +265,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
               )}
             </div>
             <button
+              id={`party_card_${i}_delete_button`}
               onClick={() => dispatch(deleteHero(i))}
               className="text-slate-500 hover:text-red-400"
               aria-label={`Remove ${hero.name} from party`}
@@ -269,21 +274,24 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
             </button>          </div>
 
           {/* Level and HP Controls */}
-          <div className="flex justify-between items-center text-xs mt-1">
-            <div className="flex items-center gap-1">
+          <div id={`party_card_${i}_stats`} className="flex justify-between items-center text-xs mt-1">
+            <div id={`party_card_${i}_level_section`} className="flex items-center gap-1">
               <button
+                id={`party_card_${i}_level_decrease_button`}
                 onClick={() => adjustLevel(i, -1)}
                 className="bg-slate-600 px-1 rounded"
                 aria-label={`Decrease ${hero.name} level`}
               >-</button>
-              <span id={`hero-${i}-level`}>L{hero.lvl} {CLASSES[hero.key].name}</span>
+              <span id={`party_card_${i}_level`}>L{hero.lvl} {CLASSES[hero.key].name}</span>
               <button
+                id={`party_card_${i}_level_increase_button`}
                 onClick={() => adjustLevel(i, 1)}
                 className="bg-slate-600 px-1 rounded"
                 aria-label={`Increase ${hero.name} level`}
               >+</button>
               {readyToLevel && (
                 <button
+                  id={`party_card_${i}_level_up_button`}
                   onClick={() => handleLevelUp(i)}
                   className="bg-yellow-500 hover:bg-yellow-400 text-black px-2 py-0.5 rounded text-xs font-bold animate-pulse ml-2"
                   aria-label={`Level up ${hero.name} to level ${hero.lvl + 1}`}
@@ -292,27 +300,29 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 </button>
               )}
             </div>
-            <div className="flex items-center gap-1 text-red-400">
+            <div id={`party_card_${i}_hp_section`} className="flex items-center gap-1 text-red-400">
               <Heart size={12} aria-hidden="true" />
               <button
+                id={`party_card_${i}_hp_decrease_button`}
                 onClick={() => adjustHP(i, -1)}
                 className="bg-slate-600 px-1 rounded"
                 aria-label={`Decrease ${hero.name} HP`}
-                aria-describedby={`hero-${i}-hp`}
+                aria-describedby={`party_card_${i}_hp_display`}
               >-</button>
-              <span id={`hero-${i}-hp`}>{hero.hp}/{hero.maxHp}</span>
+              <span id={`party_card_${i}_hp_display`}>{hero.hp}/{hero.maxHp}</span>
               <button
+                id={`party_card_${i}_hp_increase_button`}
                 onClick={() => adjustHP(i, 1)}
                 className="bg-slate-600 px-1 rounded"
                 aria-label={`Increase ${hero.name} HP`}
-                aria-describedby={`hero-${i}-hp`}
+                aria-describedby={`party_card_${i}_hp_display`}
               >+</button>
             </div>
           </div>
 
           {/* Status Effects */}
           {(hero.status?.blessed || hero.status?.wounded || hero.status?.dead) && (
-            <div className="flex gap-1 mt-1 text-xs">
+            <div id={`party_card_${i}_status`} className="flex gap-1 mt-1 text-xs">
               {hero.status?.blessed && <span className="bg-amber-600 px-1 rounded">✨ Blessed</span>}
               {hero.status?.wounded && <span className="bg-orange-600 px-1 rounded">🩹 Wounded</span>}
               {hero.status?.dead && <span className="bg-red-800 px-1 rounded">💀 Dead</span>}
@@ -320,29 +330,51 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
           )}
 
           {/* Clues Tracker */}
-          <div className="flex gap-1 mt-1 text-xs items-center">
+          <div id={`party_card_${i}_clues`} className="flex gap-1 mt-1 text-xs items-center">
             <span className="text-blue-400 font-semibold">🔍 Clues:</span>
-            <div className="flex gap-0.5">
-              {[1, 2, 3].map(clueNum => (
-                <span
-                  key={clueNum}
-                  className={`w-3 h-3 rounded-full ${
-                    clueNum <= (hero.clues || 0)
-                      ? 'bg-blue-500'
-                      : 'bg-slate-600'
-                  }`}
-                  aria-label={`Clue ${clueNum}`}
-                />
-              ))}
-            </div>
+              <div className="flex gap-0.5">
+                {[1, 2, 3].map(clueNum => {
+                  const filled = clueNum <= (hero.clues || 0);
+                  return (
+                    <button
+                      key={clueNum}
+                      id={`party_card_${i}_clue_${clueNum}_button`}
+                      type="button"
+                      onClick={() => {
+                        // filled dot removes a clue, empty dot adds one
+                        if (filled) dispatch(removeHeroClue(i, 1));
+                        else dispatch(addHeroClue(i, 1));
+                      }}
+                      className={`w-3 h-3 rounded-full focus:outline-none ${filled ? '' : ''} cursor-pointer`}
+                      aria-label={`Clue ${clueNum} for ${hero.name} - ${filled ? 'remove' : 'add'}`}
+                      aria-pressed={filled}
+                      title={filled ? 'Click to remove clue' : 'Click to add clue'}
+                      style={{ backgroundColor: filled ? 'rgb(59 130 246)' : 'rgb(15 23 42)' }}
+                    />
+                  );
+                })}
+              </div>
             <span className="text-blue-300">({hero.clues || 0}/3)</span>
+          </div>
+
+          {/* Bandage & Carried Treasure */}
+          <div id={`party_card_${i}_bandage_treasure`} className="flex gap-3 mt-1 text-xs items-center">
+            <div className="flex items-center gap-1">
+              <span className="text-emerald-300 font-semibold">🩹 Bandage:</span>
+              <span className="text-slate-300">{Math.max(0, 1 - ((state.abilities?.[i]?.bandagesUsed) || 0))}/1</span>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <span className="text-yellow-300 font-semibold">💰 Carried:</span>
+              <span className="text-slate-300">{(hero.carriedTreasureWeight || 0)}gp/{hero.maxCarryWeight || 200}gp</span>
+            </div>
           </div>
 
           {/* Character Trait */}
           {hasTraits(hero.key) && (
-            <div className="flex gap-2 items-center mt-1">
+            <div id={`party_card_${i}_trait`} className="flex gap-2 items-center mt-1">
               {hero.trait ? (
-                <div className="flex-1 bg-cyan-900 border border-cyan-600 rounded px-2 py-1 flex justify-between items-center">
+                <div id={`party_card_${i}_trait_display`} className="flex-1 bg-cyan-900 border border-cyan-600 rounded px-2 py-1 flex justify-between items-center">
                   <div>
                     <span className="text-cyan-400 text-xs font-bold">
                       🎯 {getTrait(hero.key, hero.trait)?.name || hero.trait}
@@ -352,6 +384,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                     )}
                   </div>
                   <button
+                    id={`party_card_${i}_trait_edit_button`}
                     onClick={() => setTraitSelectorHero({ hero, index: i })}
                     className="text-cyan-400 hover:text-cyan-300 text-xs ml-2"
                     title="Change Trait"
@@ -362,6 +395,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 </div>
               ) : (
                 <button
+                  id={`party_card_${i}_trait_select_button`}
                   onClick={() => setTraitSelectorHero({ hero, index: i })}
                   className="flex-1 bg-slate-600 hover:bg-slate-500 rounded px-2 py-1 text-xs text-slate-300 flex items-center justify-center gap-1"
                   aria-label={`Select trait for ${hero.name}`}
@@ -373,35 +407,42 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
             </div>
           )}
             {/* Class Abilities */}
-          {renderAbilities(hero, i)}
+          <div id={`party_card_${i}_abilities`}>
+            {renderAbilities(hero, i)}
+          </div>
 
           {/* Divider between heroes (RPGUI styled) */}
           {i < state.party.length - 1 && <hr className="my-2" />}
         </div>
         );
       })}
+      </div>
+
         {/* Gold Tracker */}
-      <div className="bg-slate-800 rounded p-2 text-sm">
+      <div id="party_gold_section" className="bg-slate-800 rounded p-2 text-sm">
         <div className="flex justify-between items-center">
-          <span className="text-amber-400" id="gold-amount">Gold: {state.gold}</span>
-          <div className="flex gap-1">
+          <span id="party_gold_display" className="text-amber-400">Gold: {state.gold}</span>
+          <div id="party_gold_controls" className="flex gap-1">
             <button
+              id="party_gold_decrease_button"
               onClick={() => dispatch(adjustGold(-1))}
               className="bg-slate-700 px-2 rounded"
               aria-label="Decrease gold by 1"
-              aria-describedby="gold-amount"
+              aria-describedby="party_gold_display"
             >-</button>
             <button
+              id="party_gold_increase_button"
               onClick={() => dispatch(adjustGold(1))}
               className="bg-slate-700 px-2 rounded"
               aria-label="Increase gold by 1"
-              aria-describedby="gold-amount"
+              aria-describedby="party_gold_display"
             >+</button>
             <button
+              id="party_gold_roll_d6_button"
               onClick={() => dispatch(adjustGold(d6()))}
               className="bg-amber-600 px-2 rounded"
               aria-label="Add 1d6 gold"
-              aria-describedby="gold-amount"
+              aria-describedby="party_gold_display"
             >+d6</button>
           </div>
         </div>
@@ -419,6 +460,6 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
           onClose={() => setTraitSelectorHero(null)}
         />
       )}
-    </div>
+    </section>
   );
 }

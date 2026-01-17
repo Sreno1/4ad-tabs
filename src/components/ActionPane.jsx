@@ -25,6 +25,7 @@ import {
   findSecretDoor,
   findSecretPassage
 } from '../utils/gameActions/explorationActions.js';
+import { ASSIGN_TREASURE } from '../state/actions.js';
 import { attemptDisarmTrap, triggerTrap } from '../utils/gameActions/dungeonActions.js';
 
 export default function ActionPane({
@@ -184,7 +185,7 @@ export default function ActionPane({
             </button>
             <div className="flex gap-2 mt-2">
               <button
-                onClick={() => rollWanderingMonster(dispatch)}
+                onClick={() => rollWanderingMonster(dispatch, { state })}
                 className="flex-1 bg-red-700 hover:bg-red-600 px-3 py-2 rounded text-sm"
               >
                 Wandering (d6)
@@ -483,8 +484,8 @@ export default function ActionPane({
           }}
           onClose={() => {
             if (searchResult.type === 'wandering_monsters') {
-              // Trigger wandering monster roll
-              rollWanderingMonster(dispatch, state.hcl);
+              // Trigger wandering monster roll as an ambush (retracing tiles)
+              rollWanderingMonster(dispatch, { ambush: true, state });
             }
             setSearchResult(null);
           }}
@@ -498,7 +499,8 @@ export default function ActionPane({
           state={state}
           onResolve={(action) => {
             if (action === 'alarm') {
-              rollWanderingMonster(dispatch, state.hcl);
+              // Alarm from hidden treasure triggers an ambush
+              rollWanderingMonster(dispatch, { ambush: true, state });
             } else if (action === 'disarm_trap') {
               // Find a rogue in the party
               const rogueIdx = state.party.findIndex(h => h.class === 'Rogue' && h.hp > 0);
@@ -582,14 +584,14 @@ export default function ActionPane({
               });
             }
 
-            // Award the gold
-            dispatch({ type: 'GOLD', n: hiddenTreasureResult.treasure.gold });
+            // Award the gold, respecting per-hero carry limits
+            dispatch({ type: ASSIGN_TREASURE, amount: hiddenTreasureResult.treasure.gold });
             setHiddenTreasureResult(null);
           }}
           onClose={() => {
             // Award the gold if complication was resolved
             if (hiddenTreasureResult.treasure) {
-              dispatch({ type: 'GOLD', n: hiddenTreasureResult.treasure.gold });
+              dispatch({ type: ASSIGN_TREASURE, amount: hiddenTreasureResult.treasure.gold });
             }
             setHiddenTreasureResult(null);
           }}

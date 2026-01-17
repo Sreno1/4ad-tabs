@@ -92,6 +92,91 @@ This document provides a complete audit of the Four Against Darkness companion a
 | **Room vs Corridor cell types** | Exploration.txt p.104 | `src/state/initialState.js:15` (0=empty, 1=room, 2=corridor) |
 | **Door tracking** | Exploration.txt p.109 | `src/state/initialState.js:16,163` |
 
+- **Status:** IMPLEMENTED
+- **Rule:**
+  - Corridors: Only positions 1-2 can melee (Combat.txt p.121)
+  - Rooms: All PCs can fight
+  - Narrow corridors: 2H weapons -1, light weapons no penalty
+- **Current Issue:** Grid tracks room/corridor but no combat logic checks this
+- **Architecture Needed:**
+  ```javascript
+  // Add to combat state:
+  {
+    currentLocation: {
+      type: 'room' | 'corridor',
+      width: 'normal' | 'narrow',
+      x: number,
+      y: number
+    }
+  }
+
+  // Modify attack validation:
+  const canAttack = (hero, heroIdx, location) => {
+    if (location.type === 'corridor') {
+      const position = state.marchingOrder.indexOf(heroIdx);
+      return position < 2; // Only front 2 can melee
+    }
+    return true;
+  };
+  ```
+- **Files to Modify:**
+  - `src/components/Combat.jsx` - Add location context
+  - `src/utils/gameActions/combatActions.js` - Add location checks
+  - `src/components/Dungeon.jsx` - Track current location
+- **Priority:** HIGH (core 4AD rule)
+
+#### **Secret Door Discovery**
+- **Status:** ✅ IMPLEMENTED
+- **Implementation:** `src/utils/gameActions/explorationActions.js:161-187`
+- **Features:**
+  - ✅ Search roll 5-6 gives option to find secret door
+  - ✅ 1-in-6 chance it's a shortcut out
+  - ✅ Treasure behind secret doors DOUBLED (treasureMultiplier: 2)
+  - ✅ UI modal for secret door discovery
+- **Completed Date:** 2026-01-16
+
+#### **Secret Passage**
+- **Status:** ✅ IMPLEMENTED
+- **Implementation:**
+  - Logic: `src/utils/gameActions/explorationActions.js:195-218`
+  - Action: `src/state/actions.js:37-38` (CHANGE_ENVIRONMENT)
+  - Reducer: `src/state/reducers/dungeonReducer.js:40-45`
+  - Initial State: `src/state/initialState.js:21`
+- **Features:**
+  - ✅ Passage to different environment (dungeon/fungal_grottoes/caverns)
+  - ✅ State properly tracks environment
+  - ✅ UI modal shows passage discovery
+  - ✅ Dispatch action changes environment
+- **Completed Date:** 2026-01-16
+
+#### **Hidden Treasure Complications**
+- **Status:** ✅ IMPLEMENTED
+- **Implementation:** `src/utils/gameActions/explorationActions.js:100-124`
+- **Features:**
+  - ✅ Alarm (1-2): Triggers wandering monsters
+  - ✅ Trap (3-5): Rogue can attempt disarm at L+1 DC
+  - ✅ Ghost (6): Cleric can banish at L/2 bonus vs DC(3+HCL)
+  - ✅ All complications wired to SearchModal with action handlers
+  - ✅ HiddenTreasureModal shows complications and resolution options
+- **Completed Date:** 2026-01-16
+
+#### **Retracing Steps Wandering Monster (1-in-6)**
+- **Status:** ❌ NOT FULLY IMPLEMENTED
+- **Rule:** When revisiting tiles, 1-in-6 wandering monster (Exploration.txt p.104)
+- **Current Issue:** Implemented for Withdraw but not general retracing
+- **Architecture Needed:**
+  ```javascript
+  const onEnterTile = (x, y) => {
+    const tile = state.grid[y][x];
+    if (tile.visited) {
+      if (d6() === 1) {
+        rollWanderingMonster();
+      }
+    }
+  };
+  ```
+- **Priority:** LOW
+
 ---
 
 <a name="partially-implemented"></a>
@@ -100,14 +185,27 @@ This document provides a complete audit of the Four Against Darkness companion a
 ### Combat System
 
 #### **Marching Order**
-- **Status:** State exists but corridor restrictions NOT enforced
+#### **Marching Order**
+- **Status:** Implemented (corridor restrictions, narrow-corridor penalties, and wandering-monster rear-attack behavior)
 - **What Exists:**
   - Marching order array: `src/state/initialState.js:157-159`
-  - SET_MARCHING_ORDER action: `src/state/reducers/partyReducer.js:195-215`
-- **What's Missing:**
-  - ❌ Corridor combat restrictions (only positions 1-2 can melee)
-  - ❌ Rear attack logic for wandering monsters
-  - ❌ Position-based targeting
+  - `SET_MARCHING_ORDER` action and reducer handling: `src/state/reducers/partyReducer.js:195-215`
+  - Corridor / narrow-corridor helpers: `src/utils/combatLocationHelpers.js` (`canHeroMeleeAttack`, `getNarrowCorridorPenalty`)
+- **Notes / Remaining polish:**
+  - ✅ Corridor combat restrictions (only front positions may melee) — enforced via `canHeroMeleeAttack`.
+  - ✅ Wandering-monster rear-attack logic implemented for ambushes.
+  - ⚠️ Position-based targeting — partially implemented: the ambush rear-targeting currently prefers the rear-most alive heroes by selecting from the end of the `state.party` array. This is a deliberate, low-risk implementation; it can be upgraded to use `state.marchingOrder` (exact position indices 1–4) if you want strict position-mapping.
+- **Behavior implemented:**
+  - Wandering Monsters triggered as ambushes now always attack first (combat auto-enters defend mode).
+  - Shields are disabled for the first defense roll against a wandering-monster encounter (one-time suppression).
+  - In corridors, ambushes prefer rear-most PCs; in rooms, default allocation falls back to existing random/round-robin behavior unless a room-distribution algorithm is applied (see next steps).
+- **Files touched (implementation):**
+  - `src/utils/gameActions/monsterActions.js` — ambush flag on spawn; dispatch wandering-encounter meta
+  - `src/utils/gameActions/combatActions.js` — rear-targeting for ambush monsters; `calculateDefense` supports shield suppression
+  - `src/components/Combat.jsx` — auto-set monster-first initiative and handle shield suppression state
+  - `src/state/actions.js` — added `SET_WANDERING_ENCOUNTER`
+  - `src/state/reducers/combatReducer.js` — stores `combatMeta.wanderingEncounter`
+- **Rule Reference:** Combat.txt p.118-122
 - **Rule Reference:** Combat.txt p.118-122
 - **Architecture Needed:**
   ```javascript
@@ -221,6 +319,22 @@ This document provides a complete audit of the Four Against Darkness companion a
   }
   ```
 
+#### **XP Rolls**
+- **Status:** ❌ Partially IMPLEMENTED in VictoryPhase.jsx, needs testing and need to make sure any character having 3 clues also immediately triggers an XP roll for them. Also level up logic needs to be fully implemented for each class(? most things are just +L)
+- **Rule:** d6 roll to determine actual XP gained from encounters
+- **Current Issue:** XP tracked but no roll mechanic
+- **Architecture Needed:**
+  ```javascript
+  // Replace auto XP award with roll:
+  const rollForXP = (monster) => {
+    const roll = d6();
+    const baseXP = monster.xp;
+    const earnedXP = Math.floor(baseXP * roll / 6);
+    return earnedXP;
+  };
+  ```
+- **Priority:** MEDIUM
+
 ---
 
 <a name="not-implemented"></a>
@@ -231,38 +345,6 @@ This document provides a complete audit of the Four Against Darkness companion a
 ### Combat System
 
 #### **Corridor vs Room Combat Restrictions**
-- **Status:** ❌ NOT IMPLEMENTED
-- **Rule:**
-  - Corridors: Only positions 1-2 can melee (Combat.txt p.121)
-  - Rooms: All PCs can fight
-  - Narrow corridors: 2H weapons -1, light weapons no penalty
-- **Current Issue:** Grid tracks room/corridor but no combat logic checks this
-- **Architecture Needed:**
-  ```javascript
-  // Add to combat state:
-  {
-    currentLocation: {
-      type: 'room' | 'corridor',
-      width: 'normal' | 'narrow',
-      x: number,
-      y: number
-    }
-  }
-
-  // Modify attack validation:
-  const canAttack = (hero, heroIdx, location) => {
-    if (location.type === 'corridor') {
-      const position = state.marchingOrder.indexOf(heroIdx);
-      return position < 2; // Only front 2 can melee
-    }
-    return true;
-  };
-  ```
-- **Files to Modify:**
-  - `src/components/Combat.jsx` - Add location context
-  - `src/utils/gameActions/combatActions.js` - Add location checks
-  - `src/components/Dungeon.jsx` - Track current location
-- **Priority:** HIGH (core 4AD rule)
 
 #### **Narrow Corridor Rules**
 - **Status:** ❌ NOT IMPLEMENTED
@@ -332,50 +414,6 @@ This document provides a complete audit of the Four Against Darkness companion a
 
 ### Party Management
 
-#### **XP Rolls**
-- **Status:** ❌ NOT IMPLEMENTED
-- **Rule:** d6 roll to determine actual XP gained from encounters
-- **Current Issue:** XP tracked but no roll mechanic
-- **Architecture Needed:**
-  ```javascript
-  // Replace auto XP award with roll:
-  const rollForXP = (monster) => {
-    const roll = d6();
-    const baseXP = monster.xp;
-    const earnedXP = Math.floor(baseXP * roll / 6);
-    return earnedXP;
-  };
-  ```
-- **Priority:** MEDIUM
-
-#### **Clues System**
-- **Status:** ❌ MECHANICS MISSING (state exists)
-- **Rule:**
-  - Find clues via Search rolls (5-6 result) (Exploration.txt p.107)
-  - Spend 3 clues to reveal a secret
-  - Accumulate across adventures
-- **Current Issue:** Clues tracked but no acquisition/spending
-- **Architecture Needed:**
-  ```javascript
-  // Add clue acquisition:
-  const searchRoll = d6();
-  if (searchRoll >= 5) {
-    const choice = await askUser(['Hidden Treasure', 'Secret Door', 'Secret Passage', 'Clue']);
-    if (choice === 'Clue') {
-      dispatch({ type: 'ADD_CLUE', heroIdx });
-    }
-  }
-
-  // Add clue spending:
-  const spendClues = (count = 3) => {
-    if (state.clues >= count) {
-      dispatch({ type: 'SPEND_CLUES', count });
-      return revealSecret();
-    }
-  };
-  ```
-- **Priority:** MEDIUM
-
 #### **Equipment Limits**
 - **Status:** ❌ NOT IMPLEMENTED
 - **Rule:** 3 weapons, 2 shields max per PC
@@ -395,10 +433,18 @@ This document provides a complete audit of the Four Against Darkness companion a
 
 ### Resource Tracking
 
+#### **Carried Treasure Weight (200gp max) - NEEDS TESTING**
 #### **Carried Treasure Weight (200gp max)**
-- **Status:** ❌ NOT IMPLEMENTED
+- **Status:** ✅ IMPLEMENTED
 - **Rule:** Each PC can carry max 200gp worth of treasure
-- **Architecture Needed:**
+- **Implementation:** Added per-hero carried treasure tracking and enforced limit on treasure pickup. Treasure is first stowed with heroes up to their 200gp capacity; any remainder becomes party gold.
+- **Files Changed:**
+  - `src/state/initialState.js` - added `carriedTreasureWeight` and `maxCarryWeight` to `createHero`
+  - `src/state/actions.js` - added `ASSIGN_TREASURE` action
+  - `src/state/reducers/partyReducer.js` - implemented `assignTreasureToParty` logic and integrated allocation
+  - `src/utils/gameActions/treasureActions.js` - use `ASSIGN_TREASURE` when awarding rolled treasure
+  - `src/components/ActionPane.jsx` - award hidden-treasure via `ASSIGN_TREASURE` (respects per-hero carry limits)
+- **Architecture Notes:**
   ```javascript
   // Add to hero state:
   {
@@ -411,12 +457,19 @@ This document provides a complete audit of the Four Against Darkness companion a
     return (hero.carriedTreasureWeight + treasureValue) <= hero.maxCarryWeight;
   };
   ```
-- **Priority:** MEDIUM
+ - **Priority:** MEDIUM
 
 #### **Bandages (1 per PC per adventure)**
-- **Status:** ❌ NOT IMPLEMENTED
+#### **Bandages (1 per PC per adventure)**
+- **Status:** ✅ IMPLEMENTED
 - **Rule:** Each PC can use 1 bandage per adventure (Equipment.txt)
-- **Current Issue:** Bandage item exists but no limit tracking
+- **Implementation:** Added per-hero `bandagesUsed` tracking and enforced the consumable limit in the Equipment UI; using a bandage increments the hero's bandage counter and heals per the item definition.
+- **Files Changed:**
+  - `src/state/initialState.js` - added `bandagesUsed` to hero abilities
+  - `src/state/actions.js` - added `USE_BANDAGE` action
+  - `src/state/actionCreators.js` - added `useBandage()` action creator
+  - `src/state/reducers/combatReducer.js` - handle `USE_BANDAGE` to increment counter
+  - `src/components/Equipment.jsx` - enforce limit, dispatch bandage use, and apply heal
 - **Architecture Needed:**
   ```javascript
   // Add to hero abilities:
@@ -430,60 +483,6 @@ This document provides a complete audit of the Four Against Darkness companion a
 - **Status:** ❌ NOT IMPLEMENTED
 - **Rule:** Required for wilderness survival
 - **Priority:** LOW (wilderness not in scope)
-
-### Dungeon Exploration
-
-#### **Secret Door Discovery**
-- **Status:** ✅ IMPLEMENTED
-- **Implementation:** `src/utils/gameActions/explorationActions.js:161-187`
-- **Features:**
-  - ✅ Search roll 5-6 gives option to find secret door
-  - ✅ 1-in-6 chance it's a shortcut out
-  - ✅ Treasure behind secret doors DOUBLED (treasureMultiplier: 2)
-  - ✅ UI modal for secret door discovery
-- **Completed Date:** 2026-01-16
-
-#### **Secret Passage**
-- **Status:** ✅ IMPLEMENTED
-- **Implementation:**
-  - Logic: `src/utils/gameActions/explorationActions.js:195-218`
-  - Action: `src/state/actions.js:37-38` (CHANGE_ENVIRONMENT)
-  - Reducer: `src/state/reducers/dungeonReducer.js:40-45`
-  - Initial State: `src/state/initialState.js:21`
-- **Features:**
-  - ✅ Passage to different environment (dungeon/fungal_grottoes/caverns)
-  - ✅ State properly tracks environment
-  - ✅ UI modal shows passage discovery
-  - ✅ Dispatch action changes environment
-- **Completed Date:** 2026-01-16
-
-#### **Hidden Treasure Complications**
-- **Status:** ✅ IMPLEMENTED
-- **Implementation:** `src/utils/gameActions/explorationActions.js:100-124`
-- **Features:**
-  - ✅ Alarm (1-2): Triggers wandering monsters
-  - ✅ Trap (3-5): Rogue can attempt disarm at L+1 DC
-  - ✅ Ghost (6): Cleric can banish at L/2 bonus vs DC(3+HCL)
-  - ✅ All complications wired to SearchModal with action handlers
-  - ✅ HiddenTreasureModal shows complications and resolution options
-- **Completed Date:** 2026-01-16
-
-#### **Retracing Steps Wandering Monster (1-in-6)**
-- **Status:** ❌ NOT FULLY IMPLEMENTED
-- **Rule:** When revisiting tiles, 1-in-6 wandering monster (Exploration.txt p.104)
-- **Current Issue:** Implemented for Withdraw but not general retracing
-- **Architecture Needed:**
-  ```javascript
-  const onEnterTile = (x, y) => {
-    const tile = state.grid[y][x];
-    if (tile.visited) {
-      if (d6() === 1) {
-        rollWanderingMonster();
-      }
-    }
-  };
-  ```
-- **Priority:** LOW
 
 ---
 

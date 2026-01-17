@@ -70,6 +70,15 @@ export function campaignReducer(state, action) {
         entries: [...state.log]
       } : null;
 
+      // Reset per-adventure fields on each hero (bandages, carried treasure, clues, abilities)
+      const resetParty = (state.party || []).map(h => ({
+        ...h,
+        clues: 0,
+        carriedTreasureWeight: 0,
+        // reset per-adventure ability usages
+        abilities: {}
+      }));
+
       return {
         ...state,
         adventure: {
@@ -82,8 +91,10 @@ export function campaignReducer(state, action) {
         minorEnc: 0,
         majorFoes: 0,
         finalBoss: false,
-        // Reset per-adventure ability uses
-        abilities: {},
+  // Reset per-adventure ability uses
+  abilities: {},
+  // Reset party per-adventure fields
+  party: resetParty,
         // Archive old log and start fresh
         log: [{
           message: `=== Started new dungeon: ${action.name || 'New Dungeon'} ===`,
@@ -127,6 +138,13 @@ export function campaignReducer(state, action) {
 
     case A.START_ADVENTURE: {
       // Start a new adventure, preserving campaign/party data
+      const resetStartParty = (state.party || []).map(h => ({
+        ...h,
+        clues: 0,
+        carriedTreasureWeight: 0,
+        abilities: {}
+      }));
+
       return {
         ...state,
         adventure: createAdventureState(),
@@ -138,6 +156,7 @@ export function campaignReducer(state, action) {
         finalBoss: false,
         // Reset per-adventure ability uses
         abilities: {},
+        party: resetStartParty,
         log: [`Started new adventure: ${action.name || 'Unnamed Dungeon'}`]
       };
     }

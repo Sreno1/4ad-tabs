@@ -184,7 +184,8 @@ export const triggerTrap = (dispatch, hero, trapType) => {
     dispatch({ type: 'LOG', t: `☠️ ${hero.name} is poisoned!` });
   } else if (effect === 'wandering') {
     dispatch({ type: 'LOG', t: `🔔 The alarm attracts wandering monsters!` });
-    rollWanderingMonster(dispatch);
+    // Alarm-based wandering monsters ambush the party (target rear)
+    rollWanderingMonster(dispatch, { ambush: true });
   } else if (effect === 'teleport') {
     dispatch({
       type: 'LOG',

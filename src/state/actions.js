@@ -12,6 +12,7 @@ export const GOLD = 'GOLD';
 export const CLUE = 'CLUE'; // Legacy: global clues (deprecated)
 export const ADD_HERO_CLUE = 'ADD_HERO_CLUE'; // Add clue to specific hero (max 3)
 export const REMOVE_HERO_CLUE = 'REMOVE_HERO_CLUE'; // Remove clues from hero (for spending)
+export const ASSIGN_TREASURE = 'ASSIGN_TREASURE'; // Assign found treasure to heroes' carriedTreasureWeight, spillover to party gold
 
 // Encounter tracking
 export const MINOR = 'MINOR';
@@ -103,6 +104,7 @@ export const USE_SPELL = 'USE_SPELL';
 export const USE_RAGE = 'USE_RAGE';
 export const USE_LUCK = 'USE_LUCK';
 export const USE_HEAL = 'USE_HEAL';
+export const USE_BANDAGE = 'USE_BANDAGE';
 export const USE_BLESS = 'USE_BLESS';
 export const ATTEMPT_FLEE = 'ATTEMPT_FLEE';
 export const SET_MONSTER_REACTION = 'SET_MONSTER_REACTION';
@@ -125,6 +127,9 @@ export const TOGGLE_LIGHT_SOURCE = 'TOGGLE_LIGHT_SOURCE';
 // Combat location (corridor/room restrictions)
 export const SET_COMBAT_LOCATION = 'SET_COMBAT_LOCATION';
 export const CLEAR_COMBAT_LOCATION = 'CLEAR_COMBAT_LOCATION';
+// Wandering encounter meta (used to mark ambushes and shield restrictions)
+export const SET_WANDERING_ENCOUNTER = 'SET_WANDERING_ENCOUNTER';
+export const CLEAR_WANDERING_ENCOUNTER = 'CLEAR_WANDERING_ENCOUNTER';
 
 // Tile exploration
 export const MARK_TILE_SEARCHED = 'MARK_TILE_SEARCHED';

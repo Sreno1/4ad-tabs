@@ -246,15 +246,16 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     };
   }, [state.grid, sidebarCollapsed]);
   return (
-  <div className="space-y-2 h-full flex flex-col">
+  <section id="dungeon_section" className="space-y-2 h-full flex flex-col">
       {/* Dungeon Grid - No extra outline/container, never scrolls */}
       <div className="flex-1 flex flex-col overflow-hidden" data-dungeon-section="true">
-        <div className="flex items-center justify-end gap-2 p-1">
-          <div className="text-xs text-slate-300 mr-2">
+        <div id="dungeon_controls" className="flex items-center justify-end gap-2 p-1">
+          <div id="dungeon_view_display" className="text-xs text-slate-300 mr-2">
             {showLogMiddle ? 'Viewing: Log' : 'Viewing: Map'}
           </div>
-          <div className="flex items-center gap-2">
+          <div id="dungeon_header_buttons" className="flex items-center gap-2">
             <button
+              id="dungeon_toggle_log_button"
               onClick={() => onToggleShowLog && onToggleShowLog()}
               className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
               title={showLogMiddle ? 'Show dungeon' : 'Show full log in middle pane'}
@@ -262,6 +263,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
               {showLogMiddle ? 'Map' : 'Log'}
             </button>
             <button
+              id="dungeon_room_designer_button"
               onClick={() => onShowRoomDesigner && onShowRoomDesigner()}
               className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
               title="Open Room Designer"
@@ -271,6 +273,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
           </div>
         </div>
   <div
+          id="dungeon_grid"
           ref={gridContainerRef}
           className="flex-1 w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden"
           data-dungeon-grid="true"
@@ -287,6 +290,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             }}
           >
           <DungeonGridCanvas
+            id="dungeon_grid_canvas"
             grid={state.grid}
             doors={state.doors}
             roomMarkers={roomMarkers}
@@ -326,17 +330,19 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             }}
           />
           {radialMenu && (
-            <RadialMenu
-              x={radialMenu.xPx}
-              y={radialMenu.yPx}
-              items={markerOptions}
-              onSelect={handleRadialSelect}
-              onClose={closeRadial}
-            />
+            <div id="dungeon_radial_menu">
+              <RadialMenu
+                x={radialMenu.xPx}
+                y={radialMenu.yPx}
+                items={markerOptions}
+                onSelect={handleRadialSelect}
+                onClose={closeRadial}
+              />
+            </div>
           )}
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

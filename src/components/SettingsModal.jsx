@@ -117,20 +117,25 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
   
   return (
     <div
+      id="settings_modal_overlay"
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="settings-title"
+      aria-labelledby="settings_modal_title"
     >
       <div
+        id="settings_modal"
         className="bg-slate-800 rounded-lg max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
       >
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-slate-700">
-          <h2 id="settings-title" className="text-lg font-bold text-amber-400">⚙️ Settings</h2>
+        <div id="settings_modal_header" className="flex justify-between items-center p-4 border-b border-slate-700">
+          <h2 id="settings_modal_title" className="text-lg font-bold text-amber-400">⚙️ Settings</h2>
           <button
+            id="settings_modal_close_button"
             onClick={onClose}
             className="text-slate-400 hover:text-white"
             aria-label="Close settings"
@@ -138,18 +143,19 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
             <X size={20} aria-hidden="true" />
           </button>
         </div>
-        
+
         {/* Content */}
-        <div className="p-4 space-y-4 overflow-y-auto flex-1">
+        <div id="settings_modal_content" className="p-4 space-y-4 overflow-y-auto flex-1">
           {/* Theme Selection */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide flex items-center gap-2">
+          <div id="settings_theme_section" className="space-y-2">
+            <h3 id="settings_theme_label" className="text-sm font-bold text-slate-300 uppercase tracking-wide flex items-center gap-2">
               <Palette size={14} />
               Theme
             </h3>
-              <div className="grid grid-cols-1 gap-2">
+              <div id="settings_theme_options" className="grid grid-cols-1 gap-2" role="group" aria-labelledby="settings_theme_label">
               {Object.values(THEMES).map((t) => (
                 <button
+                  id={`settings_theme_${t.id}_button`}
                   key={t.id}
                   onClick={() => setTheme(t.id)}
                   className={`p-3 rounded border-2 text-left transition-colors ${
@@ -157,30 +163,33 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                       ? 'border-amber-400 bg-amber-900/30'
                       : 'border-slate-600 bg-slate-900 hover:border-slate-500'
                   }`}
+                  role="radio"
+                  aria-checked={theme === t.id}
                 >
-                  <div className={`font-bold text-sm ${theme === t.id ? 'text-amber-400' : 'text-slate-300'}`}>
+                  <div id={`settings_theme_${t.id}_name`} className={`font-bold text-sm ${theme === t.id ? 'text-amber-400' : 'text-slate-300'}`}>
                     {t.name}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">
+                  <div id={`settings_theme_${t.id}_description`} className="text-xs text-slate-500 mt-1">
                     {t.description}
                   </div>
                 </button>
               ))}            </div>
-            <p className="text-xs text-slate-500">
+            <p id="settings_theme_help" className="text-xs text-slate-500">
               {theme === 'rpgui' && '🎮 RPGUI theme applies retro 8-bit styling.'}
               {theme === 'doodle' && '✏️ Doodle theme uses hand-drawn borders and playful style.'}
             </p>
           </div>
 
           {/* Dice Theme Selection */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide flex items-center gap-2">
+          <div id="settings_dice_theme_section" className="space-y-2">
+            <h3 id="settings_dice_theme_label" className="text-sm font-bold text-slate-300 uppercase tracking-wide flex items-center gap-2">
               <Dices size={14} />
               Dice Theme
             </h3>
-            <div className="grid grid-cols-3 gap-2">
+            <div id="settings_dice_theme_options" className="grid grid-cols-3 gap-2" role="group" aria-labelledby="settings_dice_theme_label">
               {Object.values(DICE_THEMES).map((dt) => (
                 <button
+                  id={`settings_dice_theme_${dt.id}_button`}
                   key={dt.id}
                   onClick={() => setDiceTheme(dt.id)}
                   className={`p-3 rounded border-2 transition-colors text-center ${
@@ -188,10 +197,12 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                       ? 'border-amber-400 bg-amber-900/30'
                       : 'border-slate-600 bg-slate-900 hover:border-slate-500'
                   }`}
+                  role="radio"
+                  aria-checked={diceTheme === dt.id}
                   title={dt.description}
                 >
                   <DicePreview themeId={dt.id} colorHex={DICE_COLORS[diceColor]?.color || '#f59e0b'} />
-                  <span className={`text-xs font-medium ${diceTheme === dt.id ? 'text-amber-400' : 'text-slate-400'}`}>
+                  <span id={`settings_dice_theme_${dt.id}_name`} className={`text-xs font-medium ${diceTheme === dt.id ? 'text-amber-400' : 'text-slate-400'}`}>
                     {dt.name}
                   </span>
                 </button>
@@ -200,13 +211,14 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
           </div>
 
           {/* Dice Color Selection */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">
+          <div id="settings_dice_color_section" className="space-y-2">
+            <h3 id="settings_dice_color_label" className="text-sm font-bold text-slate-300 uppercase tracking-wide">
               Dice Color
             </h3>
-            <div className="grid grid-cols-4 gap-2">
+            <div id="settings_dice_color_options" className="grid grid-cols-4 gap-2" role="group" aria-labelledby="settings_dice_color_label">
               {Object.values(DICE_COLORS).map((dc) => (
                 <button
+                  id={`settings_dice_color_${dc.id}_button`}
                   key={dc.id}
                   onClick={() => setDiceColor(dc.id)}
                   className={`p-2 rounded border-2 transition-colors flex flex-col items-center ${
@@ -214,13 +226,16 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                       ? 'border-amber-400 bg-amber-900/30'
                       : 'border-slate-600 bg-slate-900 hover:border-slate-500'
                   }`}
+                  role="radio"
+                  aria-checked={diceColor === dc.id}
                   title={dc.name}
                 >
                   <div
+                    id={`settings_dice_color_${dc.id}_swatch`}
                     className="w-6 h-6 rounded shadow-md mb-1"
                     style={{ backgroundColor: dc.color }}
                   />
-                  <span className={`text-xs ${diceColor === dc.id ? 'text-amber-400' : 'text-slate-400'}`}>
+                  <span id={`settings_dice_color_${dc.id}_name`} className={`text-xs ${diceColor === dc.id ? 'text-amber-400' : 'text-slate-400'}`}>
                     {dc.name.split(' ')[0]}
                   </span>
                 </button>
@@ -229,13 +244,14 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
           </div>
           
           {/* Log Management */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">
+          <div id="settings_log_management_section" className="space-y-2">
+            <h3 id="settings_log_management_label" className="text-sm font-bold text-slate-300 uppercase tracking-wide">
               Log Management
             </h3>
-            
-            <div className="flex gap-2">
+
+            <div id="settings_log_actions" className="flex gap-2">
               <button
+                id="settings_log_archive_button"
                 onClick={handleArchiveLog}
                 disabled={state.log.length === 0}
                 className="flex-1 bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-600 text-white px-3 py-2 rounded flex items-center gap-2 justify-center text-sm"
@@ -244,37 +260,40 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                 Archive & Clear Log
               </button>
             </div>
-            <p className="text-xs text-slate-500">
+            <p id="settings_log_current_count" className="text-xs text-slate-500">
               Current log: {state.log.length} entries
             </p>
-            
+
             {/* Archive Summary */}
-            <div className="bg-slate-900 rounded p-2">
+            <div id="settings_log_archive_summary" className="bg-slate-900 rounded p-2">
               <button
+                id="settings_log_archive_toggle_button"
                 onClick={() => setShowArchive(!showArchive)}
                 className="w-full flex justify-between items-center text-xs"
+                aria-expanded={showArchive}
+                aria-controls="settings_log_archive_list"
               >
-                <span className="text-slate-400">
+                <span id="settings_log_archive_count" className="text-slate-400">
                   📚 Archived: {archiveCount} logs ({totalArchivedEntries} entries)
                 </span>
                 <span className="text-slate-500">{showArchive ? '▼' : '▶'}</span>
               </button>
-              
+
               {showArchive && state.logArchive && state.logArchive.length > 0 && (
-                <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                <div id="settings_log_archive_list" className="mt-2 space-y-2 max-h-40 overflow-y-auto">
                   {state.logArchive.map((archive, idx) => (
-                    <div key={archive.id} className="bg-slate-800 rounded p-2 text-xs">
-                      <div className="text-amber-400 font-bold">{archive.adventureName}</div>
-                      <div className="text-slate-500">
+                    <div id={`settings_log_archive_item_${idx}`} key={archive.id} className="bg-slate-800 rounded p-2 text-xs">
+                      <div id={`settings_log_archive_item_${idx}_name`} className="text-amber-400 font-bold">{archive.adventureName}</div>
+                      <div id={`settings_log_archive_item_${idx}_info`} className="text-slate-500">
                         {new Date(archive.timestamp).toLocaleDateString()} · {archive.entries.length} entries
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-              
+
               {showArchive && (!state.logArchive || state.logArchive.length === 0) && (
-                <div className="mt-2 text-xs text-slate-500 text-center py-2">
+                <div id="settings_log_archive_empty" className="mt-2 text-xs text-slate-500 text-center py-2">
                   No archived logs yet
                 </div>
               )}
@@ -282,20 +301,20 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
           </div>
           
           {/* Campaign Stats */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide">
+          <div id="settings_campaign_stats_section" className="space-y-2">
+            <h3 id="settings_campaign_stats_label" className="text-sm font-bold text-slate-300 uppercase tracking-wide">
               Campaign Stats
             </h3>
-            <div className="bg-slate-900 rounded p-3 text-xs space-y-1">
-              <div className="flex justify-between">
+            <div id="settings_campaign_stats_display" className="bg-slate-900 rounded p-3 text-xs space-y-1">
+              <div id="settings_stats_party_members" className="flex justify-between">
                 <span className="text-slate-400">Party Members:</span>
                 <span className="text-amber-400">{state.party.length}/4</span>
               </div>
-              <div className="flex justify-between">
+              <div id="settings_stats_total_gold" className="flex justify-between">
                 <span className="text-slate-400">Total Gold:</span>
                 <span className="text-amber-400">{state.gold}</span>
               </div>
-              <div className="flex justify-between">
+              <div id="settings_stats_clues" className="flex justify-between">
                 <span className="text-slate-400">Total Clues Discovered:</span>
                 <span className="text-blue-400">
                   {state.party && state.party.length > 0
@@ -303,24 +322,25 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                     : 0}
                 </span>
               </div>
-              <div className="flex justify-between">
+              <div id="settings_stats_minor_encounters" className="flex justify-between">
                 <span className="text-slate-400">Minor Encounters:</span>
                 <span className="text-slate-300">{state.minorEnc}</span>
               </div>
-              <div className="flex justify-between">
+              <div id="settings_stats_major_foes" className="flex justify-between">
                 <span className="text-slate-400">Major Foes Defeated:</span>
                 <span className="text-red-400">{state.majorFoes}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Boss Defeated:</span>                <span className={state.finalBoss ? 'text-green-400' : 'text-slate-500'}>
+              <div id="settings_stats_boss" className="flex justify-between">
+                <span className="text-slate-400">Boss Defeated:</span>
+                <span id="settings_stats_boss_value" className={state.finalBoss ? 'text-green-400' : 'text-slate-500'}>
                   {state.finalBoss ? 'Yes' : 'No'}
                 </span>
               </div>
             </div>
             {/* Keyboard Shortcuts Legend */}
-            <div className="mt-6 p-3 border-t border-slate-700 text-xs text-slate-400">
-              <div className="font-bold text-amber-300 mb-2">Keyboard Shortcuts</div>
-              <div className="grid grid-cols-2 gap-2">
+            <div id="settings_keyboard_shortcuts_section" className="mt-6 p-3 border-t border-slate-700 text-xs text-slate-400">
+              <div id="settings_keyboard_shortcuts_title" className="font-bold text-amber-300 mb-2">Keyboard Shortcuts</div>
+              <div id="settings_keyboard_shortcuts_list" className="grid grid-cols-2 gap-2">
                 <div><span className="font-mono">Esc</span>: Close modals</div>
                 <div><span className="font-mono">Ctrl/Cmd+D</span>: Dice roller</div>
                 <div><span className="font-mono">p</span>: Party tab</div>

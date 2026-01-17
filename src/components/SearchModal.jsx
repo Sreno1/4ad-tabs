@@ -11,17 +11,18 @@ export function SearchModal({ searchResult, onChoice, onClose, state }) {
   const { type, message, choices, roll, total } = searchResult;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-amber-400">
+    <div id="search_modal_overlay" className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div id="search_modal" className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-amber-400">
         {/* Header */}
-        <div className="flex justify-between items-start mb-4">
+        <div id="search_modal_header" className="flex justify-between items-start mb-4">
           <div>
-            <h2 className="text-xl font-bold text-amber-400">🔍 Search Results</h2>
-            <div className="text-sm text-slate-400 mt-1">
+            <h2 id="search_modal_title" className="text-xl font-bold text-amber-400">🔍 Search Results</h2>
+            <div id="search_modal_roll" className="text-sm text-slate-400 mt-1">
               Roll: {roll} {total !== roll && `(${total} total)`}
             </div>
           </div>
           <button
+            id="search_modal_close_button"
             onClick={onClose}
             className="text-slate-400 hover:text-white text-2xl leading-none"
           >
@@ -30,18 +31,19 @@ export function SearchModal({ searchResult, onChoice, onClose, state }) {
         </div>
 
         {/* Message */}
-        <div className="mb-4 text-white">
+        <div id="search_modal_message" className="mb-4 text-white">
           {message}
         </div>
 
         {/* Wandering Monsters */}
         {type === 'wandering_monsters' && (
-          <div className="bg-red-900 border border-red-500 rounded p-4 mb-4">
-            <div className="text-red-200 font-bold mb-2">⚠️ Wandering Monsters Attack!</div>
-            <div className="text-red-100 text-sm mb-3">
+          <div id="search_modal_wandering" className="bg-red-900 border border-red-500 rounded p-4 mb-4">
+            <div id="search_modal_wandering_title" className="text-red-200 font-bold mb-2">⚠️ Wandering Monsters Attack!</div>
+            <div id="search_modal_wandering_description" className="text-red-100 text-sm mb-3">
               Your search made noise and attracted monsters. Roll on the Wandering Monsters table!
             </div>
             <button
+              id="search_modal_wandering_button"
               onClick={onClose}
               className="w-full bg-red-700 hover:bg-red-600 text-white py-2 rounded font-bold"
             >
@@ -52,11 +54,12 @@ export function SearchModal({ searchResult, onChoice, onClose, state }) {
 
         {/* Nothing Found */}
         {type === 'nothing' && (
-          <div className="bg-slate-700 border border-slate-500 rounded p-4 mb-4">
-            <div className="text-slate-300 text-center">
+          <div id="search_modal_nothing" className="bg-slate-700 border border-slate-500 rounded p-4 mb-4">
+            <div id="search_modal_nothing_message" className="text-slate-300 text-center">
               The tile appears empty. Nothing of interest here.
             </div>
             <button
+              id="search_modal_nothing_button"
               onClick={onClose}
               className="w-full mt-3 bg-slate-600 hover:bg-slate-500 text-white py-2 rounded"
             >
@@ -67,13 +70,14 @@ export function SearchModal({ searchResult, onChoice, onClose, state }) {
 
         {/* Found Something - Show Choices */}
         {type === 'found_something' && choices && (
-          <div className="space-y-2">
-            <div className="text-amber-300 font-bold mb-3">
+          <div id="search_modal_choices" className="space-y-2">
+            <div id="search_modal_choices_title" className="text-amber-300 font-bold mb-3">
               Choose what you discovered:
             </div>
 
             {choices.map((choice) => (
               <button
+                id={`search_modal_choice_${choice.key}`}
                 key={choice.key}
                 onClick={() => onChoice(choice.key)}
                 className="w-full bg-slate-700 hover:bg-slate-600 border border-slate-500 hover:border-amber-400 p-3 rounded text-left transition-colors"
@@ -93,7 +97,7 @@ export function SearchModal({ searchResult, onChoice, onClose, state }) {
             ))}
 
             {/* Current Clues Display */}
-            <div className="mt-4 pt-4 border-t border-slate-600">
+            <div id="search_modal_clues_display" className="mt-4 pt-4 border-t border-slate-600">
               <div className="text-xs text-slate-400">
                 <div className="mb-2">Party Clues:</div>
                 {state.party && state.party.length > 0 ? (
@@ -127,12 +131,13 @@ export function HiddenTreasureModal({ treasure, complication, onResolve, onClose
   if (!treasure) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-yellow-400">
+    <div id="treasure_modal_overlay" className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div id="treasure_modal" className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-yellow-400">
         {/* Header */}
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-bold text-yellow-400">💰 Hidden Treasure!</h2>
+        <div id="treasure_modal_header" className="flex justify-between items-start mb-4">
+          <h2 id="treasure_modal_title" className="text-xl font-bold text-yellow-400">💰 Hidden Treasure!</h2>
           <button
+            id="treasure_modal_close_button"
             onClick={onClose}
             className="text-slate-400 hover:text-white text-2xl leading-none"
           >
@@ -141,12 +146,12 @@ export function HiddenTreasureModal({ treasure, complication, onResolve, onClose
         </div>
 
         {/* Treasure Amount */}
-        <div className="bg-yellow-900 border border-yellow-600 rounded p-4 mb-4">
+        <div id="treasure_modal_amount" className="bg-yellow-900 border border-yellow-600 rounded p-4 mb-4">
           <div className="text-yellow-100 text-center">
-            <div className="text-2xl font-bold mb-2">
+            <div id="treasure_modal_gold" className="text-2xl font-bold mb-2">
               {treasure.gold} GP
             </div>
-            <div className="text-sm text-yellow-300">
+            <div id="treasure_modal_formula" className="text-sm text-yellow-300">
               {treasure.formula}
             </div>
           </div>
@@ -232,13 +237,14 @@ export function SecretDoorModal({ secretDoor, onClose }) {
   if (!secretDoor) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-blue-400">
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-bold text-blue-400">
+    <div id="secret_door_modal_overlay" className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div id="secret_door_modal" className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-blue-400">
+        <div id="secret_door_modal_header" className="flex justify-between items-start mb-4">
+          <h2 id="secret_door_modal_title" className="text-xl font-bold text-blue-400">
             🚪 Secret Door Discovered!
           </h2>
           <button
+            id="secret_door_modal_close_button"
             onClick={onClose}
             className="text-slate-400 hover:text-white text-2xl leading-none"
           >
@@ -246,7 +252,7 @@ export function SecretDoorModal({ secretDoor, onClose }) {
           </button>
         </div>
 
-        <div className={`border rounded p-4 mb-4 ${
+        <div id="secret_door_modal_content" className={`border rounded p-4 mb-4 ${
           secretDoor.isShortcut
             ? 'bg-green-900 border-green-500'
             : 'bg-blue-900 border-blue-500'
@@ -296,13 +302,14 @@ export function SecretPassageModal({ passage, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-purple-400">
-        <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-bold text-purple-400">
+    <div id="secret_passage_modal_overlay" className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div id="secret_passage_modal" className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-purple-400">
+        <div id="secret_passage_modal_header" className="flex justify-between items-start mb-4">
+          <h2 id="secret_passage_modal_title" className="text-xl font-bold text-purple-400">
             🗺️ Secret Passage!
           </h2>
           <button
+            id="secret_passage_modal_close_button"
             onClick={onClose}
             className="text-slate-400 hover:text-white text-2xl leading-none"
           >
@@ -310,7 +317,7 @@ export function SecretPassageModal({ passage, onClose }) {
           </button>
         </div>
 
-        <div className="bg-purple-900 border border-purple-500 rounded p-4 mb-4">
+        <div id="secret_passage_modal_content" className="bg-purple-900 border border-purple-500 rounded p-4 mb-4">
           <div className="text-purple-100 font-bold mb-2">
             Passage to {envNames[passage.newEnvironment]}
           </div>

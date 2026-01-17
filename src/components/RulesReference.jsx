@@ -183,20 +183,22 @@ export default function RulesReference({ isOpen, onClose }) {
   if (pdfViewer) {
     return (
       <div
+        id="rules_pdf_viewer_overlay"
         className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-2"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="pdf-title"
+        aria-labelledby="rules_pdf_viewer_title"
       >
-        <div className="bg-slate-800 rounded-lg w-full h-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+        <div id="rules_pdf_viewer_modal" className="bg-slate-800 rounded-lg w-full h-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="flex justify-between items-center p-3 border-b border-slate-700 flex-shrink-0">
-            <h2 id="pdf-title" className="text-lg font-bold text-amber-400 flex items-center gap-2">
+          <div id="rules_pdf_viewer_header" className="flex justify-between items-center p-3 border-b border-slate-700 flex-shrink-0">
+            <h2 id="rules_pdf_viewer_title" className="text-lg font-bold text-amber-400 flex items-center gap-2">
               <Book size={20} aria-hidden="true" />
               {pdfViewer.name}
             </h2>
-            <div className="flex items-center gap-2">
+            <div id="rules_pdf_viewer_controls" className="flex items-center gap-2">
               <a
+                id="rules_pdf_viewer_open_tab_link"
                 href={pdfViewer.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -206,6 +208,7 @@ export default function RulesReference({ isOpen, onClose }) {
                 Open in New Tab
               </a>
               <button
+                id="rules_pdf_viewer_close_button"
                 onClick={closePdf}
                 className="text-slate-400 hover:text-white p-1"
                 aria-label="Close PDF viewer"
@@ -214,10 +217,11 @@ export default function RulesReference({ isOpen, onClose }) {
               </button>
             </div>
           </div>
-          
+
           {/* PDF Embed */}
-          <div className="flex-1 overflow-hidden">
+          <div id="rules_pdf_viewer_content" className="flex-1 overflow-hidden">
             <iframe
+              id="rules_pdf_viewer_iframe"
               src={pdfViewer.url}
               className="w-full h-full border-0"
               title={pdfViewer.name}
@@ -230,22 +234,23 @@ export default function RulesReference({ isOpen, onClose }) {
   
   return (
     <div
+      id="rules_reference_modal_overlay"
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="rules-title"
+      aria-labelledby="rules_reference_modal_title"
     >
-      <div className="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+      <div id="rules_reference_modal" className="bg-slate-800 rounded-lg max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <h2 id="rules-title" className="text-lg font-bold text-amber-400 flex items-center gap-2">
+        <div id="rules_reference_modal_header" className="flex justify-between items-center p-4 border-b border-slate-700">
+          <div id="rules_reference_modal_title_section" className="flex items-center gap-3">
+            <h2 id="rules_reference_modal_title" className="text-lg font-bold text-amber-400 flex items-center gap-2">
               <Book size={20} aria-hidden="true" />
               <span className="sr-only">Rules Reference</span>
             </h2>
-            <label htmlFor="rules-modal-select" className="sr-only">Select Rules PDF</label>
+            <label htmlFor="rules_reference_pdf_selector" className="sr-only">Select Rules PDF</label>
             <select
-              id="rules-modal-select"
+              id="rules_reference_pdf_selector"
               onChange={(e) => {
                 const pdf = PDF_LINKS.find((p) => p.file === e.target.value);
                 if (pdf) openPdf(pdf);
@@ -262,6 +267,7 @@ export default function RulesReference({ isOpen, onClose }) {
             </select>
           </div>
           <button
+            id="rules_reference_modal_close_button"
             onClick={onClose}
             className="text-slate-400 hover:text-white"
             aria-label="Close rules reference"
@@ -269,9 +275,9 @@ export default function RulesReference({ isOpen, onClose }) {
             <X size={20} aria-hidden="true" />
           </button>
         </div>
-        
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div id="rules_reference_modal_content" className="flex-1 overflow-y-auto p-4 space-y-2">
           {/* Quick Reference Sections */}
           {Object.entries(RULES_SECTIONS).map(([key, section]) => {
             const Icon = section.icon;
@@ -307,15 +313,15 @@ export default function RulesReference({ isOpen, onClose }) {
           })}
           
           {/* PDF Links Section */}
-          <div className="bg-slate-900 rounded-lg p-3 mt-4">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-3 flex items-center gap-2">
+          <div id="rules_reference_pdf_section" className="bg-slate-900 rounded-lg p-3 mt-4">
+            <h3 id="rules_reference_pdf_title" className="text-sm font-bold text-slate-300 uppercase tracking-wide mb-3 flex items-center gap-2">
               <Book size={14} />
               Rules PDFs
             </h3>
             <div className="flex items-center gap-2">
-              <label htmlFor="rules-modal-select" className="sr-only">Select Rules PDF</label>
+              <label htmlFor="rules_reference_pdf_selector_footer" className="sr-only">Select Rules PDF</label>
               <select
-                id="rules-modal-select"
+                id="rules_reference_pdf_selector_footer"
                 onChange={(e) => {
                   const pdf = PDF_LINKS.find((p) => p.file === e.target.value);
                   if (pdf) openPdf(pdf);
@@ -332,11 +338,11 @@ export default function RulesReference({ isOpen, onClose }) {
               </select>
             </div>
           </div>
-          
+
           {/* Quick Tips */}
-          <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mt-4">
-            <h3 className="text-sm font-bold text-amber-400 mb-2">💡 Quick Tips</h3>
-            <ul className="text-xs text-slate-300 space-y-1 list-disc list-inside">
+          <div id="rules_reference_tips_section" className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mt-4">
+            <h3 id="rules_reference_tips_title" className="text-sm font-bold text-amber-400 mb-2">💡 Quick Tips</h3>
+            <ul id="rules_reference_tips_list" className="text-xs text-slate-300 space-y-1 list-disc list-inside">
               <li>Hover over buttons and labels for tooltips</li>
               <li>Combat: attack modifiers are automatically calculated</li>
               <li>Explore tab: click "Generate Room" to roll for room contents</li>
@@ -347,7 +353,7 @@ export default function RulesReference({ isOpen, onClose }) {
         </div>
         
         {/* Footer */}
-        <div className="p-3 border-t border-slate-700 text-center text-xs text-slate-500">
+        <div id="rules_reference_modal_footer" className="p-3 border-t border-slate-700 text-center text-xs text-slate-500">
           Four Against Darkness © Andrea Sfiligoi. This is a digital companion app.
         </div>
       </div>

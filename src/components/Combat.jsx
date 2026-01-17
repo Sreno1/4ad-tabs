@@ -63,6 +63,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   const [roundStartsWith, setRoundStartsWith] = useState('attack'); // 'attack' | 'defend'
   const [showCombatModule, setShowCombatModule] = useState(false); // hide both until player/initiative decides
   const [targetMonsterIdx, setTargetMonsterIdx] = useState(null); // Selected target monster
+  const [shieldsDisabledFirst, setShieldsDisabledFirst] = useState(false);
   
   const party = selectParty(state);
   const activeHero = selectHero(state, selectedHero) || null;
@@ -215,7 +216,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     }
 
     const options = {
-      hasLightSource: effectiveHasLight
+      hasLightSource: effectiveHasLight,
+      ignoreShield: shieldsDisabledFirst
     };
 
   const target = getTargetMonster();
@@ -223,6 +225,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   const computedFoeLevel = targetMonster ? (targetMonster.level || 1) : (Math.max(...state.monsters.map(m => m.level || 1), 1));
 
   const result = calculateDefense(hero, computedFoeLevel, options);
+  // Clear the global one-time shield restriction after it's consumed by the first defense roll
+  if (shieldsDisabledFirst) setShieldsDisabledFirst(false);
     
     if (!result.blocked) {
       const newHP = Math.max(0, hero.hp - 1);
@@ -293,6 +297,31 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
       setShowCombatModule(true);
     }
   }, [combatInitiative]);
+
+  // Respond to wandering encounter metadata (set by rollWanderingMonster)
+  useEffect(() => {
+    try {
+      const meta = state?.combatMeta?.wanderingEncounter;
+      if (meta) {
+        // Wandering monsters always attack first
+        const init = { monsterFirst: true, order: ['monster_melee', 'party_melee'], reason: 'Wandering Monsters ambush!' };
+        setCombatInitiative(init);
+        // Disable shields for the first defense rolls if indicated
+        if (meta.shieldsDisabledFirst) setShieldsDisabledFirst(true);
+
+        // Perform immediate ambush strikes using current state
+        try {
+          const combatActions = require('../utils/gameActions/combatActions.js');
+          combatActions.initialWanderingStrikes(dispatch, state);
+        } catch (e) {}
+
+        // Clear the shieldsDisabledFirst flag in global meta so it's not re-used
+        try { dispatch({ type: 'SET_WANDERING_ENCOUNTER', ambush: !!meta.ambush, location: meta.location, shieldsDisabledFirst: false }); } catch (e) {}
+      }
+    } catch (e) {
+      // ignore errors
+    }
+  }, [state?.combatMeta, dispatch]);
 
   // When initiative is set to Party attacks first, if any alive hero has a ranged weapon
   // show the ranged-volley modal so they can fire before regular combat starts.
@@ -456,16 +485,16 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   const partyLacksDarkvision = state.party.some(h => h.hp > 0 && !hasDarkvision(h.key));
 
   return (
-    <div className="space-y-2">
+    <section id="combat_section" className="space-y-2">
       {/* Combat Location Display */}
       {state.currentCombatLocation && (
-        <div className={`rounded p-2 ${
+        <div id="combat_location" className={`rounded p-2 ${
           state.currentCombatLocation.type === 'corridor'
             ? 'bg-blue-900'
             : 'bg-slate-800'
         }`}>
-          <div className="flex justify-between items-center">
-            <div>
+          <div id="combat_location_controls" className="flex justify-between items-center">
+            <div id="combat_location_display">
               <span className="text-sm font-bold text-blue-300">
                 📍 {state.currentCombatLocation.type === 'corridor' ? 'Corridor Combat' : 'Room Combat'}
               </span>
@@ -479,6 +508,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
               )}
             </div>
             <button
+              id="combat_location_clear_button"
               onClick={() => dispatch({ type: 'CLEAR_COMBAT_LOCATION' })}
               className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
             >
@@ -490,15 +520,16 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
 
       {/* Save Roll Modal */}
       {pendingSave && (
-        <div className="bg-red-900 border-2 border-red-500 rounded p-3 animate-pulse">
-          <div className="text-red-300 font-bold text-center mb-2">
+        <div id="combat_save_modal" className="bg-red-900 border-2 border-red-500 rounded p-3 animate-pulse">
+          <div id="combat_save_title" className="text-red-300 font-bold text-center mb-2">
             💀 SAVE ROLL REQUIRED!
           </div>
           <div className="text-white text-center text-sm mb-3">
             {state.party[pendingSave.heroIdx]?.name} must make a save roll to survive!
           </div>
-          <div className="flex flex-col gap-2">
+          <div id="combat_save_buttons" className="flex flex-col gap-2">
             <button
+              id="combat_save_roll_button"
               onClick={handleSaveRoll}
               className="w-full bg-red-600 hover:bg-red-500 py-2 rounded font-bold"
             >
@@ -538,45 +569,48 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
         </div>      )}
 
       {/* Active Monsters */}
-      <div className="bg-slate-800 rounded p-2">
-        <div className="mb-2">
-          <div className="text-amber-400 font-bold text-sm mb-1">Active Monsters ({state.monsters.length})</div>
+      <div id="monster_group" className="bg-slate-800 rounded p-2">
+        <div id="monster_group_header" className="mb-2">
+          <div id="monster_group_title" className="text-amber-400 font-bold text-sm mb-1">Active Monsters ({state.monsters.length})</div>
           <div className="flex flex-wrap gap-1">
             {/* Control buttons moved to ActionPane (bottom); kept empty here to avoid duplication */}
           </div>
         </div>
-        
-        <div className="space-y-1 max-h-32 overflow-y-auto mb-2">
+
+        <div id="monster_cards" className="space-y-1 max-h-32 overflow-y-auto mb-2">
           {state.monsters.map((monster, index) => {
             const isMinor = isMinorFoe(monster);
             const isDefeated = isMinor ? (monster.count === 0) : (monster.hp === 0);
             const isTargeted = targetMonsterIdx === index;
             
             return (
-            <div 
-              key={monster.id} 
-              className={`bg-slate-700 rounded p-1.5 text-sm cursor-pointer border-2 ${
+            <div
+              key={monster.id}
+              id={`monster_${index}`}
+              className={`monster_card bg-slate-700 rounded p-1.5 text-sm cursor-pointer border-2 ${
                 isTargeted ? 'border-amber-400' : 'border-transparent'
               } ${isDefeated ? 'opacity-50' : ''}`}
               onClick={() => !isDefeated && setTargetMonsterIdx(index)}
             >
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-1">
+              <div id={`monster_${index}_header`} className="flex justify-between items-center">
+                <div id={`monster_${index}_info`} className="flex items-center gap-1">
                   {isMinor && <span className="text-blue-400 text-xs">👥</span>}
                   {!isMinor && <span className="text-red-400 text-xs"></span>}
                   <div className="flex items-center gap-2">
-                    <span className="text-amber-400 font-bold text-xs">{monster.name}</span>
+                    <span id={`monster_${index}_name`} className="text-amber-400 font-bold text-xs">{monster.name}</span>
                     {/* Per-monster level controls: edit monster.level directly */}
-                    <div className="flex items-center gap-1">
+                    <div id={`monster_${index}_level_controls`} className="flex items-center gap-1">
                       <button
+                        id={`monster_${index}_level_decrease_button`}
                         onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { level: Math.max(1, (monster.level || 1) - 1) })); }}
                         className="bg-slate-700 px-1 py-0.5 rounded text-xs"
                         title="Decrease monster level"
                       >
                         −
                       </button>
-                      <span className="text-slate-400 text-xs px-1">L{monster.level || 1}</span>
+                      <span id={`monster_${index}_level`} className="text-slate-400 text-xs px-1">L{monster.level || 1}</span>
                       <button
+                        id={`monster_${index}_level_increase_button`}
                         onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { level: (monster.level || 1) + 1 })); }}
                         className="bg-slate-700 px-1 py-0.5 rounded text-xs"
                         title="Increase monster level"
@@ -586,48 +620,53 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
                     </div>
                   </div>
                   {monster.special && MONSTER_ABILITIES[monster.special] && (
-                    <span className="text-purple-400 text-xs" title={MONSTER_ABILITIES[monster.special].description}>
+                    <span id={`monster_${index}_ability`} className="text-purple-400 text-xs" title={MONSTER_ABILITIES[monster.special].description}>
                       {MONSTER_ABILITIES[monster.special].name}
                     </span>
                   )}
                   {monster.levelReduced && (
-                    <span className="text-yellow-400 text-xs" title="Level reduced due to wounds">📉</span>
+                    <span id={`monster_${index}_level_reduced`} className="text-yellow-400 text-xs" title="Level reduced due to wounds">📉</span>
                   )}
                 </div>
-                <button 
-                  onClick={(e) => { e.stopPropagation(); dispatch(deleteMonster(index)); }} 
+                <button
+                  id={`monster_${index}_delete_button`}
+                  onClick={(e) => { e.stopPropagation(); dispatch(deleteMonster(index)); }}
                   className="text-red-400 hover:text-red-300 text-xs"
                 >
                   ✕
                 </button>
               </div>
-              <div className="flex justify-between items-center mt-0.5 text-xs">
-                <div className="flex items-center gap-2">
+              <div id={`monster_${index}_hp_section`} className="flex justify-between items-center mt-0.5 text-xs">
+                <div id={`monster_${index}_stats`} className="flex items-center gap-2">
                   {monster.xp && <span className="text-yellow-400">({monster.xp}XP)</span>}
                   {isMinor && <span className="text-blue-300">(Minor Foe)</span>}
                 </div>
                 {/* Show count for Minor Foes, HP for Major Foes */}
                 {isMinor ? (
-                  <div className="flex items-center gap-1 text-blue-400">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { count: Math.max(0, (monster.count || 1) - 1) })); }} 
+                  <div id={`monster_${index}_count_controls`} className="flex items-center gap-1 text-blue-400">
+                    <button
+                      id={`monster_${index}_count_decrease_button`}
+                      onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { count: Math.max(0, (monster.count || 1) - 1) })); }}
                       className="bg-slate-600 px-1 rounded hover:bg-slate-500"
                     >-</button>
-                    <span className={monster.count === 0 ? 'text-green-400' : ''}>{monster.count || 0}/{monster.initialCount || monster.count}</span>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { count: (monster.count || 0) + 1 })); }} 
+                    <span id={`monster_${index}_count`} className={monster.count === 0 ? 'text-green-400' : ''}>{monster.count || 0}/{monster.initialCount || monster.count}</span>
+                    <button
+                      id={`monster_${index}_count_increase_button`}
+                      onClick={(e) => { e.stopPropagation(); dispatch(updateMonster(index, { count: (monster.count || 0) + 1 })); }}
                       className="bg-slate-600 px-1 rounded hover:bg-slate-500"
                     >+</button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 text-red-400">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); adjustMonsterHP(index, -1); }} 
+                  <div id={`monster_${index}_hp_controls`} className="flex items-center gap-1 text-red-400">
+                    <button
+                      id={`monster_${index}_hp_decrease_button`}
+                      onClick={(e) => { e.stopPropagation(); adjustMonsterHP(index, -1); }}
                       className="bg-slate-600 px-1 rounded hover:bg-slate-500"
                     >-</button>
-                    <span className={monster.hp === 0 ? 'text-green-400' : ''}>{monster.hp}/{monster.maxHp}</span>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); adjustMonsterHP(index, 1); }} 
+                    <span id={`monster_${index}_hp_display`} className={monster.hp === 0 ? 'text-green-400' : ''}>{monster.hp}/{monster.maxHp}</span>
+                    <button
+                      id={`monster_${index}_hp_increase_button`}
+                      onClick={(e) => { e.stopPropagation(); adjustMonsterHP(index, 1); }}
                       className="bg-slate-600 px-1 rounded hover:bg-slate-500"
                     >+</button>
                   </div>
@@ -851,20 +890,20 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   ) : null}
       
       {/* Class Abilities */}
-      <div className="bg-slate-800 rounded p-2">
-        <div className="text-purple-400 font-bold text-sm mb-2">✨ Class Abilities</div>
-        <div className="space-y-1">
+      <div id="combat_abilities" className="bg-slate-800 rounded p-2">
+        <div id="combat_abilities_title" className="text-purple-400 font-bold text-sm mb-2">✨ Class Abilities</div>
+        <div id="combat_ability_list" className="space-y-1">
           {state.party.map((hero, index) => {
             const abilities = getAbilityUsage(index);
             const hasAbilities = ['cleric', 'wizard', 'elf', 'druid', 'illusionist', 'barbarian', 'halfling',
               'paladin', 'ranger', 'assassin', 'swashbuckler', 'acrobat', 'mushroomMonk', 'lightGladiator'].includes(hero.key);
 
             if (!hasAbilities || hero.hp <= 0) return null;
-            
+
             return (
-              <div key={hero.id || index} className="bg-slate-700 rounded p-1.5">
+              <div key={hero.id || index} id={`combat_ability_${index}`} className="bg-slate-700 rounded p-1.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-white text-xs font-bold">{hero.name}</span>
+                  <span id={`combat_ability_${index}_name`} className="text-white text-xs font-bold">{hero.name}</span>
                   <div className="flex gap-1">
                     {/* Cleric Abilities */}
                     {hero.key === 'cleric' && (
@@ -1071,15 +1110,17 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
       
       {/* Treasure & Victory: only show after the encounter is actually won */}
       {state.monsters.length > 0 && state.monsters.every(m => (m.count !== undefined ? m.count === 0 : m.hp === 0)) && (
-        <VictoryPhase
-          monsters={state.monsters}
-          party={state.party}
-          dispatch={dispatch}
-          clearCombatLog={clearCombatLog}
-          setCombatInitiative={setCombatInitiative}
-          setTargetMonsterIdx={setTargetMonsterIdx}
-        />
+        <div id="combat_victory">
+          <VictoryPhase
+            monsters={state.monsters}
+            party={state.party}
+            dispatch={dispatch}
+            clearCombatLog={clearCombatLog}
+            setCombatInitiative={setCombatInitiative}
+            setTargetMonsterIdx={setTargetMonsterIdx}
+          />
+        </div>
       )}
-    </div>
+    </section>
   );
 }

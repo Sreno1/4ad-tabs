@@ -244,3 +244,44 @@ export function partyReducer(state, action) {
       return state;
   }
 }
+
+// Assign treasure helper: distribute gold to heroes up to their maxCarryWeight
+export const assignTreasureToParty = (state, amount, preferredHeroIdx = null) => {
+  if (!amount || amount <= 0) return state;
+
+  let remaining = amount;
+  const newParty = state.party.map((h, i) => ({ ...h }));
+
+  // Try preferred hero first
+  const order = [];
+  if (typeof preferredHeroIdx === 'number' && preferredHeroIdx >= 0 && preferredHeroIdx < newParty.length) {
+    order.push(preferredHeroIdx);
+  }
+  // Then everyone else
+  for (let i = 0; i < newParty.length; i++) if (order.indexOf(i) === -1) order.push(i);
+
+  for (const idx of order) {
+    if (remaining <= 0) break;
+    const hero = newParty[idx];
+    if (!hero || hero.hp <= 0) continue; // can't carry if dead
+    const carried = hero.carriedTreasureWeight || 0;
+    const capacity = (hero.maxCarryWeight || 200) - carried;
+    if (capacity <= 0) continue;
+    const take = Math.min(capacity, remaining);
+    hero.carriedTreasureWeight = carried + take;
+    remaining -= take;
+  }
+
+  const newGold = Math.max(0, (state.gold || 0) + remaining);
+
+  // Add a log entry (log reducer may add further entries)
+  const logEntry = { type: 'LOG', t: `Treasure: ${amount - remaining}gp stowed with party, ${remaining}gp added to party gold.` };
+
+  return {
+    ...state,
+    party: newParty,
+    gold: newGold,
+    // Append a quick inline log - the logReducer will also process later
+    log: [...(state.log || []), { t: logEntry.t, ts: Date.now() }]
+  };
+};

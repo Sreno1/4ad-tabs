@@ -28,9 +28,9 @@ export default function AppHeader({
   onShowLantern,
 }) {
   return (
-    <header className="bg-slate-800 p-1 border-b border-slate-700 flex-shrink-0">
+    <header id="app_header" className="bg-slate-800 p-1 border-b border-slate-700 flex-shrink-0">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div id="app_header_title" className="flex items-center gap-2">
           {onBackToCampaigns && (
             <Tooltip text="Back to Campaigns">
               <button
@@ -54,7 +54,7 @@ export default function AppHeader({
         </div>
 
         {/* Stats */}
-        <div className="flex items-center gap-2 text-xs">
+        <div id="app_header_stats" className="flex items-center gap-2 text-xs">
           <Tooltip text="Gold collected">
             <span className="text-amber-400 font-bold">{state.gold}g</span>
           </Tooltip>
@@ -68,7 +68,7 @@ export default function AppHeader({
         </div>
 
         {/* Header Actions */}
-        <div className="flex items-center gap-1">
+        <div id="app_header_actions" className="flex items-center gap-1">
           {/* Light source indicator */}
           <div className="flex items-center gap-2">
             {!hasLightSource && (

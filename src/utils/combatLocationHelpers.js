@@ -100,14 +100,12 @@ export const getNarrowCorridorPenalty = (location, weapon) => {
  * @param {object} hero - Hero object
  * @returns {object|null} Weapon object or null
  */
+import { getEquipment } from '../data/equipment.js';
+
 export const getEquippedMeleeWeapon = (hero) => {
   if (!hero.equipment || !Array.isArray(hero.equipment)) {
     return null;
   }
-
-  // Import here to avoid circular dependency
-  const { getEquipment } = require('../data/equipment.js');
-
   const weaponKey = hero.equipment.find(itemKey => {
     const item = getEquipment(itemKey);
     return item && item.category === 'weapon' && item.type === 'melee';
@@ -116,9 +114,7 @@ export const getEquippedMeleeWeapon = (hero) => {
   if (!weaponKey) {
     return null;
   }
-
-  const { getEquipment: getEquipmentAgain } = require('../data/equipment.js');
-  return getEquipmentAgain(weaponKey);
+  return getEquipment(weaponKey);
 };
 
 /**

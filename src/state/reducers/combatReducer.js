@@ -120,6 +120,20 @@ export function combatReducer(state, action) {
       };
     }
 
+    case A.USE_BANDAGE: {
+      const heroAbilities = state.abilities[action.heroIdx] || {};
+      return {
+        ...state,
+        abilities: {
+          ...state.abilities,
+          [action.heroIdx]: {
+            ...heroAbilities,
+            bandagesUsed: (heroAbilities.bandagesUsed || 0) + 1
+          }
+        }
+      };
+    }
+
     case A.USE_BLESS: {
       const heroAbilities = state.abilities[action.heroIdx] || {};
       return {
@@ -236,6 +250,28 @@ export function combatReducer(state, action) {
 
     case A.CLEAR_COMBAT_LOCATION:
       return { ...state, currentCombatLocation: null };
+
+    case A.SET_WANDERING_ENCOUNTER: {
+      // Store a short-lived combat metadata object used by the UI to adjust
+      // initial combat behavior for wandering monster encounters.
+      return {
+        ...state,
+        combatMeta: {
+          ...(state.combatMeta || {}),
+          wanderingEncounter: {
+            ambush: !!action.ambush,
+            location: action.location || (state.currentCombatLocation && state.currentCombatLocation.type) || null,
+            shieldsDisabledFirst: !!action.shieldsDisabledFirst,
+            timestamp: Date.now()
+          }
+        }
+      };
+    }
+    case A.CLEAR_WANDERING_ENCOUNTER: {
+      const meta = { ...(state.combatMeta || {}) };
+      if (meta.wanderingEncounter) delete meta.wanderingEncounter;
+      return { ...state, combatMeta: Object.keys(meta).length ? meta : null };
+    }
 
     default:
       return state;

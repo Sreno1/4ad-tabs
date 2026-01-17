@@ -59,6 +59,7 @@ export const createHero = (classKey, classData, name = null) => ({
     blessingsUsed: 0,      // Cleric: 3 max
     spellsUsed: 0,         // Wizard: L+2 max, Elf: L max, Druid: L+2, Illusionist: L+3
     luckUsed: 0,           // Halfling: L+1 max
+  bandagesUsed: 0,      // Bandage consumable: 1 per adventure
     rageActive: false,     // Barbarian
     prayerUsed: 0,         // Paladin: L+1 max
     tricksUsed: 0,         // Acrobat: L+3 max
@@ -74,6 +75,10 @@ export const createHero = (classKey, classData, name = null) => ({
 
   // Clues discovered by this hero (max 3, per game rules)
   clues: 0,
+
+  // Carried treasure tracking (GP carried by this hero) and per-hero max
+  carriedTreasureWeight: 0, // GP worth of treasure currently carried
+  maxCarryWeight: 200,
 
   // Status effects
   status: {

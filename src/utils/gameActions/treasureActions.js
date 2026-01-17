@@ -3,6 +3,7 @@
  */
 import { d6, r2d6 } from '../dice.js';
 import { TREASURE_TABLE } from '../../data/treasure.js';
+import { ASSIGN_TREASURE } from '../../state/actions.js';
 
 /**
  * Roll on treasure table and award result
@@ -18,7 +19,8 @@ export const rollTreasure = (dispatch, options = {}) => {
   if (result.includes('Gold (d6)')) {
     let gold = d6() * multiplier;
     gold = Math.max(gold, minGold); // Apply minimum if specified
-    dispatch({ type: 'GOLD', n: gold });
+  // Assign treasure respecting per-hero carry limits; leftover goes to party gold
+  dispatch({ type: ASSIGN_TREASURE, amount: gold });
 
     const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
     const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
@@ -29,7 +31,8 @@ export const rollTreasure = (dispatch, options = {}) => {
   if (result.includes('Gold (2d6)')) {
     let gold = r2d6() * multiplier;
     gold = Math.max(gold, minGold); // Apply minimum if specified
-    dispatch({ type: 'GOLD', n: gold });
+  // Assign treasure respecting per-hero carry limits; leftover goes to party gold
+  dispatch({ type: ASSIGN_TREASURE, amount: gold });
 
     const multiplierText = multiplier > 1 ? ` (×${multiplier})` : '';
     const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';

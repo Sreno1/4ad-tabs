@@ -100,6 +100,7 @@ export default function PartyTracker({ state, dispatch, containerRef }) {
 
   return (
     <div
+      id="party_tracker"
       ref={elRef}
       role="dialog"
       aria-label="Party Tracker"
@@ -107,24 +108,25 @@ export default function PartyTracker({ state, dispatch, containerRef }) {
       className="bg-slate-800 border border-slate-700 rounded p-2 text-xs w-40 shadow-lg"
     >
       <div
+        id="party_tracker_header"
         onPointerDown={startDrag}
         style={{ cursor: 'grab' }}
         className="flex items-center justify-between mb-1"
       >
-        <div className="font-bold text-amber-400">Party</div>
-        <div className="text-slate-400">☰</div>
+        <div id="party_tracker_title" className="font-bold text-amber-400">Party</div>
+        <div id="party_tracker_drag_handle" className="text-slate-400">☰</div>
       </div>
-      <div className="space-y-1">
+      <div id="party_tracker_list" className="space-y-1">
         {state.party.map((h, i) => (
-          <div key={h.id || i} className="flex items-center justify-between">
+          <div id={`party_tracker_hero_${i}`} key={h.id || i} className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center text-amber-300 font-bold">{(h.name||'H').slice(0,1)}</div>
+              <div id={`party_tracker_hero_${i}_avatar`} className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center text-amber-300 font-bold">{(h.name||'H').slice(0,1)}</div>
               <div className="truncate">
-                <div className="text-amber-300 text-xs font-bold">{h.name}</div>
-                <div className="text-slate-400 text-[11px]">L{h.lvl} • {h.key}</div>
+                <div id={`party_tracker_hero_${i}_name`} className="text-amber-300 text-xs font-bold">{h.name}</div>
+                <div id={`party_tracker_hero_${i}_info`} className="text-slate-400 text-[11px]">L{h.lvl} • {h.key}</div>
               </div>
             </div>
-            <div className="text-red-400 text-xs">{h.hp}/{h.maxHp}</div>
+            <div id={`party_tracker_hero_${i}_hp`} className="text-red-400 text-xs">{h.hp}/{h.maxHp}</div>
           </div>
         ))}
       </div>

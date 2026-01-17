@@ -314,7 +314,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
+    <div id="app_root" className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
       {/* Header */}
       <AppHeader
         state={state}
@@ -335,7 +335,7 @@ export default function App() {
       <LanternModal isOpen={showLantern} onClose={() => setShowLantern(false)} state={state} dispatch={dispatch} />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-hidden flex flex-col">
+      <main id="main_content" className="flex-1 overflow-hidden flex flex-col">
         {/* Mobile: Tabbed interface */}
         <div className="md:hidden flex-1 overflow-y-auto pb-16">
           <div className="p-3">
@@ -491,7 +491,7 @@ export default function App() {
             </div>
 
             {/* Right Column - Action Pane (col 3) - span both rows so its background remains visible under the LogBar */}
-            <div style={{ gridColumn: '3 / 4', gridRow: '1 / 3' }} className="overflow-y-auto p-3 bg-slate-850 min-w-0">
+            <div id="action_pane" style={{ gridColumn: '3 / 4', gridRow: '1 / 3' }} className="overflow-y-auto p-3 bg-slate-850 min-w-0">
               <div className="mb-2" />
               <ActionPane
                 state={state}
@@ -551,6 +551,7 @@ export default function App() {
       <MobileNavigation activeTab={tab} onTabChange={setTab} />
 
       {/* Modals */}
+      <div id="modals_container">
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
@@ -594,6 +595,7 @@ export default function App() {
           setGoldSenseModalData(null);
         }}
       />
+      </div>
 
   {/* Floating Dice Roller moved into header */}
     </div>

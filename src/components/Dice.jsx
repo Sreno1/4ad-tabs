@@ -21,28 +21,32 @@ export default function Dice() {
   };
 
   return (
-    <div className="bg-slate-800 rounded p-2 flex gap-2 items-center">
-      {['d6', '2d6', 'd66'].map(type => (
-        <Button
-          key={type}
-          variant="info"
-          size="sm"
-          onClick={() => handleRoll(type)}
-          dataAction={`roll-${type}`}
-          aria-label={`Roll ${type}`}
-        >
-          {type}
-        </Button>
-      ))}
+    <div id="dice_roller_section" className="bg-slate-800 rounded p-2 flex gap-2 items-center">
+      <div id="dice_roller_buttons" className="flex gap-2">
+        {['d6', '2d6', 'd66'].map(type => (
+          <Button
+            key={type}
+            id={`dice_roll_${type}_button`}
+            variant="info"
+            size="sm"
+            onClick={() => handleRoll(type)}
+            dataAction={`roll-${type}`}
+            aria-label={`Roll ${type}`}
+          >
+            {type}
+          </Button>
+        ))}
+      </div>
       {result && (
         <span
+          id="dice_result_display"
           className="ml-auto text-amber-400 font-bold text-xl"
           role="status"
           aria-live="polite"
           aria-label={`Roll result: ${result.value}`}
         >
-          {result.value}
-          <span className="text-xs text-slate-400 ml-1">({result.type})</span>
+          <span id="dice_result_value">{result.value}</span>
+          <span id="dice_result_type" className="text-xs text-slate-400 ml-1">({result.type})</span>
         </span>
       )}
     </div>

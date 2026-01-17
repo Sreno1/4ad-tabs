@@ -47,6 +47,20 @@ export const setHeroStatus = (heroIdx, statusKey, value) => ({
 });
 
 /**
+ * Add a clue to a specific hero (max 3 enforced in reducer)
+ * @param {number} heroIdx - Hero index
+ * @param {number} amount - Amount to add (default 1)
+ */
+export const addHeroClue = (heroIdx, amount = 1) => ({ type: A.ADD_HERO_CLUE, heroIdx, amount });
+
+/**
+ * Remove a clue from a specific hero
+ * @param {number} heroIdx - Hero index
+ * @param {number} amount - Amount to remove (default 1)
+ */
+export const removeHeroClue = (heroIdx, amount = 1) => ({ type: A.REMOVE_HERO_CLUE, heroIdx, amount });
+
+/**
  * Add XP to a hero
  * @param {number} heroIdx - Hero index
  * @param {number} amount - XP amount to add
@@ -214,6 +228,12 @@ export const useSpell = (heroIdx) => ({ type: A.USE_SPELL, heroIdx });
  * @param {number} heroIdx - Hero index
  */
 export const useHeal = (heroIdx) => ({ type: A.USE_HEAL, heroIdx });
+
+/**
+ * Use a bandage consumable for a hero (enforce per-adventure limit)
+ * @param {number} heroIdx
+ */
+export const useBandage = (heroIdx) => ({ type: A.USE_BANDAGE, heroIdx });
 
 /**
  * Use a blessing

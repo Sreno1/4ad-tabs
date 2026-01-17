@@ -25,16 +25,17 @@ export default function OnboardingScreen({ onComplete }) {
     <>
       {/* Step 0: Campaign Name */}
       {step === "campaign-name" && (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div id="onboarding_campaign_name_screen" className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
           <Card variant="surface1" className="max-w-2xl w-full p-8">
-            <h1 className="text-4xl font-bold text-amber-400 mb-4">
+            <h1 id="onboarding_campaign_name_title" className="text-4xl font-bold text-amber-400 mb-4">
               New Campaign
             </h1>
-            <p className="text-slate-300 mb-6">
+            <p id="onboarding_campaign_name_description" className="text-slate-300 mb-6">
               Give your adventure a name (e.g., "Dragon Quest", "Tomb Raiding",
               "The Lost Temple")
             </p>
             <input
+              id="onboarding_campaign_name_input"
               type="text"
               placeholder="Campaign Name"
               value={campaignName}
@@ -44,6 +45,7 @@ export default function OnboardingScreen({ onComplete }) {
               autoFocus
             />
             <Button
+              id="onboarding_campaign_name_confirm_button"
               variant="primary"
               size="lg"
               fullWidth
@@ -464,24 +466,28 @@ export default function OnboardingScreen({ onComplete }) {
                   </div>
 
                   {/* Filters and Sort */}
-                  <div className="flex gap-3 mb-4">
+                  <div id="onboarding_shop_filters" className="flex gap-3 mb-4">
                     <button
+                      id="onboarding_shop_sort_button"
                       onClick={() => setSortByPrice(!sortByPrice)}
                       className={`px-3 py-2 rounded text-sm ${
                         sortByPrice
                           ? "bg-amber-600 text-white"
                           : "bg-slate-700 text-slate-300"
                       }`}
+                      aria-pressed={sortByPrice}
                     >
                       {sortByPrice ? "📊 Sort: Price" : "🔤 Sort: Name"}
                     </button>
                     <button
+                      id="onboarding_shop_affordability_button"
                       onClick={() => setHideUnaffordable(!hideUnaffordable)}
                       className={`px-3 py-2 rounded text-sm ${
                         hideUnaffordable
                           ? "bg-amber-600 text-white"
                           : "bg-slate-700 text-slate-300"
                       }`}
+                      aria-pressed={hideUnaffordable}
                     >
                       {hideUnaffordable ? "💰 Affordable Only" : "👁️ Show All"}
                     </button>
@@ -511,8 +517,9 @@ export default function OnboardingScreen({ onComplete }) {
                           <p className="text-slate-400 text-xs mb-2">
                             {item.description}
                           </p>
-                          <div className="flex gap-2">
+                          <div id={`onboarding_shop_item_${item.key}_actions`} className="flex gap-2">
                             <select
+                              id={`onboarding_shop_item_${item.key}_buy_select`}
                               className="flex-1 bg-slate-600 rounded px-2 py-1 text-white text-xs"
                               onChange={(e) => {
                                 if (e.target.value) {
@@ -521,6 +528,7 @@ export default function OnboardingScreen({ onComplete }) {
                                 }
                               }}
                               disabled={remainingGold < item.cost}
+                              aria-label={`Buy ${item.name} for...`}
                             >
                               <option value="">Buy for...</option>
                               {heroes.map((hero, idx) => (
@@ -531,6 +539,7 @@ export default function OnboardingScreen({ onComplete }) {
                             </select>
                             <div>
                               <button
+                                id={`onboarding_shop_item_${item.key}_inventory_button`}
                                 onClick={() => {
                                   /* Open a small prompt to select hero to add to inventory for simplicity */
                                   const nameList = heroes.map((h, i) => `${i}: ${h.name}`).join('\n');
@@ -541,6 +550,7 @@ export default function OnboardingScreen({ onComplete }) {
                                   }
                                 }}
                                 className="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs"
+                                aria-label={`Add ${item.name} to inventory`}
                               >
                                 Add to Inventory
                               </button>
@@ -774,12 +784,13 @@ function HeroCreationCard({
 
   return (
     <Card variant={hero ? "hero" : "surface2"} className="p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-amber-400 font-bold">Hero {heroNumber}</h4>
-        {hero && <span className="text-green-400 text-xs">✓ Created</span>}
+      <div id={`onboarding_hero_${heroNumber}_header`} className="flex items-center justify-between mb-3">
+        <h4 id={`onboarding_hero_${heroNumber}_title`} className="text-amber-400 font-bold">Hero {heroNumber}</h4>
+        {hero && <span id={`onboarding_hero_${heroNumber}_created_badge`} className="text-green-400 text-xs">✓ Created</span>}
       </div>
 
       <input
+        id={`onboarding_hero_${heroNumber}_name_input`}
         type="text"
         placeholder="Hero Name"
         value={name}
@@ -789,6 +800,7 @@ function HeroCreationCard({
       />
 
       <select
+        id={`onboarding_hero_${heroNumber}_class_select`}
         value={selectedClass}
         onChange={(e) => {
           const newClass = e.target.value;

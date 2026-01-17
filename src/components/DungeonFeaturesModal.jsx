@@ -143,27 +143,30 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
 
   return (
     <div
+      id="dungeon_features_modal_overlay"
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="dungeon-features-title"
+      aria-labelledby="dungeon_features_modal_title"
     >
       <div
+        id="dungeon_features_modal"
         className="bg-slate-800 rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-700 sticky top-0 bg-slate-800">
-          <h2 id="dungeon-features-title" className="text-lg font-bold text-amber-400">Dungeon Features</h2>
+        <div id="dungeon_features_modal_header" className="flex items-center justify-between p-4 border-b border-slate-700 sticky top-0 bg-slate-800">
+          <h2 id="dungeon_features_modal_title" className="text-lg font-bold text-amber-400">Dungeon Features</h2>
           <button
+            id="dungeon_features_modal_close_button"
             onClick={onClose}
             className="text-slate-400 hover:text-white p-1"
             aria-label="Close dungeon features"
           >
             <X size={20} aria-hidden="true" />
           </button>
-        </div>        <div className="p-4 space-y-4">
+        </div>        <div id="dungeon_features_modal_content" className="p-4 space-y-4">
           {/* Active Hero Display */}
           {activeHero ? (
             <div className="bg-slate-700/50 rounded p-2 text-sm">
@@ -178,8 +181,8 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           )}
 
           {/* Door Mechanics */}
-          <div className="bg-slate-700/50 rounded p-3">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm mb-2">
+          <div id="dungeon_features_door_section" className="bg-slate-700/50 rounded p-3">
+            <div id="dungeon_features_door_title" className="flex items-center gap-2 text-amber-400 font-bold text-sm mb-2">
               <DoorOpen size={16} /> Door Mechanics
             </div>
             
@@ -212,8 +215,8 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           </div>
 
           {/* Trap Mechanics */}
-          <div className="bg-slate-700/50 rounded p-3">
-            <div className="flex items-center gap-2 text-red-400 font-bold text-sm mb-2">
+          <div id="dungeon_features_trap_section" className="bg-slate-700/50 rounded p-3">
+            <div id="dungeon_features_trap_title" className="flex items-center gap-2 text-red-400 font-bold text-sm mb-2">
               <AlertTriangle size={16} /> Trap Mechanics
             </div>
             
@@ -276,8 +279,8 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           </div>
 
           {/* Special Rooms */}
-          <div className="bg-slate-700/50 rounded p-3">
-            <div className="flex items-center gap-2 text-purple-400 font-bold text-sm mb-2">
+          <div id="dungeon_features_special_section" className="bg-slate-700/50 rounded p-3">
+            <div id="dungeon_features_special_title" className="flex items-center gap-2 text-purple-400 font-bold text-sm mb-2">
               <Sparkles size={16} /> Special Rooms
             </div>
             
@@ -312,8 +315,8 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           </div>
 
           {/* Puzzle Rooms */}
-          <div className="bg-slate-700/50 rounded p-3">
-            <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm mb-2">
+          <div id="dungeon_features_puzzle_section" className="bg-slate-700/50 rounded p-3">
+            <div id="dungeon_features_puzzle_title" className="flex items-center gap-2 text-cyan-400 font-bold text-sm mb-2">
               <Puzzle size={16} /> Puzzle Rooms
             </div>
             
@@ -365,9 +368,9 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
           </div>
 
           {/* Quick Reference */}
-          <div className="bg-slate-700/50 rounded p-3">
-            <div className="text-amber-400 font-bold text-sm mb-2">📖 Quick Reference</div>
-            <div className="text-xs text-slate-400 space-y-1">
+          <div id="dungeon_features_reference_section" className="bg-slate-700/50 rounded p-3">
+            <div id="dungeon_features_reference_title" className="text-amber-400 font-bold text-sm mb-2">📖 Quick Reference</div>
+            <div id="dungeon_features_reference_content" className="text-xs text-slate-400 space-y-1">
               <div><span className="text-amber-400">Warriors/Barbarians:</span> Auto-open stuck doors</div>
               <div><span className="text-amber-400">Rogues:</span> +Level to detect/disarm traps, pick locks</div>
               <div><span className="text-amber-400">Dwarves:</span> +1 to detect stone traps (pit, blade)</div>

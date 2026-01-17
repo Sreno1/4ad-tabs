@@ -416,16 +416,15 @@ export const calculateDefense = (hero, foeLevel, options = {}) => {
   let mod = 0;
   const modifiers = [];
 
-  // Trait modifiers for defense
+  // Trait modifiers for defense (use imported helper)
   try {
-    const { getTraitRollModifiers } = require('../traitEffects.js');
     const traitMods = getTraitRollModifiers(hero, { firstAttackTarget: !!options.firstAttackTarget, rangedDefense: !!options.rangedDefense });
-    if (traitMods.defenseMod) {
+    if (traitMods && traitMods.defenseMod) {
       mod += traitMods.defenseMod;
       modifiers.push(`+${traitMods.defenseMod} (trait)`);
     }
   } catch (e) {
-    // ignore if require resolution fails
+    // ignore errors from trait effects
   }
 
   // Darkness penalty (-2 if no light and character lacks darkvision)
@@ -483,10 +482,28 @@ export const calculateDefense = (hero, foeLevel, options = {}) => {
 
   // Equipment bonuses
   const equipBonus = calculateEquipmentBonuses(hero);
-  if (equipBonus.defenseMod !== 0) {
-    mod += equipBonus.defenseMod;
+  // Equipment bonuses - allow ignoring shields for surprise/ambush cases
+  let appliedEquipBonus = equipBonus.defenseMod || 0;
+  if (options.ignoreShield) {
+    try {
+      const eq = hero.equipment || [];
+      const hasShield = Array.isArray(eq) && eq.some(k => {
+        const it = require('../../data/equipment.js').getEquipment ? require('../../data/equipment.js').getEquipment(k) : null;
+        return it && (it.category === 'shield' || it.key === 'shield');
+      });
+      if (hasShield) {
+        // Subtract a baseline shield bonus (assumed +1)
+        appliedEquipBonus -= 1;
+        modifiers.push('-1 (no shield allowed)');
+      }
+    } catch (e) {
+      // ignore any require-time issues
+    }
+  }
+  if (appliedEquipBonus !== 0) {
+    mod += appliedEquipBonus;
     modifiers.push(
-      `${equipBonus.defenseMod >= 0 ? "+" : ""}${equipBonus.defenseMod} (equip)`,
+      `${appliedEquipBonus >= 0 ? "+" : ""}${appliedEquipBonus} (equip)`,
     );
   }
 
@@ -679,10 +696,22 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
   if (aliveHeroes.length === 0) return { totalDamage: 0, hitCount: 0 };
 
   // Each monster gets ONE attack
+  // If monster.ambush is true, prefer rear-most alive heroes (end of party array)
+  let rearTargetsAllocated = 0;
   monsters.forEach((monster) => {
-    // Determine target (random alive hero)
-    const targetIdx = Math.floor(Math.random() * aliveHeroes.length);
-    const target = aliveHeroes[targetIdx];
+    let target;
+    if (monster.ambush) {
+      // Find nth rear-most alive hero that hasn't been targeted yet
+      const aliveOrdered = party.filter(h => h.hp > 0);
+      // Sort by position in party array: rear is end, so reverse
+      const reversed = aliveOrdered.slice().reverse();
+      target = reversed[rearTargetsAllocated] || reversed[0];
+      rearTargetsAllocated += 1;
+    } else {
+      // Determine target (random alive hero)
+      const targetIdx = Math.floor(Math.random() * aliveHeroes.length);
+      target = aliveHeroes[targetIdx];
+    }
 
     // Roll d6 for monster attack
     const roll = d6();
@@ -690,8 +719,8 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
     const defenseMod = isWithdraw ? 1 : 0;
 
     // Monster hits if roll + monster level > target defense
-    const monsterAttack = roll + monster.level;
-    const hits = monsterAttack > targetDefense;
+  const monsterAttack = roll + monster.level;
+  const hits = monsterAttack > targetDefense;
 
     if (hits) {
       totalDamage += 1;
@@ -723,6 +752,115 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
   });
 
   return { totalDamage, hitCount, foeAttacksCount: monsters.length };
+};
+
+/**
+ * Allocate immediate wandering-monster ambush strikes when monsters appear.
+ * - If location is 'corridor': target rear marching positions (positions 2 & 3 — zero-based indices 2 and 3 in marchingOrder mapping)
+ * - If location is 'room': if enough foes to hit all PCs, assign 1 attack each; extra attacks to hated then lowest HP
+ * This function applies damage immediately and logs results.
+ */
+export const initialWanderingStrikes = (dispatch, state) => {
+  const monsters = state.monsters || [];
+  if (!monsters || monsters.length === 0) return;
+  const party = state.party || [];
+  const marchingOrder = state.marchingOrder || [0,1,2,3];
+  const location = state.currentCombatLocation?.type || null;
+
+  dispatch({ type: 'LOG', t: `⚠️ Wandering Monsters ambush! They strike immediately.` });
+
+  // Build list of alive hero indices
+  const aliveIdx = party.map((h, idx) => ({ h, idx })).filter(x => x.h && x.h.hp > 0).map(x => x.idx);
+  if (aliveIdx.length === 0) return;
+
+  // Expand monsters into individual attackers (for minor foes with counts, expand count times)
+  const attackers = [];
+  monsters.forEach(m => {
+    const count = m.count && m.isMinorFoe ? m.count : 1;
+    for (let i = 0; i < count; i++) attackers.push(m);
+  });
+
+  // Helper: resolve a single monster attack against heroIdx (simple d6 vs hero.lvl check)
+  const resolveAttack = (monster, heroIdx) => {
+    const hero = party[heroIdx];
+    if (!hero || hero.hp <= 0) return false;
+    const roll = d6();
+    const defense = hero.lvl; // no withdraw modifier here
+    const hits = (roll + (monster.level || 0)) > defense;
+    if (hits) {
+      dispatch({ type: 'LOG', t: `❌ ${monster.name} hits ${hero.name}! (${roll}+${monster.level} vs ${defense})` });
+      dispatch({ type: 'UPD_HERO', i: heroIdx, u: { hp: Math.max(0, hero.hp - 1) } });
+      if (hero.hp - 1 <= 0) dispatch({ type: 'LOG', t: `💀 ${hero.name} is defeated!` });
+    } else {
+      dispatch({ type: 'LOG', t: `✅ ${hero.name} avoids ${monster.name}'s attack (${roll}+${monster.level} vs ${defense})` });
+    }
+    return hits;
+  };
+
+  if (location === 'corridor') {
+    // Rear positions per MarchingOrder layout: positions 2 and 3 (zero-based indices 2,3) map to rear PCs
+    const rearPositions = [2,3];
+    const rearHeroIdx = [];
+    rearPositions.forEach(pos => {
+      const heroIdx = marchingOrder[pos];
+      if (typeof heroIdx === 'number' && party[heroIdx] && party[heroIdx].hp > 0) rearHeroIdx.push(heroIdx);
+    });
+
+    // Assign attackers to rear heroes first (round-robin)
+    let ai = 0;
+    attackers.forEach(attacker => {
+      const target = rearHeroIdx[ai % rearHeroIdx.length] || aliveIdx[0];
+      resolveAttack(attacker, target);
+      ai += 1;
+    });
+    return;
+  }
+
+  // Room logic: ensure each PC gets at least one attack if enough attackers
+  if (attackers.length >= aliveIdx.length) {
+    // Shuffle attackers for assignment fairness
+    const shuffled = attackers.slice();
+    // Simple Fisher-Yates
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = t;
+    }
+
+    // First, assign one attacker per hero
+    const assignments = {};
+    let attackerIdx = 0;
+    aliveIdx.forEach(heroIdx => {
+      const attacker = shuffled[attackerIdx++];
+      if (attacker) assignments[heroIdx] = [attacker];
+    });
+
+    // Remaining attackers: prefer hated character, then lowest HP
+    const hatedIdx = party.findIndex(h => h && h.hated);
+    const hpOrder = aliveIdx.slice().sort((a,b) => (party[a].hp - party[b].hp) || 0);
+    while (attackerIdx < shuffled.length) {
+      let target = null;
+      if (hatedIdx !== -1 && party[hatedIdx] && party[hatedIdx].hp > 0) target = hatedIdx;
+      else target = hpOrder.shift() || aliveIdx[0];
+      if (!assignments[target]) assignments[target] = [];
+      assignments[target].push(shuffled[attackerIdx++]);
+    }
+
+    // Resolve assignments
+    Object.keys(assignments).forEach(k => {
+      const heroIdx = parseInt(k, 10);
+      assignments[k].forEach(att => resolveAttack(att, heroIdx));
+    });
+    return;
+  }
+
+  // Fallback: fewer attackers than PCs, target lowest HP then hated then random
+  const hpSorted = aliveIdx.slice().sort((a,b) => party[a].hp - party[b].hp);
+  let ai2 = 0;
+  attackers.forEach(att => {
+    let target = hpSorted[ai2 % hpSorted.length];
+    resolveAttack(att, target);
+    ai2 += 1;
+  });
 };
 
 /**

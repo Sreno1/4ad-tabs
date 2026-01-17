@@ -16,9 +16,14 @@ import {
  * @param {string} type - Monster template key
  * @param {number} level - Override level (optional)
  */
-export const spawnMonster = (dispatch, type, level = null) => {
+export const spawnMonster = (dispatch, type, level = null, opts = {}) => {
   const monster = createMonster(type, level);
   if (!monster) return;
+
+  // Allow callers to mark spawned monsters as part of an ambush (target rear)
+  if (opts.ambush) {
+    monster.ambush = true;
+  }
 
   dispatch({ type: 'ADD_MONSTER', m: monster });
 
@@ -65,12 +70,38 @@ export const spawnMajorFoe = (dispatch, hcl, isBoss = false) => {
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Roll result info
  */
-export const rollWanderingMonster = (dispatch) => {
+export const rollWanderingMonster = (dispatch, opts = {}) => {
   const roll = d6();
   const monsterType = WANDERING_TABLE[roll];
 
   if (roll >= 1 && roll <= 5) {
-    spawnMonster(dispatch, monsterType, roll);
+    // Pass through ambush/targeting options to spawned monsters
+    spawnMonster(dispatch, monsterType, roll, opts);
+  }
+
+  // If caller requested wandering-encounter meta, dispatch it for the UI/reducer
+  if (opts && (typeof opts.ambush !== 'undefined' || typeof opts.shieldsDisabledFirst !== 'undefined')) {
+    try {
+      dispatch({ type: 'SET_WANDERING_ENCOUNTER', ambush: !!opts.ambush, location: opts.location || null, shieldsDisabledFirst: !!opts.shieldsDisabledFirst });
+    } catch (e) {
+      // ignore dispatch errors
+    }
+  }
+  // If this was an ambush, trigger immediate initial strikes using combatActions helper
+  if (opts && opts.ambush) {
+    try {
+      // Lazy-import to avoid circular requires at top-level
+      const combatActions = require('./combatActions.js');
+      // We need to pass the current state - caller can supply state in opts.state; fallback: skip if not provided
+      if (opts.state) {
+        combatActions.initialWanderingStrikes(dispatch, opts.state);
+      } else {
+        // If state not provided, log a warning (non-fatal)
+        dispatch({ type: 'LOG', t: '⚠️ Wandering ambush occurred but state was not provided for immediate strikes.' });
+      }
+    } catch (e) {
+      // ignore
+    }
   }
 
   const displayNames = ['', 'Goblin (L1)', 'Orc (L2)', 'Troll (L3)', 'Ogre (L4)', 'Dragon (L5)', 'Special'];

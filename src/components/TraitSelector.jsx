@@ -27,7 +27,7 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedTrait) {
       alert('Please select a trait first!');
       return;
@@ -44,11 +44,11 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
     // Compute immediate updates (e.g., +1 maxHp)
     let immediateUpdates = {};
     try {
-      // Dynamically import helper to avoid circular dependency at module load
-      // (utils/traitEffects is safe to import here)
-      // eslint-disable-next-line global-require
-      const { applyImmediateTraitEffects } = require('../utils/traitEffects.js');
-      immediateUpdates = applyImmediateTraitEffects(hero, traitKey) || {};
+      // Use dynamic ES import so this runs in the browser and avoids `require`.
+      const mod = await import('../utils/traitEffects.js');
+      if (mod && typeof mod.applyImmediateTraitEffects === 'function') {
+        immediateUpdates = mod.applyImmediateTraitEffects(hero, traitKey) || {};
+      }
     } catch (e) {
       // noop - if helper unavailable, still set trait
     }
@@ -91,35 +91,36 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4" onClick={onClose}>
-      <div className="bg-slate-900 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto border-2 border-cyan-500 relative z-[10000]" onClick={(e) => e.stopPropagation()}>
+    <div id="trait_selector_modal_overlay" className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4" onClick={onClose}>
+      <div id="trait_selector_modal" className="bg-slate-900 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto border-2 border-cyan-500 relative z-[10000]" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="bg-gradient-to-r from-cyan-600 to-blue-600 p-4 sticky top-0 z-[10001]">
+        <div id="trait_selector_modal_header" className="bg-gradient-to-r from-cyan-600 to-blue-600 p-4 sticky top-0 z-[10001]">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold text-white">🎯 Select Character Trait</h2>
-              <div className="text-cyan-200 text-sm">{hero.name} ({hero.key})</div>
+              <h2 id="trait_selector_modal_title" className="text-2xl font-bold text-white">🎯 Select Character Trait</h2>
+              <div id="trait_selector_modal_hero_info" className="text-cyan-200 text-sm">{hero.name} ({hero.key})</div>
             </div>
-            <button onClick={onClose} className="text-white hover:text-red-300 text-2xl font-bold">✕</button>
+            <button id="trait_selector_modal_close_button" onClick={onClose} className="text-white hover:text-red-300 text-2xl font-bold">✕</button>
           </div>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div id="trait_selector_modal_content" className="p-4 space-y-4">
           {/* Current Trait Display */}
           {currentTrait && (
-            <div className="bg-green-900 border-2 border-green-500 rounded p-3">
+            <div id="trait_selector_current_trait_section" className="bg-green-900 border-2 border-green-500 rounded p-3">
               <div className="flex justify-between items-start">
-                <div>
-                  <div className="text-green-300 font-bold text-sm mb-1">✓ Current Trait</div>
-                  <div className="text-white font-bold">{traits.find(t => t.key === currentTrait)?.name || currentTrait}</div>
+                <div id="trait_selector_current_trait_info">
+                  <div id="trait_selector_current_trait_label" className="text-green-300 font-bold text-sm mb-1">✓ Current Trait</div>
+                  <div id="trait_selector_current_trait_name" className="text-white font-bold">{traits.find(t => t.key === currentTrait)?.name || currentTrait}</div>
                   {currentTraitChoice && (
-                    <div className="text-green-200 text-xs">Choice: {currentTraitChoice}</div>
+                    <div id="trait_selector_current_trait_choice" className="text-green-200 text-xs">Choice: {currentTraitChoice}</div>
                   )}
-                  <div className="text-green-200 text-xs mt-1">
+                  <div id="trait_selector_current_trait_description" className="text-green-200 text-xs mt-1">
                     {traits.find(t => t.key === currentTrait)?.description}
                   </div>
                 </div>
                 <button
+                  id="trait_selector_remove_trait_button"
                   onClick={handleRemoveTrait}
                   className="bg-red-600 hover:bg-red-500 px-2 py-1 rounded text-xs text-white"
                 >
@@ -130,10 +131,10 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
           )}
 
           {/* Instructions */}
-          <div className="bg-slate-800 rounded p-3">
-            <div className="text-slate-300 text-sm">
-              <div className="font-bold text-cyan-400 mb-2">Choose Your Trait</div>
-              <p className="text-xs">
+          <div id="trait_selector_instructions_section" className="bg-slate-800 rounded p-3">
+            <div id="trait_selector_instructions_content" className="text-slate-300 text-sm">
+              <div id="trait_selector_instructions_title" className="font-bold text-cyan-400 mb-2">Choose Your Trait</div>
+              <p id="trait_selector_instructions_text" className="text-xs">
                 Select one trait from the list below, or roll randomly. Traits provide unique bonuses and abilities
                 that complement your character's playstyle. You can change your trait selection at any time.
               </p>
@@ -141,8 +142,9 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
           </div>
 
           {/* Random Roll Button */}
-          <div className="flex gap-2">
+          <div id="trait_selector_random_roll_section" className="flex gap-2">
             <button
+              id="trait_selector_random_roll_button"
               onClick={handleRandomRoll}
               className="flex-1 bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white font-bold"
             >
@@ -151,14 +153,15 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
           </div>
 
           {/* Trait List */}
-          <div className="space-y-2">
-            <div className="text-cyan-400 font-bold text-sm mb-2">Available Traits ({traits.length})</div>
+          <div id="trait_selector_trait_list_section" className="space-y-2">
+            <div id="trait_selector_trait_list_header" className="text-cyan-400 font-bold text-sm mb-2">Available Traits ({traits.length})</div>
             {traits.map((trait, idx) => {
               const isSelected = selectedTrait?.key === trait.key;
               const isCurrent = currentTrait === trait.key;
 
               return (
                 <div
+                  id={`trait_selector_trait_${idx}`}
                   key={trait.key}
                   className={`bg-slate-700 rounded p-3 cursor-pointer border-2 transition-colors ${
                     isSelected
@@ -170,31 +173,32 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
                   onClick={() => handleSelectTrait(trait)}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="text-slate-400 font-bold text-lg pt-1">{idx + 1}</div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="text-white font-bold">{trait.name}</div>
+                    <div id={`trait_selector_trait_${idx}_number`} className="text-slate-400 font-bold text-lg pt-1">{idx + 1}</div>
+                    <div id={`trait_selector_trait_${idx}_content`} className="flex-1">
+                      <div id={`trait_selector_trait_${idx}_header`} className="flex items-center gap-2 mb-1">
+                        <div id={`trait_selector_trait_${idx}_name`} className="text-white font-bold">{trait.name}</div>
                         {isCurrent && (
-                          <span className="bg-green-600 text-white text-xs px-2 py-0.5 rounded">Current</span>
+                          <span id={`trait_selector_trait_${idx}_current_badge`} className="bg-green-600 text-white text-xs px-2 py-0.5 rounded">Current</span>
                         )}
                         {isSelected && (
-                          <span className="bg-cyan-600 text-white text-xs px-2 py-0.5 rounded">Selected</span>
+                          <span id={`trait_selector_trait_${idx}_selected_badge`} className="bg-cyan-600 text-white text-xs px-2 py-0.5 rounded">Selected</span>
                         )}
                       </div>
-                      <div className="text-slate-300 text-sm mb-1">{trait.description}</div>
-                      <div className="text-cyan-400 text-xs font-bold">
+                      <div id={`trait_selector_trait_${idx}_description`} className="text-slate-300 text-sm mb-1">{trait.description}</div>
+                      <div id={`trait_selector_trait_${idx}_benefit`} className="text-cyan-400 text-xs font-bold">
                         {trait.benefit}
                       </div>
 
                       {/* Sub-choice for traits that require it */}
                       {isSelected && trait.requiresChoice && (
-                        <div className="mt-3 pt-3 border-t border-slate-600">
-                          <div className="text-cyan-300 text-sm font-bold mb-2">
+                        <div id={`trait_selector_trait_${idx}_choice_section`} className="mt-3 pt-3 border-t border-slate-600">
+                          <div id={`trait_selector_trait_${idx}_choice_label`} className="text-cyan-300 text-sm font-bold mb-2">
                             Choose your {trait.choices[0]} or {trait.choices[1]}:
                           </div>
-                          <div className="flex gap-2">
+                          <div id={`trait_selector_trait_${idx}_choice_buttons`} className="flex gap-2">
                             {trait.choices.map(choice => (
                               <button
+                                id={`trait_selector_trait_${idx}_choice_${choice}`}
                                 key={choice}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -220,8 +224,9 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
           </div>
 
           {/* Confirm Button */}
-          <div className="sticky bottom-0 bg-slate-900 pt-4 pb-2 border-t border-slate-700">
+          <div id="trait_selector_confirm_section" className="sticky bottom-0 bg-slate-900 pt-4 pb-2 border-t border-slate-700">
             <button
+              id="trait_selector_confirm_button"
               onClick={handleConfirm}
               disabled={!selectedTrait}
               className={`w-full px-4 py-3 rounded font-bold text-lg ${
