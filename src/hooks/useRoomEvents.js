@@ -9,6 +9,7 @@ import { addMonster, logMessage as logMsgAction } from '../state/actionCreators.
 import { ACTION_MODES, EVENT_TYPES } from '../constants/gameConstants.js';
 import { logMessage } from '../state/actionCreators.js';
 import roomLibrary from '../utils/roomLibrary.js';
+import sfx from '../utils/sfx.js';
 import { SET_COMBAT_LOCATION } from '../state/actions.js';
 
 export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview) {
@@ -160,7 +161,8 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       }
 
       case 'treasure':
-        rollTreasure(dispatch);
+  rollTreasure(dispatch);
+  try { sfx.play('treasure', { volume: 0.9 }); } catch (e) {}
         newEvents.push({ type: EVENT_TYPES.TREASURE, data: { gold: state.gold }, timestamp: Date.now() });
         setActionMode(ACTION_MODES.TREASURE);
         break;

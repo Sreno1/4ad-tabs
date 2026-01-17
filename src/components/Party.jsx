@@ -17,6 +17,7 @@ import {
   adjustGold
 } from '../state/actionCreators.js';
 import { addHeroClue, removeHeroClue } from '../state/actionCreators.js';
+import sfx from '../utils/sfx.js';
 
 export default function Party({ state, dispatch, selectedHero = 0, onSelectHero }) {
   const [showClassPicker, setShowClassPicker] = useState(false);
@@ -75,6 +76,12 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
   const adjustHP = useCallback((index, delta) => {
     const hero = party[index];
     const newHP = Math.max(0, Math.min(hero.maxHp, hero.hp + delta));
+    // Play SFX for HP changes triggered by the party card (play before dispatch to retain user gesture)
+    if (delta < 0) {
+      try { sfx.play('hurt4', { volume: 0.9 }); } catch (e) { /* ignore playback errors */ }
+    } else if (delta > 0) {
+      try { sfx.play('upgrade4', { volume: 0.9 }); } catch (e) { /* ignore playback errors */ }
+    }
     dispatch(updateHero(index, { hp: newHP }));
   }, [party, dispatch]);
 

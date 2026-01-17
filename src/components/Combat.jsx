@@ -38,6 +38,7 @@ import { isLifeThreatening, getRerollOptions } from '../data/saves.js';
 import { getAvailableSpells, SPELLS, getSpellSlots } from '../data/spells.js';
 import { MONSTER_ABILITIES, rollMonsterReaction, REACTION_TYPES } from '../data/monsters.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
+import sfx from '../utils/sfx.js';
 import { getPrayerPoints, getTrickPoints, getMaxPanache, getFlurryAttacks, hasDarkvision } from '../data/classes.js';
 import { hasEquipment, getEquipment } from '../data/equipment.js';
 import { InitiativePhase, VictoryPhase, MonsterReaction } from './combat/index.js';
@@ -185,7 +186,9 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
         state.party.filter(h => h.hp > 0).length > (monster.count || 1)
     };
     
-    // Use appropriate attack function based on foe type
+  // Play generic attack sound
+  try { sfx.play('attack', { volume: 0.8 }); } catch (e) {}
+  // Use appropriate attack function based on foe type
     if (isMinorFoe(monster)) {
       // Minor Foe: Use multi-kill attack
       const foe = {
@@ -230,7 +233,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   // Clear the global one-time shield restriction after it's consumed by the first defense roll
   if (shieldsDisabledFirst) setShieldsDisabledFirst(false);
     
-    if (!result.blocked) {
+  try { sfx.play('defend', { volume: 0.6 }); } catch (e) {}
+  if (!result.blocked) {
       const newHP = Math.max(0, hero.hp - 1);
       
       // Check if this is lethal damage
@@ -251,7 +255,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     if (!pendingSave) return;
     const hero = state.party[pendingSave.heroIdx];
   const options = { hasLightSource: effectiveHasLight };
-    performSaveRoll(dispatch, hero, pendingSave.heroIdx, pendingSave.damageSource, options);
+  performSaveRoll(dispatch, hero, pendingSave.heroIdx, pendingSave.damageSource, options);
     setPendingSave(null);
   }, [pendingSave, state.party, state.hasLightSource, dispatch]);
 
@@ -349,7 +353,8 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   // Flee attempt
   const handleFlee = useCallback(() => {
     const highestLevel = Math.max(...state.monsters.map(m => m.level), 1);
-    attemptPartyFlee(dispatch, state.party, state.monsters, highestLevel);
+  try { sfx.play('flee', { volume: 0.6 }); } catch (e) {}
+  attemptPartyFlee(dispatch, state.party, state.monsters, highestLevel);
   }, [state.monsters, state.party, dispatch]);
 
   // Withdraw attempt
@@ -402,6 +407,7 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     // Check if monster defeated
     if (newHP === 0 && monster.hp > 0) {
       addToCombatLog(`💀 ${monster.name} defeated!`);
+  try { sfx.play('treasure', { volume: 0.9 }); } catch (e) {}
     }
   }, [state.monsters, dispatch, addToCombatLog]);
 
@@ -455,8 +461,9 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
       }
     }
 
-    performCastSpell(dispatch, caster, casterIdx, spellKey, context);
-    setShowSpells(null);
+  performCastSpell(dispatch, caster, casterIdx, spellKey, context);
+  try { sfx.play('spell', { volume: 0.85 }); } catch (e) {}
+  setShowSpells(null);
   }, [state.party, state.monsters, dispatch]);
 
   const handleSpellTargetConfirm = useCallback(({ targets, targetHeroIdx, all }) => {
@@ -480,9 +487,10 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
     }
 
     // Special-case Fireball minor group handled in castSpell/performCastSpell now; keep simple here
-    performCastSpell(dispatch, caster, casterIdx, spellKey, context);
-    setSpellTargeting(null);
-    setShowSpells(null);
+  performCastSpell(dispatch, caster, casterIdx, spellKey, context);
+  try { sfx.play('spell', { volume: 0.85 }); } catch (e) {}
+  setSpellTargeting(null);
+  setShowSpells(null);
   }, [spellTargeting, state.monsters, state.party, dispatch]);
 
   const handleSpellTargetCancel = useCallback(() => {

@@ -14,6 +14,7 @@ import DungeonFeaturesModal from "./components/DungeonFeaturesModal.jsx";
 import CampaignManagerModal from "./components/CampaignManagerModal.jsx";
 import CampaignManager from "./components/CampaignManager.jsx";
 import OnboardingScreen from "./components/OnboardingScreen.jsx";
+import EntranceRollModal from "./components/EntranceRollModal.jsx";
 import Equipment from "./components/Equipment.jsx";
 import Abilities from "./components/Abilities.jsx";
 import ActionPane from "./components/ActionPane.jsx";
@@ -52,6 +53,9 @@ export default function App() {
   const [state, dispatch, campaignControls] = useGameState();
   const { currentCampaignId, setCurrentCampaignId } = campaignControls;
   const [tab, setTab] = useState("party"); // For mobile
+  const [pendingOnboarding, setPendingOnboarding] = useState(null);
+  const [showEntranceRoll, setShowEntranceRoll] = useState(false);
+  const [entranceRoll, setEntranceRoll] = useState(null);
   const [showCampaignManager, setShowCampaignManager] =
     useState(!currentCampaignId);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -271,15 +275,30 @@ export default function App() {
 
   // Handler for completing onboarding
   const handleOnboardingComplete = ({ campaignName, party, gold }) => {
+    // Save pending onboarding data and roll a d6 for entrance tile shape, show modal
+    setPendingOnboarding({ campaignName, party, gold });
+    const roll = Math.floor(Math.random() * 6) + 1;
+    setEntranceRoll(roll);
+    setShowEntranceRoll(true);
+  };
+
+  const finalizeOnboardingWithEntrance = () => {
+    if (!pendingOnboarding) return;
+    const { campaignName, party, gold } = pendingOnboarding;
     const newCampaignId = createCampaign(campaignName, {
       ...initialState,
       party,
       gold,
       name: campaignName,
-      marchingOrder: [0, 1, 2, 3], // Hero 1 in pos 0, Hero 2 in pos 1, etc.
+      marchingOrder: [0, 1, 2, 3],
+      // store entranceRoll in initial state for later use/display if desired
+      entranceTileRoll: entranceRoll || null,
     });
     setActiveCampaign(newCampaignId);
     setCurrentCampaignId(newCampaignId);
+    setPendingOnboarding(null);
+    setShowEntranceRoll(false);
+    setEntranceRoll(null);
     setShowOnboarding(false);
     window.location.reload(); // Reload to load new campaign state
   };
@@ -302,7 +321,12 @@ export default function App() {
 
   // Show onboarding screen when creating new campaign
   if (showOnboarding) {
-    return <OnboardingScreen onComplete={handleOnboardingComplete} />;
+    return (
+      <>
+        <EntranceRollModal isOpen={showEntranceRoll} roll={entranceRoll} onClose={finalizeOnboardingWithEntrance} />
+        <OnboardingScreen onComplete={handleOnboardingComplete} />
+      </>
+    );
   }
 
   if (!state) {
@@ -333,6 +357,7 @@ export default function App() {
       />
 
       <LanternModal isOpen={showLantern} onClose={() => setShowLantern(false)} state={state} dispatch={dispatch} />
+  <EntranceRollModal isOpen={showEntranceRoll} roll={entranceRoll} onClose={finalizeOnboardingWithEntrance} />
 
       {/* Main Content */}
       <main id="main_content" className="flex-1 overflow-hidden flex flex-col">
@@ -433,6 +458,7 @@ export default function App() {
                     setAutoPlacedRoom={roomEvents.setAutoPlacedRoom}
                     onCommitPlacement={(startX, startY, tpl) => {
                       // tpl may be {grid, doors}
+                      try { const sfx = require('./utils/sfx.js').default; sfx.play('hurt2', { volume: 0.9 }); } catch (e) {}
                       const templateGrid = tpl.grid || tpl;
                       const templateDoors = tpl.doors || [];
                       templateGrid.forEach((row, ry) => {

@@ -25,6 +25,7 @@ import {
   findSecretDoor,
   findSecretPassage
 } from '../utils/gameActions/explorationActions.js';
+import sfx from '../utils/sfx.js';
 import { ASSIGN_TREASURE } from '../state/actions.js';
 import { attemptDisarmTrap, triggerTrap } from '../utils/gameActions/dungeonActions.js';
 
@@ -414,6 +415,7 @@ export default function ActionPane({
                     // Perform search roll - corridor status from tileResult if available
                     const isInCorridor = tileResult?.isCorridor || corridor;
                     const result = performSearchRoll({ isInCorridor });
+                    try { sfx.play('miss', { volume: 0.7 }); } catch (e) {}
                     setSearchResult(result);
                     dispatch({ type: 'LOG', t: result.message });
                   }}
@@ -431,14 +433,35 @@ export default function ActionPane({
             {hasActiveMonsters && (
               <>
                 <button
-                  onClick={() => attemptWithdraw(dispatch, state.party, selectMonsters(state), state.doors)}
+                  onClick={() => {
+                    const result = attemptWithdraw(dispatch, state.party, selectMonsters(state), state.doors);
+                    try {
+                      if (result?.success === false) {
+                        sfx.play('select3', { volume: 0.8 });
+                      } else {
+                        sfx.play('jump4', { volume: 0.8 });
+                      }
+                    } catch (e) {}
+                  }}
                   className="flex-1 bg-green-600 hover:bg-green-500 px-3 py-2 rounded text-sm"
                   disabled={!state.doors || state.doors.length === 0}
                 >
                   Withdraw
                 </button>
                 <button
-                  onClick={() => attemptPartyFlee(dispatch, state.party, selectMonsters(state), Math.max(...selectMonsters(state).map(m => m.level), 1))}
+                  onClick={() => {
+                    const monsters = selectMonsters(state);
+                    const highest = Math.max(...monsters.map(m => m.level), 1);
+                    const result = attemptPartyFlee(dispatch, state.party, monsters, highest);
+                    try {
+                      const failedCount = result?.failedCount || 0;
+                      if (failedCount > 0) {
+                        sfx.play('select3', { volume: 0.8 });
+                      } else {
+                        sfx.play('jump5', { volume: 0.8 });
+                      }
+                    } catch (e) {}
+                  }}
                   className="flex-1 bg-yellow-600 hover:bg-yellow-500 px-3 py-2 rounded text-sm"
                 >
                   Flee

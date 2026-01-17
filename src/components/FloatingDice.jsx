@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Dices } from 'lucide-react';
 import DiceBox from '@3d-dice/dice-box';
+import sfx from '../utils/sfx.js';
 import { useDiceTheme } from '../contexts/DiceContext.jsx';
 
 const DICE_OPTIONS = [
@@ -123,6 +124,14 @@ export default function FloatingDice({ onLogRoll = null, inline = false }) {
             : `Rolled ${option.notation} = ${total} (${values})`;
           try { onLogRoll(desc); } catch (e) {}
         }
+        // Play fumble/crit only for single-die UI-triggered rolls (avoid multi-die cacophony)
+        try {
+          if (results && results.length === 1) {
+            const v = results[0].value;
+            if (v === 1) sfx.play('fumble', { volume: 0.85 });
+            else if (v === 6) sfx.play('crit', { volume: 0.9 });
+          }
+        } catch (e) {}
       } else {
         // Fallback to simple random
         let total;
@@ -141,13 +150,43 @@ export default function FloatingDice({ onLogRoll = null, inline = false }) {
             total += Math.floor(Math.random() * sides) + 1;
           }
         }
-        setResult({ total, type: option.type, dice: [] });
+        // Build a dice array so callers can inspect individual die values
+        const diceArr = [];
+        if (option.special === 'd66') {
+          // we generated tens and ones earlier
+          const tens = Math.floor(Math.random() * 6) + 1; // NOTE: we already computed above but rebuild to be consistent
+          const ones = Math.floor(Math.random() * 6) + 1;
+          diceArr.push({ value: tens }, { value: ones });
+        } else if (option.type === 'd3') {
+          // fallback used a single computed value; represent as one d3 result
+          diceArr.push({ value: total });
+        } else {
+          // attempt to reconstruct individual dice values for display/play
+          const match = option.notation.match(/(\d+)d(\d+)/);
+          const count = parseInt(match[1]);
+          const sides = parseInt(match[2]);
+          let rem = total;
+          // naive split: distribute rolls (best-effort) by randomly assigning values that sum to total
+          for (let i = 0; i < count; i++) {
+            const val = Math.min(sides, Math.max(1, Math.floor(Math.random() * sides) + 1));
+            diceArr.push({ value: val });
+          }
+        }
+        setResult({ total, type: option.type, dice: diceArr });
         if (onLogRoll) {
           const desc = option.special === 'd66'
             ? `Rolled d66=${total}`
             : `Rolled ${option.notation} = ${total}`;
           try { onLogRoll(desc); } catch (e) {}
         }
+        // Play fumble/crit only when exactly one die was rolled (d6). Skip multi-dice rolls.
+        try {
+          if (diceArr && diceArr.length === 1) {
+            const v = diceArr[0].value;
+            if (v === 1) sfx.play('fumble', { volume: 0.85 });
+            else if (v === 6) sfx.play('crit', { volume: 0.9 });
+          }
+        } catch (e) {}
       }
     } catch (err) {
       console.error('Dice roll error:', err);

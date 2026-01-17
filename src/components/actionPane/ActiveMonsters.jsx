@@ -1,15 +1,25 @@
 import React, { memo, useCallback } from 'react';
 import { updateMonster } from '../../state/actionCreators.js';
 import { attemptPartyFlee, attemptWithdraw } from '../../utils/gameActions/index.js';
+import sfx from '../../utils/sfx.js';
 
 const ActiveMonsters = memo(function ActiveMonsters({ activeMonsters, state, dispatch, corridor }) {
   const handleFlee = useCallback(() => {
     const highestLevel = Math.max(...state.monsters.map(m => m.level), 1);
-    attemptPartyFlee(dispatch, state.party, state.monsters, highestLevel);
+    const result = attemptPartyFlee(dispatch, state.party, state.monsters, highestLevel);
+    try {
+      const failedCount = result?.failedCount || 0;
+      if (failedCount > 0) sfx.play('select3', { volume: 0.8 });
+      else sfx.play('jump5', { volume: 0.8 });
+    } catch (e) {}
   }, [state.monsters, state.party, dispatch]);
 
   const handleWithdraw = useCallback(() => {
-    attemptWithdraw(dispatch, state.party, state.monsters, state.doors);
+  const result = attemptWithdraw(dispatch, state.party, state.monsters, state.doors);
+  try {
+    if (result?.success === false) sfx.play('select3', { volume: 0.8 });
+    else sfx.play('jump4', { volume: 0.8 });
+  } catch (e) {}
   }, [state.monsters, state.party, state.doors, dispatch]);
 
   return (

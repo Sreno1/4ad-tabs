@@ -343,8 +343,6 @@ This document provides a complete audit of the Four Against Darkness companion a
 <a name="not-implemented"></a>
 ## 3. ❌ NOT IMPLEMENTED FEATURES
 
-- can you add one final step to the game start screen, after the characters use the store and confirm entering the dungeon, a D6 roll should happen to determine the entrance room tile shape, and that roll's result should appear in a modal, similar to the gold sense ability successes
-
 ### Combat System
 
 #### **Corridor vs Room Combat Restrictions**

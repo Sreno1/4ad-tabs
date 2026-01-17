@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import sfx from '../utils/sfx.js';
 import { X, Download, Upload, Save, PlusSquare, Trash2 } from 'lucide-react';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
 import ContextMenu from './ContextMenu.jsx';
@@ -271,7 +272,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
             </div>
             <div className="mt-2 flex gap-2">
               <button onClick={clearGrid} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-sm">Clear</button>
-              <button onClick={()=>onPlaceTemplate({ name, grid, doors, walls })} className="px-2 py-1 bg-amber-600 hover:bg-amber-500 rounded text-sm">Place to map</button>
+              <button onClick={()=>{ try { sfx.play('select2', { volume: 0.8 }); } catch(e){}; onPlaceTemplate({ name, grid, doors, walls }) }} className="px-2 py-1 bg-amber-600 hover:bg-amber-500 rounded text-sm">Place to map</button>
             </div>
           </div>
 
@@ -298,7 +299,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                       </div>
                       <div className="flex items-center gap-1 flex-wrap">
                         <button onClick={()=>{ setGrid(item.grid); setDoors(item.doors || []); setName(item.name); setD66Number(item.d66Number || ''); }} className="px-2 py-0.5 bg-slate-600 hover:bg-slate-500 rounded text-xs">Edit</button>
-                        <button onClick={()=>onPlaceTemplate(item)} className="px-2 py-0.5 bg-amber-600 hover:bg-amber-500 rounded text-xs">Place</button>
+                        <button onClick={()=>{ try { sfx.play('select2', { volume: 0.8 }); } catch(e){}; onPlaceTemplate(item); }} className="px-2 py-0.5 bg-amber-600 hover:bg-amber-500 rounded text-xs">Place</button>
                         <button onClick={()=>exportTemplate(item)} className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-xs">Export</button>
                         <button onClick={()=>deleteFromLibrary(item.id)} className="px-2 py-0.5 bg-red-700 hover:bg-red-600 rounded text-xs"><Trash2 size={12}/></button>
                       </div>

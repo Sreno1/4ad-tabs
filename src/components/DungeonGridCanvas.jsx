@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useCallback, memo, useState } from 'react';
 import { getEquipment } from '../data/equipment.js';
+import sfx from '../utils/sfx.js';
 
 import MARKER_STYLES from '../constants/markerStyles.js';
 
@@ -919,10 +920,12 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (partyPos && hoveredCell.x === partyPos.x && hoveredCell.y === partyPos.y) {
         if (onPartyMove) onPartyMove(null, null);
         if (onPartySelect) onPartySelect(false);
+        try { sfx.play('select', { volume: 0.5 }); } catch (err) {}
         return;
       }
       // Otherwise place pawn here
       if (onPartyMove) onPartyMove(hoveredCell.x, hoveredCell.y);
+      try { sfx.play('step', { volume: 0.5 }); } catch (err) {}
       if (onPartySelect) onPartySelect(true);
       return;
     }
@@ -936,6 +939,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     // If hovering a door edge on a room cell, toggle door (always, no shift needed!)
     if (hoveredDoor && cell > 0) {
       onDoorToggle(hoveredCell.x, hoveredCell.y, hoveredDoor.edge);
+      try { sfx.play('door', { volume: 0.6 }); } catch (err) {}
     } else {
       // Regular cell click (now handled by mousedown/mouseup for drag support)
     }
@@ -1002,6 +1006,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         pressedKeysRef.current.add(e.key);
+  // Play step sound on movement start
+  try { sfx.play('step', { volume: 0.6 }); } catch (err) {}
       }
     };
 
@@ -1009,6 +1015,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         pressedKeysRef.current.delete(e.key);
+  try { sfx.play('select', { volume: 0.45 }); } catch (err) {}
       }
     };
 
