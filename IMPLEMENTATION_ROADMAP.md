@@ -345,8 +345,6 @@ This document provides a complete audit of the Four Against Darkness companion a
 
 ### Combat System
 
-- Remove "Room Combat" or "Corridor Combat" sections from under roll results in action pane. add room/corridor tag to top right of "Active Monsters" panel. When hovering it should show the corridor affects
-
 #### **Corridor vs Room Combat Restrictions**
 
 #### **Narrow Corridor Rules**

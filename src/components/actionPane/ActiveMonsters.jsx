@@ -1,4 +1,5 @@
 import React, { memo, useCallback } from 'react';
+import Tooltip from '../Tooltip.jsx';
 import { updateMonster } from '../../state/actionCreators.js';
 import { attemptPartyFlee, attemptWithdraw } from '../../utils/gameActions/index.js';
 import sfx from '../../utils/sfx.js';
@@ -25,8 +26,22 @@ const ActiveMonsters = memo(function ActiveMonsters({ activeMonsters, state, dis
   return (
     <div className="bg-slate-800 rounded p-2">
       <div className="flex justify-between items-center mb-2">
-        <div className="text-sm font-bold text-red-400">
-  Active Foes {corridor && <span className="text-yellow-400 text-xs ml-1">(Corridor)</span>}
+        <div className="text-sm font-bold text-red-400">Active Foes</div>
+          <div className="flex items-center gap-2">
+          {/* Location tag: shows Corridor or Room and tooltip on hover describing effects */}
+          <Tooltip text={corridor ? (
+              `Corridor — Melee is limited to the front two party positions (positions 1 and 2).\n\n` +
+              `Note: the -1 penalty to two-handed weapons and the no-penalty for light weapons apply ONLY in NARROW corridors. ` +
+              `No current tile shapes are marked NARROW; the combat architecture already supports narrow corridors for future tiles.`
+          ) : (
+            `Room — All party members may attempt melee attacks.`
+          )}>
+            <div
+              className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${corridor ? 'bg-amber-700 text-black' : 'bg-emerald-700 text-white'}`}
+            >
+              {corridor ? 'Corridor' : 'Room'}
+            </div>
+          </Tooltip>
         </div>
         {state.monsters && state.monsters.length > 0 && (
           <div className="flex gap-1">

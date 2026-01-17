@@ -1,4 +1,4 @@
-/**
+  /**
  * Combat Actions - Attack, defense, saves, fleeing, and initiative
  */
 import { d6, explodingD6 } from "../dice.js";
@@ -36,6 +36,7 @@ const getEffectiveMonsterLevel = (monster) => {
 export const calculateAttack = (hero, foeLevel, options = {}) => {
   const roll = d6();
   let mod = 0;
+  let corridorNote = '';
 
   // Class-specific attack bonuses
   if (["warrior", "barbarian", "elf", "dwarf"].includes(hero.key)) {
@@ -52,6 +53,17 @@ export const calculateAttack = (hero, foeLevel, options = {}) => {
   const equipBonus = calculateEquipmentBonuses(hero);
   mod += equipBonus.attackMod;
 
+  // Narrow corridor penalty (two-handed weapons)
+  if (options.location) {
+    const weapon = getEquippedMeleeWeapon(hero);
+    const corridorPenalty = getNarrowCorridorPenalty(options.location, weapon);
+    if (corridorPenalty !== 0) {
+      mod += corridorPenalty;
+      corridorNote = ` ${corridorPenalty} (narrow corridor)`;
+  try { console.debug('NARROW_CORRIDOR_PENALTY', { fn: 'calculateAttack', hero: hero && hero.name, weapon: weapon && weapon.key, corridorPenalty, location: options.location }); } catch (e) {}
+    }
+  }
+
   const total = roll + mod;
   const hits = roll === 1 ? 0 : Math.floor(total / foeLevel);
   const exploded = roll === 6;
@@ -62,7 +74,7 @@ export const calculateAttack = (hero, foeLevel, options = {}) => {
     total,
     hits,
     exploded,
-    message: `${hero.name}: ${roll}+${mod}=${total} vs L${foeLevel} → ${hits > 0 ? hits + " kill(s)" : "Miss"}${exploded ? " 💥EXPLODE" : ""}`,
+  message: `${hero.name}: ${roll}+${mod}=${total} vs L${foeLevel} → ${hits > 0 ? hits + " kill(s)" : "Miss"}${exploded ? " 💥EXPLODE" : ""}${corridorNote}`,
   };
 };
 
@@ -104,6 +116,7 @@ export const calculateEnhancedAttack = (hero, foeLevel, options = {}) => {
     if (corridorPenalty !== 0) {
       mod += corridorPenalty;
       modifiers.push(`${corridorPenalty} (narrow corridor)`);
+  try { console.debug('NARROW_CORRIDOR_PENALTY', { fn: 'calculateEnhancedAttack', hero: hero && hero.name, weapon: weapon && weapon.key, corridorPenalty, location: options.location }); } catch (e) {}
     }
   }
 
@@ -292,6 +305,7 @@ export const attackMinorFoe = (hero, foe, options = {}) => {
     if (corridorPenalty !== 0) {
       mod += corridorPenalty;
       modifiers.push(`${corridorPenalty} (narrow corridor)`);
+  try { console.debug('NARROW_CORRIDOR_PENALTY', { fn: 'attackMinorFoe', hero: hero && hero.name, weapon: weapon && weapon.key, corridorPenalty, location: options.location }); } catch (e) {}
     }
   }
 

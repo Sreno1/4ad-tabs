@@ -361,11 +361,7 @@ export default function ActionPane({
                 <div className="flex-1 bg-blue-900/30 rounded p-2 text-xs border-l-2 border-blue-400 text-left">
                   <div className="flex items-center justify-between">
                     <div className="text-blue-400 font-bold">d66 {d66Event.data.roll}</div>
-                    <div className="ml-2">
-                      <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${ (tileResult?.isCorridor || corridor) ? 'bg-amber-700 text-black' : 'bg-emerald-700 text-white' }`}>
-                        {(tileResult?.isCorridor || corridor) ? 'Corridor' : 'Room'}
-                      </span>
-                    </div>
+                    <div className="ml-2" />
                   </div>
                 </div>
               )}

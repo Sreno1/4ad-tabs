@@ -11,12 +11,8 @@ const EventCard = memo(function EventCard({ event, index }) {
       );
 
     case 'LIBRARY_MATCH':
-      return (
-        <div key={index} className="bg-green-900/30 rounded p-2 text-xs border-l-2 border-green-400">
-          <div className="text-green-400 font-bold">✓ {event.data.room.name}</div>
-          <div className="text-slate-300">Ready to drag onto the map</div>
-        </div>
-      );
+      // Library matches are handled via auto-placed templates; do not render a duplicate event card
+      return null;
 
     case 'CONTENTS_ROLL':
       return (

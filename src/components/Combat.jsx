@@ -576,39 +576,13 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
   const partyHasDarkvision = state.party.some(h => h.hp > 0 && hasDarkvision(h.key));
   const partyLacksDarkvision = state.party.some(h => h.hp > 0 && !hasDarkvision(h.key));
 
+  // Combat location flags (used to display compact tag in Active Monsters panel)
+  const combatIsCorridor = state.currentCombatLocation && state.currentCombatLocation.type === 'corridor';
+  const combatIsNarrow = state.currentCombatLocation && state.currentCombatLocation.width === 'narrow';
+
   return (
     <section id="combat_section" className="space-y-2">
-      {/* Combat Location Display */}
-      {state.currentCombatLocation && (
-        <div id="combat_location" className={`rounded p-2 ${
-          state.currentCombatLocation.type === 'corridor'
-            ? 'bg-blue-900'
-            : 'bg-slate-800'
-        }`}>
-          <div id="combat_location_controls" className="flex justify-between items-center">
-            <div id="combat_location_display">
-              <span className="text-sm font-bold text-blue-300">
-                📍 {state.currentCombatLocation.type === 'corridor' ? 'Corridor Combat' : 'Room Combat'}
-              </span>
-              {state.currentCombatLocation.type === 'corridor' && (
-                <div className="text-xs text-blue-200 mt-1">
-                  ⚠️ Only positions 1-2 can melee attack
-                  {state.currentCombatLocation.width === 'narrow' && (
-                    <span className="text-amber-300"> (Narrow: 2H weapons -1)</span>
-                  )}
-                </div>
-              )}
-            </div>
-            <button
-              id="combat_location_clear_button"
-              onClick={() => dispatch({ type: 'CLEAR_COMBAT_LOCATION' })}
-              className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      )}
+  {/* Combat location is shown on the Active Monsters panel; removed inline location block here to avoid duplicate labels */}
 
       {/* Save Roll Modal */}
       {pendingSave && (
@@ -662,12 +636,20 @@ export default function Combat({ state, dispatch, selectedHero, setSelectedHero,
 
       {/* Active Monsters */}
       <div id="monster_group" className="bg-slate-800 rounded p-2">
-        <div id="monster_group_header" className="mb-2">
-          <div id="monster_group_title" className="text-amber-400 font-bold text-sm mb-1">Active Monsters ({state.monsters.length})</div>
-          <div className="flex flex-wrap gap-1">
-            {/* Control buttons moved to ActionPane (bottom); kept empty here to avoid duplication */}
+          <div id="monster_group_header" className="mb-2 flex justify-between items-center">
+            <div id="monster_group_title" className="text-amber-400 font-bold text-sm mb-1">Active Monsters ({state.monsters.length})</div>
+            <div className="flex items-center gap-2">
+              <div
+                className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${combatIsCorridor ? 'bg-amber-700 text-black' : 'bg-emerald-700 text-white'}`}
+                title={combatIsCorridor ? `Corridor: Only positions 1-2 may melee.${combatIsNarrow ? ' Narrow: 2H weapons -1.' : ''}` : 'Room: All party members may melee.'}
+              >
+                {combatIsCorridor ? 'Corridor' : 'Room'}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {/* Control buttons moved to ActionPane (bottom); kept empty here to avoid duplication */}
+              </div>
+            </div>
           </div>
-        </div>
 
         <div id="monster_cards" className="space-y-1 max-h-32 overflow-y-auto mb-2">
           {state.monsters.map((monster, index) => {

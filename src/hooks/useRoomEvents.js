@@ -289,9 +289,15 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
   // Determine corridor from the TILE_SHAPE_TABLE mapping (type field)
   const isCorridor = !!(shapeResult && String(shapeResult.type || '').toLowerCase() === 'corridor');
 
+    // Determine if this corridor shape should be considered 'narrow'.
+    // NOTE: This is a heuristic mapping. If you want different shapes to be narrow,
+    // update the NARROW_SHAPES array below.
+  const NARROW_SHAPES = [];
+    const width = (isCorridor && NARROW_SHAPES.includes(shapeRoll)) ? 'narrow' : 'normal';
+
     // Notify reducers of combat location type (derived from d66 only)
     try {
-      dispatch({ type: SET_COMBAT_LOCATION, locationType: isCorridor ? 'corridor' : 'room', width: 'normal', x: null, y: null });
+      dispatch({ type: SET_COMBAT_LOCATION, locationType: isCorridor ? 'corridor' : 'room', width, x: null, y: null });
     } catch (e) {
       // ignore dispatch errors
     }

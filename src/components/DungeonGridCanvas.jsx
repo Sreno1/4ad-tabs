@@ -1051,24 +1051,26 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     }
   }, []);
 
-  // Add keyboard listeners
-  useEffect(() => {
+    // Add keyboard listeners
+    useEffect(() => {
     // Placement transform keys: Q = rotate CCW, E = rotate CW, W = mirror
     const handlePlacementKeyDown = (e) => {
-      if (!placementTemplate) return; // only active while placing a designer template
+      // Active while placing either a designer template or an auto-placed library room
+      if (!(placementTemplate || autoPlacedRoom)) return;
+      const source = placementTemplate || autoPlacedRoom;
       if (e.key === 'e' || e.key === 'E') {
         e.preventDefault();
-        setTransformedPlacementTemplate(prev => rotateCWOnce(prev || cloneTemplate(placementTemplate)));
+        setTransformedPlacementTemplate(prev => rotateCWOnce(prev || cloneTemplate(source)));
         try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
       }
       if (e.key === 'q' || e.key === 'Q') {
         e.preventDefault();
-        setTransformedPlacementTemplate(prev => rotateCCW(prev || cloneTemplate(placementTemplate)));
+        setTransformedPlacementTemplate(prev => rotateCCW(prev || cloneTemplate(source)));
         try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
       }
       if (e.key === 'w' || e.key === 'W') {
         e.preventDefault();
-        setTransformedPlacementTemplate(prev => mirrorHorizontal(prev || cloneTemplate(placementTemplate)));
+        setTransformedPlacementTemplate(prev => mirrorHorizontal(prev || cloneTemplate(source)));
         try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
       }
     };
@@ -1186,19 +1188,20 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       stopGameLoop();
       pressedKeysRef.current.clear();
     };
-  }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle, partyPos, onPartyMove, cols, rows, placementTemplate, cloneTemplate, rotateCWOnce, rotateCCW, mirrorHorizontal]);
+  }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle, partyPos, onPartyMove, cols, rows, placementTemplate, autoPlacedRoom, cloneTemplate, rotateCWOnce, rotateCCW, mirrorHorizontal]);
 
-  // Sync transformed placement when the incoming placementTemplate changes.
+  // Sync transformed placement when the incoming placementTemplate or autoPlacedRoom changes.
   useEffect(() => {
-    if (placementTemplate) {
+    const source = placementTemplate || autoPlacedRoom;
+    if (source) {
       // Initialize transformed copy
-      setTransformedPlacementTemplate(cloneTemplate(placementTemplate));
-  // Focus the canvas so keyboard shortcuts work immediately
-  try { canvasRef.current && canvasRef.current.focus(); } catch (e) {}
+      setTransformedPlacementTemplate(cloneTemplate(source));
+      // Focus the canvas so keyboard shortcuts work immediately
+      try { canvasRef.current && canvasRef.current.focus(); } catch (e) {}
     } else {
       setTransformedPlacementTemplate(null);
     }
-  }, [placementTemplate, cloneTemplate]);
+  }, [placementTemplate, autoPlacedRoom, cloneTemplate]);
 
   // Add global mouseup listener to handle drag ending outside canvas
   useEffect(() => {
