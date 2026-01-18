@@ -2,6 +2,8 @@
  * Monster definitions and tables for Four Against Darkness
  * Organized by location and encounter type from official tables
  */
+import { getDefaultContext } from "../game/context.js";
+import { roll } from "../utils/dice.js";
 
 // Monster Special Abilities
 export const MONSTER_ABILITIES = {
@@ -293,16 +295,17 @@ export const MONSTER_REACTIONS = {
  * @param {object} monster - Monster with optional custom reaction table
  * @returns {object} Reaction result with details
  */
-export const rollMonsterReaction = (monster = null) => {
-  const roll = Math.floor(Math.random() * 6) + 1;
+export const rollMonsterReaction = (monster = null, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const rollResult = roll(1, 6, 0, rng, rollLog);
   
   // Use monster's custom reaction table if available, otherwise use default
   const reactionTable = monster?.reactionTable || DEFAULT_REACTION_TABLE;
-  const reactionKey = reactionTable[roll];
+  const reactionKey = reactionTable[rollResult];
   const reactionDetails = REACTION_TYPES[reactionKey];
   
   return {
-    roll,
+    roll: rollResult,
     reactionKey,
     ...reactionDetails,
     initiative: reactionDetails.hostile === true ? 'monster' : 
@@ -551,7 +554,8 @@ export const calculateMonsterHP = (template) => {
 };
 
 // Create monster from table entry
-export const createMonsterFromTable = (key, hcl = 1) => {
+export const createMonsterFromTable = (key, hcl = 1, ctx) => {
+  const { rng, now, rollLog } = ctx || getDefaultContext();
   const template = MONSTER_TABLE[key];
   if (!template) return null;
   
@@ -562,9 +566,30 @@ export const createMonsterFromTable = (key, hcl = 1) => {
   const specialAbilities = template.special ? 
     (Array.isArray(template.special) ? template.special : [template.special]) : 
     [];
+
+  const rollCountExpression = () => {
+    const c = template.count;
+    if (c === undefined || c === null) return undefined;
+    if (typeof c === 'number') return c;
+    if (typeof c === 'string') {
+      // Plain number string
+      if (/^\d+$/.test(c)) return parseInt(c, 10);
+      // Dice expressions like d6, d3, d6+2, d6-2
+      const m = c.match(/^(\d*)d(\d+)([+-]\d+)?$/);
+      if (m) {
+        const dice = m[1] ? parseInt(m[1], 10) : 1;
+        const sides = parseInt(m[2], 10);
+        const adj = m[3] ? parseInt(m[3], 10) : 0;
+        const total = roll(dice, sides, adj, rng, rollLog);
+        return Math.max(1, total);
+      }
+    }
+    // Fallback: undefined
+    return undefined;
+  };
   
   return {
-    id: Date.now() + Math.random(),
+    id: now() + rng.nextFloat(),
     name: template.name,
     level: level,
     hp: hp,
@@ -577,53 +602,9 @@ export const createMonsterFromTable = (key, hcl = 1) => {
     xp: template.xp,
     surpriseChance: template.surpriseChance || 0,
     // Evaluate count expressions (like 'd6', 'd6+2', 'd6-2', 'd3', or numeric strings)
-    count: (function() {
-      const c = template.count;
-      if (c === undefined || c === null) return undefined;
-      if (typeof c === 'number') return c;
-      if (typeof c === 'string') {
-        // Plain number string
-        if (/^\d+$/.test(c)) return parseInt(c, 10);
-        // Dice expressions like d6, d3, d6+2, d6-2
-        const m = c.match(/^(\d*)d(\d+)([+-]\d+)?$/);
-        if (m) {
-          const dice = m[1] ? parseInt(m[1], 10) : 1;
-          const sides = parseInt(m[2], 10);
-          const adj = m[3] ? parseInt(m[3], 10) : 0;
-          let roll = 0;
-          for (let i = 0; i < dice; i++) {
-            roll += Math.floor(Math.random() * sides) + 1;
-          }
-          const val = roll + adj;
-          return Math.max(1, val);
-        }
-      }
-      // Fallback: undefined
-      return undefined;
-    })(),
+    count: rollCountExpression(),
     // initialCount: if we produced a numeric count, set initialCount for minor groups
-    initialCount: (function() {
-      const c = template.count;
-      // Determine numeric count using same logic
-      if (c === undefined || c === null) return undefined;
-      if (typeof c === 'number') return c;
-      if (typeof c === 'string') {
-        if (/^\d+$/.test(c)) return parseInt(c, 10);
-        const m = c.match(/^(\d*)d(\d+)([+-]\d+)?$/);
-        if (m) {
-          const dice = m[1] ? parseInt(m[1], 10) : 1;
-          const sides = parseInt(m[2], 10);
-          const adj = m[3] ? parseInt(m[3], 10) : 0;
-          let roll = 0;
-          for (let i = 0; i < dice; i++) {
-            roll += Math.floor(Math.random() * sides) + 1;
-          }
-          const val = roll + adj;
-          return Math.max(1, val);
-        }
-      }
-      return undefined;
-    })(),
+    initialCount: rollCountExpression(),
     reactionTable: template.reactionTable || DEFAULT_REACTION_TABLE, // Monster-specific reactions
     reaction: null, // Set when rolled
     statuses: []
@@ -691,7 +672,8 @@ export const WANDERING_TABLE_DISPLAY = [
  * @param {number} level - Override level (optional)
  * @returns {object} Monster object
  */
-export const createMonster = (type, level = null) => {
+export const createMonster = (type, level = null, ctx) => {
+  const { rng, now, rollLog } = ctx || getDefaultContext();
   const template = MONSTER_TEMPLATES[type];
   if (!template) return null;
     const effectiveLevel = level || template.level;
@@ -703,14 +685,14 @@ export const createMonster = (type, level = null) => {
     let count;
     if (type === 'vermin') {
       // Vermin: Roll 2d6
-      count = Math.floor(Math.random() * 6) + 1 + Math.floor(Math.random() * 6) + 1;
+      count = roll(2, 6, 0, rng, rollLog);
     } else if (type === 'minion' || type === 'minions') {
       // Minions: Roll d6+2
-      count = Math.floor(Math.random() * 6) + 1 + 2;
+      count = roll(1, 6, 2, rng, rollLog);
     }
     
     return {
-      id: Date.now() + Math.random(),
+      id: now() + rng.nextFloat(),
       name: template.name,
       level: effectiveLevel,
       hp: 1, // Minor Foes always have 1 HP each
@@ -731,7 +713,7 @@ export const createMonster = (type, level = null) => {
   const hp = calculateMonsterHP(type, effectiveLevel);
   
   return {
-    id: Date.now() + Math.random(),
+    id: now() + rng.nextFloat(),
     name: template.name,
     level: effectiveLevel,
     hp,
@@ -750,8 +732,8 @@ export const createMonster = (type, level = null) => {
  * @param {object} monster - Optional monster for custom reaction table
  * @returns {object} Reaction result
  */
-export const rollReaction = (monster = null) => {
-  return rollMonsterReaction(monster);
+export const rollReaction = (monster = null, ctx) => {
+  return rollMonsterReaction(monster, ctx);
 };
 
 /**

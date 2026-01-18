@@ -4,6 +4,7 @@
  */
 
 import { d6 } from "../dice.js";
+import { getDefaultContext } from "../../game/context.js";
 
 /**
  * Perform a search roll on current tile
@@ -16,8 +17,9 @@ import { d6 } from "../dice.js";
  * @param {object} options - { isInCorridor: boolean, environment: string, party: array }
  * @returns {object} Search result
  */
-export const performSearchRoll = (options = {}) => {
-  const roll = d6();
+export const performSearchRoll = (options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   const modifier = options.isInCorridor ? -1 : 0;
   const total = roll + modifier;
   const environment = options.environment || 'dungeon';
@@ -126,9 +128,10 @@ export const findClue = (dispatch, heroIdx, heroName) => {
  * @param {number} hcl - Highest Character Level
  * @returns {object} Treasure result
  */
-export const calculateHiddenTreasure = (hcl) => {
-  const roll1 = d6() + d6() + hcl;
-  const roll2 = d6() + d6() + hcl;
+export const calculateHiddenTreasure = (hcl, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll1 = d6(rng, rollLog) + d6(rng, rollLog) + hcl;
+  const roll2 = d6(rng, rollLog) + d6(rng, rollLog) + hcl;
   const gold = roll1 * roll2;
 
   return {
@@ -148,8 +151,9 @@ export const calculateHiddenTreasure = (hcl) => {
  *
  * @returns {object} Complication result
  */
-export const rollHiddenTreasureComplication = () => {
-  const roll = d6();
+export const rollHiddenTreasureComplication = (ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
 
   if (roll <= 2) {
     return {
@@ -180,12 +184,12 @@ export const rollHiddenTreasureComplication = () => {
  * @param {number} hcl - Highest Character Level
  * @returns {object} Treasure and complication result
  */
-export const findHiddenTreasure = (dispatch, hcl) => {
+export const findHiddenTreasure = (dispatch, hcl, ctx) => {
   // First, roll for complication
-  const complication = rollHiddenTreasureComplication();
+  const complication = rollHiddenTreasureComplication(ctx);
 
   // Then calculate treasure amount
-  const treasure = calculateHiddenTreasure(hcl);
+  const treasure = calculateHiddenTreasure(hcl, ctx);
 
   dispatch({
     type: 'LOG',
@@ -209,8 +213,9 @@ export const findHiddenTreasure = (dispatch, hcl) => {
  * @param {function} dispatch - Redux dispatch
  * @returns {object} Secret door result
  */
-export const findSecretDoor = (dispatch) => {
-  const isShortcut = d6() === 6;
+export const findSecretDoor = (dispatch, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const isShortcut = d6(rng, rollLog) === 6;
 
   if (isShortcut) {
     dispatch({
@@ -282,7 +287,7 @@ export const findSecretPassage = (dispatch, currentEnvironment, chosenEnvironmen
  * @param {string} heroName - Hero's name for logging
  * @returns {object} Result of spending clues
  */
-export const spendCluesForSecret = (dispatch, heroIdx, currentClues, heroName) => {
+export const spendCluesForSecret = (dispatch, heroIdx, currentClues, heroName, ctx) => {
   if (currentClues < 3) {
     return {
       success: false,
@@ -293,7 +298,8 @@ export const spendCluesForSecret = (dispatch, heroIdx, currentClues, heroName) =
   dispatch({ type: 'REMOVE_HERO_CLUE', heroIdx, amount: 3 });
 
   // Roll for what secret is revealed (this could be expanded)
-  const roll = d6();
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   let secret;
 
   if (roll <= 2) {

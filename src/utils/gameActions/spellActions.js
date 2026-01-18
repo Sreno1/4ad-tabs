@@ -16,7 +16,7 @@ import { formatRollPrefix } from '../rollLog.js';
  * @param {object} context - Spell context (targets, etc.)
  * @returns {object} Spell result
  */
-export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context = {}) => {
+export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context = {}, ctx) => {
   const spell = SPELLS[spellKey];
   if (!spell) {
     dispatch({ type: 'LOG', t: `❌ Unknown spell: ${spellKey}` });
@@ -50,8 +50,8 @@ export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context 
   }
 
   // Provide castingBonus to castSpell via explicit context.castingBonus
-  const ctx = { ...context, targets: context.targets || [], castingBonus };
-  const result = castSpell(spellKey, caster, ctx);
+  const spellContext = { ...context, targets: context.targets || [], castingBonus };
+  const result = castSpell(spellKey, caster, spellContext, ctx);
   // Log main message
   dispatch({ type: 'LOG', t: `✨ ${result.message}` });
 
@@ -227,7 +227,7 @@ export const getRemainingSpells = (hero, abilities) => {
  * @param {object} context - Spell context (targets, etc.)
  * @returns {object} Spell result
  */
-export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, context = {}) => {
+export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, context = {}, ctx) => {
   // Check if hero can use scrolls
   if (!canUseScroll(caster)) {
     dispatch({ type: 'LOG', t: `❌ ${caster.name} cannot read magical scrolls!` });
@@ -247,8 +247,8 @@ export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, c
   // Cast the spell (reuse existing spell logic, but don't consume spell slot)
 
   const spellKey = spell.key || Object.keys(SPELLS).find(key => SPELLS[key] === spell);
-  const ctx = { ...context, targets: context.targets || [], castingBonus: (context.castingBonus || 0) + bonus };
-  const result = castSpell(spellKey, caster, ctx);
+  const spellContext = { ...context, targets: context.targets || [], castingBonus: (context.castingBonus || 0) + bonus };
+  const result = castSpell(spellKey, caster, spellContext, ctx);
   result.scrollBonus = bonus;
   result.message = `${caster.name} reads ${scrollKey.replace('scroll_', '')} scroll and casts it (+${bonus} bonus)! ${result.message}`;
   dispatch({ type: 'LOG', t: `✨ ${result.message}` });

@@ -37,8 +37,68 @@ body.roguelike {
     font-size: 18px;
     line-height: 1.3;
     image-rendering: pixelated;
-    -webkit-font-smoothing: none;
+    -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    position: relative;
+    overflow: hidden;
+    --crt-frame-size: 16px;
+    --crt-soft-blur: 0.7px;
+}
+
+/* CRT frame around the panel */
+body.roguelike [data-crt-frame="true"] {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: var(--crt-frame-size);
+    background-color: var(--crt-bg);
+}
+
+/* CRT frame to mask barrel bleed */
+body.roguelike [data-crt-frame="true"]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 30;
+    border: var(--crt-frame-size) solid rgba(10, 10, 12, 0.95);
+    border-radius: var(--crt-frame-size);
+    box-shadow:
+        inset 0 0 55px rgba(0, 0, 0, 0.9),
+        inset 0 0 120px rgba(0, 0, 0, 0.6),
+        0 0 0 2px rgba(112, 159, 115, 0.4);
+}
+
+/* CRT inner surface */
+body.roguelike [data-crt-barrel="true"] {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    border-radius: calc(var(--crt-frame-size) - 4px);
+}
+
+body.roguelike [data-crt-barrel="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 19;
+    border-radius: inherit;
+    background:
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.28) 0px,
+            rgba(0, 0, 0, 0.28) 1px,
+            rgba(0, 0, 0, 0) 1px,
+            rgba(0, 0, 0, 0) 3px
+        ),
+        radial-gradient(
+            ellipse at center,
+            rgba(255, 255, 255, 0.02) 0%,
+            rgba(0, 0, 0, 0.04) 65%,
+            rgba(0, 0, 0, 0.28) 100%
+        );
 }
 
 /* Override Tailwind text sizes for better readability */
@@ -75,6 +135,81 @@ body.roguelike #root {
 /* CRT effect mixin - applied via .crt-screen class */
 body.roguelike .crt-screen {
     position: relative;
+    isolation: isolate;
+    animation: crt-flicker 8s infinite;
+}
+
+/* Barrel distortion inspired by Retromator */
+body.roguelike [data-crt-barrel="true"] {
+    filter: url(#crt-barrel-strong) blur(var(--crt-soft-blur));
+    transform: translateZ(0);
+}
+
+/* CRT power transition surface */
+body.roguelike .crt-power-surface {
+    transform-origin: center;
+    will-change: transform, filter, opacity;
+}
+
+body.roguelike .crt-turn-on {
+    animation: crt-turn-on 520ms ease-out both;
+}
+
+body.roguelike .crt-turn-off {
+    animation: crt-turn-off 420ms cubic-bezier(0.755, 0.05, 0.855, 0.06) both;
+}
+
+@keyframes crt-turn-on {
+    0% {
+        transform: scale(1, 0.8) translate3d(0, 0, 0);
+        -webkit-filter: brightness(30);
+        filter: brightness(30);
+        opacity: 1;
+    }
+    3.5% {
+        transform: scale(1, 0.8) translate3d(0, 100%, 0);
+    }
+    3.6% {
+        transform: scale(1, 0.8) translate3d(0, -100%, 0);
+        opacity: 1;
+    }
+    9% {
+        transform: scale(1.3, 0.6) translate3d(0, 100%, 0);
+        -webkit-filter: brightness(30);
+        filter: brightness(30);
+        opacity: 0;
+    }
+    11% {
+        transform: scale(1, 1) translate3d(0, 0, 0);
+        -webkit-filter: contrast(0) brightness(0);
+        filter: contrast(0) brightness(0);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1, 1) translate3d(0, 0, 0);
+        -webkit-filter: contrast(1) brightness(1.2) saturate(1.3);
+        filter: contrast(1) brightness(1.2) saturate(1.3);
+        opacity: 1;
+    }
+}
+
+@keyframes crt-turn-off {
+    0% {
+        transform: scale(1, 1.3) translate3d(0, 0, 0);
+        -webkit-filter: brightness(1);
+        filter: brightness(1);
+        opacity: 1;
+    }
+    60% {
+        transform: scale(1.3, 0.001) translate3d(0, 0, 0);
+        -webkit-filter: brightness(10);
+        filter: brightness(10);
+    }
+    100% {
+        transform: scale(0.000, 0.0001) translate3d(0, 0, 0);
+        -webkit-filter: brightness(50);
+        filter: brightness(50);
+    }
 }
 
 body.roguelike .crt-screen::before,
@@ -94,145 +229,39 @@ body.roguelike .crt-screen::after {
 
 /* Horizontal scanlines */
 body.roguelike .crt-screen::before {
-    background: repeating-linear-gradient(
-        0deg,
-        transparent 0px,
-        rgba(0, 0, 0, 0.3) 1px,
-        transparent 2px
-    );
-    opacity: 0.4;
+    background:
+        radial-gradient(
+            ellipse at center,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(0, 0, 0, 0.2) 55%,
+            rgba(0, 0, 0, 0.7) 100%
+        ),
+        repeating-linear-gradient(
+            0deg,
+            transparent 0px,
+            rgba(0, 0, 0, 0.35) 1px,
+            transparent 2px
+        );
+    opacity: 0.55;
 }
 
 /* RGB pixel effect */
 body.roguelike .crt-screen::after {
-    background: repeating-linear-gradient(
-        90deg,
-        var(--crt-red) 0px,
-        var(--crt-green) 1px,
-        var(--crt-blue) 2px,
-        transparent 3px
-    );
-    opacity: 0.08;
-}
-
-/* Apply CRT effect to Header */
-body.roguelike header {
-    position: relative;
-}
-
-body.roguelike header::before,
-body.roguelike header::after {
-    content: "";
-    transform: translateZ(0);
-    pointer-events: none;
-    mix-blend-mode: overlay;
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    left: 0;
-    top: 0;
-    z-index: 10;
-}
-
-body.roguelike header::before {
-    background: repeating-linear-gradient(
-        0deg,
-        transparent 0px,
-        rgba(0, 0, 0, 0.3) 1px,
-        transparent 2px
-    );
-    opacity: 0.4;
-}
-
-body.roguelike header::after {
-    background: repeating-linear-gradient(
-        90deg,
-        var(--crt-red) 0px,
-        var(--crt-green) 1px,
-        var(--crt-blue) 2px,
-        transparent 3px
-    );
-    opacity: 0.08;
-}
-
-/* Apply CRT effect to Sidebar (left panel) */
-body.roguelike [data-panel="sidebar"] {
-    position: relative;
-}
-
-body.roguelike [data-panel="sidebar"]::before,
-body.roguelike [data-panel="sidebar"]::after {
-    content: "";
-    transform: translateZ(0);
-    pointer-events: none;
-    mix-blend-mode: overlay;
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    left: 0;
-    top: 0;
-    z-index: 10;
-}
-
-body.roguelike [data-panel="sidebar"]::before {
-    background: repeating-linear-gradient(
-        0deg,
-        transparent 0px,
-        rgba(0, 0, 0, 0.3) 1px,
-        transparent 2px
-    );
-    opacity: 0.4;
-}
-
-body.roguelike [data-panel="sidebar"]::after {
-    background: repeating-linear-gradient(
-        90deg,
-        var(--crt-red) 0px,
-        var(--crt-green) 1px,
-        var(--crt-blue) 2px,
-        transparent 3px
-    );
-    opacity: 0.08;
-}
-
-/* Apply CRT effect to Dungeon grid */
-body.roguelike [data-dungeon-grid="true"] {
-    position: relative;
-}
-
-body.roguelike [data-dungeon-grid="true"]::before,
-body.roguelike [data-dungeon-grid="true"]::after {
-    content: "";
-    transform: translateZ(0);
-    pointer-events: none;
-    mix-blend-mode: overlay;
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    left: 0;
-    top: 0;
-    z-index: 10;
-}
-
-body.roguelike [data-dungeon-grid="true"]::before {
-    background: repeating-linear-gradient(
-        0deg,
-        transparent 0px,
-        rgba(0, 0, 0, 0.3) 1px,
-        transparent 2px
-    );
-    opacity: 0.4;
-}
-
-body.roguelike [data-dungeon-grid="true"]::after {
-    background: repeating-linear-gradient(
-        90deg,
-        var(--crt-red) 0px,
-        var(--crt-green) 1px,
-        var(--crt-blue) 2px,
-        transparent 3px
-    );
-    opacity: 0.08;
+    background:
+        linear-gradient(
+            120deg,
+            rgba(255, 255, 255, 0.12) 0%,
+            rgba(255, 255, 255, 0.04) 35%,
+            transparent 60%
+        ),
+        repeating-linear-gradient(
+            90deg,
+            var(--crt-red) 0px,
+            var(--crt-green) 1px,
+            var(--crt-blue) 2px,
+            transparent 3px
+        );
+    opacity: 0.12;
 }
 
 /* Panel Styling */
@@ -563,27 +592,18 @@ body.roguelike svg {
     }
 }
 
-/* Apply flicker to CRT sections only */
-body.roguelike header,
-body.roguelike [data-panel="sidebar"],
-body.roguelike [data-dungeon-grid="true"] {
-    animation: crt-flicker 8s infinite;
-}
-
 /* Turn off the flicker if user prefers reduced motion */
 @media (prefers-reduced-motion: reduce) {
-    body.roguelike header,
-    body.roguelike [data-panel="sidebar"],
-    body.roguelike [data-dungeon-grid="true"] {
+    body.roguelike .crt-screen {
         animation: none;
     }
-    body.roguelike header::before,
-    body.roguelike header::after,
-    body.roguelike [data-panel="sidebar"]::before,
-    body.roguelike [data-panel="sidebar"]::after,
-    body.roguelike [data-dungeon-grid="true"]::before,
-    body.roguelike [data-dungeon-grid="true"]::after {
+    body.roguelike .crt-screen::after {
         display: none;
+    }
+    body.roguelike .crt-power-surface,
+    body.roguelike .crt-turn-on,
+    body.roguelike .crt-turn-off {
+        animation: none !important;
     }
 }
 

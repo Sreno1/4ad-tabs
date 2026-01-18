@@ -24,6 +24,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   onCellRightClick,
   suppressContextAction = false,
   onDoorToggle,
+  onWallToggle,
   partyPos,
   onPartyMove,
   partySelected,
@@ -223,7 +224,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   if (cell === 1) {
           const key = `${x},${y}`;
           const style = (cellStyles && cellStyles[key]) || 'full';
-          const fillColor = isHovered ? '#111111' : '#000000';
+          // Use a distinct color for the hovered tile
+          const fillColor = isHovered ? '#38bdf8' : '#000000'; // sky-400 for hover, black otherwise
           let fullRoomFill = false;
           ctx.fillStyle = fillColor;
           if (style === 'full') {
@@ -319,12 +321,17 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           drawFillDot(px + cellSize / 2, py + cellSize / 2);
         }
 
-        // Hover highlight - draw only a faint outline so cycling visuals remain visible
+        // Hover highlight - draw a semi-transparent overlay and a faint outline so cycling visuals remain visible
         if (isHovered) {
+          // Overlay: amber/yellow, semi-transparent
           ctx.save();
+          ctx.globalAlpha = 0.25;
+          ctx.fillStyle = 'rgba(245, 158, 11, 1)'; // amber-400
+          ctx.fillRect(px, py, cellSize, cellSize);
+          ctx.globalAlpha = 1.0;
+          // Outline
           ctx.strokeStyle = 'rgba(245, 158, 11, 0.16)';
           ctx.lineWidth = Math.max(1, Math.floor(cellSize * 0.06));
-          // inset the stroke slightly so it doesn't clip on the grid lines
           ctx.strokeRect(px + 1, py + 1, cellSize - 2, cellSize - 2);
           ctx.restore();
         }
@@ -354,12 +361,42 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
             ctx.fillRect(px, py, cellSize, cellSize);
             ctx.globalAlpha = 1.0;
 
-            // Marker character
-            ctx.fillStyle = '#ffffff';
-            ctx.font = `bold ${Math.max(8, cellSize * 0.6)}px monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(style.char, px + cellSize / 2, py + cellSize / 2);
+            // Marker icon: image or char
+            ctx.save();
+            const markerCenterX = px + cellSize / 2;
+            const markerCenterY = py + cellSize / 2;
+            ctx.translate(markerCenterX, markerCenterY);
+            if (shouldRotate) {
+              ctx.rotate(-Math.PI / 2); // counteract grid rotation
+            }
+            if (style.image) {
+              // Draw image centered in cell
+              const img = new window.Image();
+              img.src = style.image;
+              const iconSize = Math.floor(cellSize * 0.7);
+              // If image is not loaded, draw after it loads
+              if (!img.complete) {
+                img.onload = () => {
+                  const ctx2 = canvasRef.current?.getContext('2d');
+                  if (ctx2) {
+                    ctx2.save();
+                    ctx2.translate(markerCenterX, markerCenterY);
+                    if (shouldRotate) ctx2.rotate(-Math.PI / 2);
+                    ctx2.drawImage(img, -iconSize/2, -iconSize/2, iconSize, iconSize);
+                    ctx2.restore();
+                  }
+                };
+              } else {
+                ctx.drawImage(img, -iconSize/2, -iconSize/2, iconSize, iconSize);
+              }
+            } else if (style.char) {
+              ctx.fillStyle = '#ffffff';
+              ctx.font = `bold ${Math.max(8, cellSize * 0.6)}px "DungeonMode", monospace`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(style.char, 0, 0);
+            }
+            ctx.restore();
           }
         }
       }
@@ -932,7 +969,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       let screenCy = logicalCy;
       if (shouldRotate) {
         // when we rotated the canvas with: translate(canvasWidth,0); rotate(+90deg)
-        // the forward mapping was: sx = canvasWidth - ly, sy = lx
+        // the forward mapping was: sx = canvasWidth - logicalCy, sy = logicalCx
         // so here we invert that: sx = canvasWidth - logicalCy, sy = logicalCx
         screenCx = canvasWidth - logicalCy;
         screenCy = logicalCx;
@@ -1576,14 +1613,16 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       return;
     }
 
-    // If hovering a door edge on a room cell, toggle door (always, no shift needed!)
+    // If hovering an edge on a room cell, toggle wall (left-click no longer places doors)
     if (hoveredDoor && cell > 0) {
-      onDoorToggle(hoveredCell.x, hoveredCell.y, hoveredDoor.edge);
-      try { sfx.play('door', { volume: 0.6 }); } catch (err) {}
-    } else {
-      // Regular cell click (now handled by mousedown/mouseup for drag support)
+      if (typeof onWallToggle === 'function') {
+        onWallToggle(hoveredCell.x, hoveredCell.y, hoveredDoor.edge);
+        try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
+      }
+      return;
     }
-  }, [hoveredCell, hoveredDoor, grid, onDoorToggle, onPartyMove, onPartySelect, partyPos, partySelected]);
+    // Regular cell click (now handled by mousedown/mouseup for drag support)
+  }, [hoveredCell, hoveredDoor, grid, onWallToggle, onPartyMove, onPartySelect, partyPos, partySelected]);
 
   const handleContextMenu = useCallback((e) => {
   e.preventDefault();

@@ -2,6 +2,7 @@
  * Dungeon Actions - Doors, traps, special rooms, corridors, puzzles, and boss room
  */
 import { d6 } from '../dice.js';
+import { getDefaultContext } from '../../game/context.js';
 import { formatRollPrefix } from '../rollLog.js';
 import {
   DOOR_TYPE_TABLE,
@@ -29,8 +30,9 @@ import { rollTreasure } from './treasureActions.js';
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Door info
  */
-export const rollDoorType = (dispatch) => {
-  const roll = d6();
+export const rollDoorType = (dispatch, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   const typeKey = DOOR_TYPE_TABLE[roll];
   const type = DOOR_TYPES[typeKey];
 
@@ -46,7 +48,8 @@ export const rollDoorType = (dispatch) => {
  * @param {string} doorType - Door type key
  * @returns {object} Result of attempt
  */
-export const attemptOpenDoor = (dispatch, hero, doorType) => {
+export const attemptOpenDoor = (dispatch, hero, doorType, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const door = DOOR_TYPES[doorType];
   if (!door) return { success: true, message: 'Door opens' };
 
@@ -64,7 +67,7 @@ export const attemptOpenDoor = (dispatch, hero, doorType) => {
   }
 
   // Roll to open
-  const roll = d6();
+  const roll = d6(rng, rollLog);
   const total = roll + access.bonus;
   const success = total >= door.openDC;
 
@@ -82,10 +85,11 @@ export const attemptOpenDoor = (dispatch, hero, doorType) => {
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Trap info
  */
-export const rollTrap = (dispatch, options = {}) => {
+export const rollTrap = (dispatch, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const envKey = normalizeEnvironment(options.environment);
   const table = TRAP_TABLES[envKey] || TRAP_TABLES.dungeon;
-  const roll = d6();
+  const roll = d6(rng, rollLog);
   const typeKey = table[roll];
   const trap = TRAP_TYPES[typeKey];
 
@@ -101,12 +105,13 @@ export const rollTrap = (dispatch, options = {}) => {
  * @param {string} trapType - Trap type key (if known)
  * @returns {object} Detection result
  */
-export const attemptDetectTrap = (dispatch, hero, trapType = null, options = {}) => {
+export const attemptDetectTrap = (dispatch, hero, trapType = null, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   // If trap type unknown, roll it
-  const roll = d6();
+  const roll = d6(rng, rollLog);
   const envKey = normalizeEnvironment(options.environment);
   const table = TRAP_TABLES[envKey] || TRAP_TABLES.dungeon;
-  const actualTrapType = trapType || table[d6()];
+  const actualTrapType = trapType || table[d6(rng, rollLog)];
   const trap = TRAP_TYPES[actualTrapType];
 
   const { bonus, dc } = getTrapDetectionBonus(hero, actualTrapType);
@@ -129,11 +134,12 @@ export const attemptDetectTrap = (dispatch, hero, trapType = null, options = {})
  * @param {string} trapType - Trap type key
  * @returns {object} Disarm result
  */
-export const attemptDisarmTrap = (dispatch, hero, trapType, options = {}) => {
+export const attemptDisarmTrap = (dispatch, hero, trapType, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const trap = TRAP_TYPES[trapType];
   if (!trap) return { success: false, message: 'Unknown trap type' };
 
-  const roll = d6();
+  const roll = d6(rng, rollLog);
   const { bonus, dc } = getTrapDisarmBonus(hero, trapType);
   const total = roll + bonus;
   const success = total >= dc;
@@ -167,7 +173,7 @@ export const attemptDisarmTrap = (dispatch, hero, trapType, options = {}) => {
  * @param {string} trapType - Trap type key
  * @returns {object} Trap effect result
  */
-export const triggerTrap = (dispatch, hero, trapType, options = {}) => {
+export const triggerTrap = (dispatch, hero, trapType, options = {}, ctx) => {
   const trap = TRAP_TYPES[trapType];
   if (!trap) return { damage: 0 };
 
@@ -192,7 +198,7 @@ export const triggerTrap = (dispatch, hero, trapType, options = {}) => {
   } else if (effect === 'wandering') {
     dispatch({ type: 'LOG', t: `🔔 The alarm attracts wandering monsters!` });
     // Alarm-based wandering monsters ambush the party (target rear)
-    rollWanderingMonster(dispatch, { ambush: true, state: options.state, environment: options.environment });
+    rollWanderingMonster(dispatch, { ambush: true, state: options.state, environment: options.environment }, ctx);
   } else if (effect === 'teleport') {
     dispatch({
       type: 'LOG',
@@ -214,11 +220,12 @@ export const triggerTrap = (dispatch, hero, trapType, options = {}) => {
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Special room info
  */
-export const rollSpecialRoom = (dispatch, options = {}) => {
+export const rollSpecialRoom = (dispatch, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const envKey = normalizeEnvironment(options.environment);
   const table = SPECIAL_FEATURE_TABLES[envKey] || SPECIAL_FEATURE_TABLES.dungeon;
   const rooms = SPECIAL_FEATURES_BY_ENV[envKey] || SPECIAL_FEATURES_BY_ENV.dungeon;
-  const roll = d6();
+  const roll = d6(rng, rollLog);
   const typeKey = table[roll];
   const room = rooms[typeKey];
 
@@ -226,7 +233,7 @@ export const rollSpecialRoom = (dispatch, options = {}) => {
     dispatch({ type: 'LOG', t: `✨ Special Feature: ${room.name}` });
     dispatch({ type: 'LOG', t: `📜 ${room.description}` });
     if (room.effect === 'water_pool') {
-      const poolRoll = d6();
+      const poolRoll = d6(rng, rollLog);
       const poolResult = WATER_POOL_TABLE[poolRoll];
       dispatch({ type: 'LOG', t: `💧 Water Pool (${poolRoll}): ${poolResult}` });
     }
@@ -242,7 +249,8 @@ export const rollSpecialRoom = (dispatch, options = {}) => {
  * @param {number} goldPaid - Gold offered
  * @returns {object} Shrine result
  */
-export const interactShrine = (dispatch, hero, goldPaid = 0) => {
+export const interactShrine = (dispatch, hero, goldPaid = 0, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   if (goldPaid < 1) {
     dispatch({
       type: 'LOG',
@@ -252,7 +260,7 @@ export const interactShrine = (dispatch, hero, goldPaid = 0) => {
   }
 
   dispatch({ type: 'GOLD', n: -1 });
-  const roll = d6();
+  const roll = d6(rng, rollLog);
 
   let result;
   if (roll <= 2) {
@@ -284,8 +292,9 @@ export const interactShrine = (dispatch, hero, goldPaid = 0) => {
  * @param {object} hero - Hero drinking
  * @returns {object} Fountain result
  */
-export const interactFountain = (dispatch, hero) => {
-  const roll = d6();
+export const interactFountain = (dispatch, hero, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
 
   let result,
     healing = 0;
@@ -321,8 +330,9 @@ export const interactFountain = (dispatch, hero) => {
  * @param {object} hero - Hero searching
  * @returns {object} Statue result
  */
-export const interactStatue = (dispatch, hero, options = {}) => {
-  const roll = d6();
+export const interactStatue = (dispatch, hero, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
 
   let result;
   if (roll <= 2) {
@@ -341,7 +351,7 @@ export const interactStatue = (dispatch, hero, options = {}) => {
       type: 'LOG',
       t: `💎 ${hero.name} finds treasure hidden in the statue!`,
     });
-    rollTreasure(dispatch, { environment: options.environment });
+    rollTreasure(dispatch, { environment: options.environment }, ctx);
   }
 
   return { roll, result };
@@ -353,14 +363,15 @@ export const interactStatue = (dispatch, hero, options = {}) => {
  * @param {number} goldPaid - Gold offered
  * @returns {object} Altar result
  */
-export const interactAltar = (dispatch, goldPaid = 0) => {
+export const interactAltar = (dispatch, goldPaid = 0, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   if (goldPaid < 2) {
     dispatch({ type: 'LOG', t: `The altar demands a sacrifice of 2 gold.` });
     return { success: false, message: 'Requires 2 gold sacrifice' };
   }
 
   dispatch({ type: 'GOLD', n: -2 });
-  const roll = d6();
+  const roll = d6(rng, rollLog);
 
   let result;
   if (roll <= 3) {
@@ -384,8 +395,9 @@ export const interactAltar = (dispatch, goldPaid = 0) => {
  * @param {object} hero - Hero searching
  * @returns {object} Library result
  */
-export const interactLibrary = (dispatch, hero) => {
-  const roll = d6();
+export const interactLibrary = (dispatch, hero, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
 
   let result;
   if (roll <= 2) {
@@ -415,8 +427,9 @@ export const interactLibrary = (dispatch, hero) => {
  * @param {object} hero - Hero searching
  * @returns {object} Armory result
  */
-export const interactArmory = (dispatch, hero) => {
-  const roll = d6();
+export const interactArmory = (dispatch, hero, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
 
   let result;
   if (roll <= 2) {
@@ -444,8 +457,9 @@ export const interactArmory = (dispatch, hero) => {
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Puzzle info
  */
-export const rollPuzzle = (dispatch) => {
-  const roll = d6();
+export const rollPuzzle = (dispatch, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   const typeKey = PUZZLE_TABLE[roll];
   const puzzle = PUZZLE_TYPES[typeKey];
 
@@ -462,11 +476,12 @@ export const rollPuzzle = (dispatch) => {
  * @param {string} puzzleType - Puzzle type key
  * @returns {object} Puzzle result
  */
-export const attemptPuzzle = (dispatch, hero, puzzleType) => {
+export const attemptPuzzle = (dispatch, hero, puzzleType, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const puzzle = PUZZLE_TYPES[puzzleType];
   if (!puzzle) return { success: false };
 
-  const roll = d6();
+  const roll = d6(rng, rollLog);
   let bonus = 0;
 
   // Class bonuses for puzzles
@@ -505,10 +520,11 @@ export const attemptPuzzle = (dispatch, hero, puzzleType) => {
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Corridor info
  */
-export const generateCorridor = (dispatch) => {
-  const dirRoll = d6();
-  const lenRoll = d6();
-  const contentsRoll = d6();
+export const generateCorridor = (dispatch, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const dirRoll = d6(rng, rollLog);
+  const lenRoll = d6(rng, rollLog);
+  const contentsRoll = d6(rng, rollLog);
 
   const direction = CORRIDOR_DIRECTION_TABLE[dirRoll];
   const length = CORRIDOR_LENGTH_TABLE[lenRoll];
@@ -525,7 +541,7 @@ export const generateCorridor = (dispatch) => {
     dispatch({ type: 'LOG', t: `⚠️ There's a trap in the passage!` });
   } else if (contents === 'wandering') {
     dispatch({ type: 'LOG', t: `👹 Wandering monster in the passage!` });
-    rollWanderingMonster(dispatch);
+    rollWanderingMonster(dispatch, {}, ctx);
   }
 
   return { direction, length, contents, dirRoll, lenRoll, contentsRoll };
@@ -563,7 +579,7 @@ export const checkBossRoomAccess = (clues) => {
  * @param {number} hcl - Party HCL
  * @returns {object} Boss room entry result
  */
-export const enterBossRoom = (dispatch, clues, hcl) => {
+export const enterBossRoom = (dispatch, clues, hcl, ctx) => {
   const access = checkBossRoomAccess(clues);
 
   if (!access.canEnter) {
@@ -575,7 +591,7 @@ export const enterBossRoom = (dispatch, clues, hcl) => {
   dispatch({ type: 'LOG', t: access.message });
 
   // Spawn the boss
-  spawnMajorFoe(dispatch, hcl, true);
+  spawnMajorFoe(dispatch, hcl, true, ctx);
   dispatch({ type: 'BOSS' });
 
   return { success: true, ...access };

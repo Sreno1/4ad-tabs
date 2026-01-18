@@ -2,6 +2,7 @@
  * Treasure Actions - Rolling treasure and searching
  */
 import { d6, r2d6 } from '../dice.js';
+import { getDefaultContext } from '../../game/context.js';
 import { formatRollPrefix } from '../rollLog.js';
 import { SCROLLS, generateRandomScroll } from '../../data/scrolls.js';
 import { ASSIGN_TREASURE, SHOW_MODAL } from '../../state/actions.js';
@@ -47,9 +48,9 @@ const FUNGAL_RARE_ITEM_TABLE = [
   'Morel Crusher'
 ];
 
-const rollXd6 = (count) => {
+const rollXd6 = (count, rng, rollLog) => {
   let total = 0;
-  for (let i = 0; i < count; i++) total += d6();
+  for (let i = 0; i < count; i++) total += d6(rng, rollLog);
   return total;
 };
 
@@ -64,8 +65,9 @@ const getScrollName = (scrollKey) => {
   return SCROLLS[scrollKey]?.name || 'Scroll';
 };
 
-export const rollRareMushroomTable = (dispatch = null) => {
-  const roll = d6();
+export const rollRareMushroomTable = (dispatch = null, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   const item = RARE_MUSHROOM_TABLE[roll] || 'Rare Mushroom';
   if (dispatch) {
     const logText = `${formatRollPrefix(roll)}Rare Mushroom: ${item}`;
@@ -75,22 +77,25 @@ export const rollRareMushroomTable = (dispatch = null) => {
   return { roll, item };
 };
 
-const rollDungeonMagicTreasure = (environmentKey) => {
-  const roll = d6();
+const rollDungeonMagicTreasure = (environmentKey, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   if (environmentKey === 'fungal_grottoes' && roll === 6) {
-    const mushroom = rollRareMushroomTable();
+    const mushroom = rollRareMushroomTable(null, ctx);
     return { roll, item: `Rare Mushroom: ${mushroom.item}`, detail: mushroom };
   }
   return { roll, item: DUNGEON_MAGIC_TREASURE_TABLE[roll] || 'Magic Treasure' };
 };
 
-const rollCavernsSpecialItem = () => {
-  const roll = d6();
+const rollCavernsSpecialItem = (ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   return { roll, item: CAVERNS_SPECIAL_ITEM_TABLE[roll] || 'Special Item' };
 };
 
-const rollFungalRareItem = () => {
-  const roll = d6();
+const rollFungalRareItem = (ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   return { roll, item: FUNGAL_RARE_ITEM_TABLE[roll] || 'Rare Item' };
 };
 
@@ -100,10 +105,11 @@ const rollFungalRareItem = () => {
  * @param {object} options - Optional params { multiplier, minGold, environment }
  * @returns {object} Treasure result
  */
-export const rollTreasure = (dispatch, options = {}) => {
+export const rollTreasure = (dispatch, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const { multiplier = 1, minGold = 0, environment } = options;
   const envKey = normalizeEnvironment(environment);
-  const roll = d6();
+  const roll = d6(rng, rollLog);
 
   if (roll === 1) {
     const logText = `${formatRollPrefix(roll)}Treasure: No treasure found.`;
@@ -114,15 +120,15 @@ export const rollTreasure = (dispatch, options = {}) => {
 
   if (roll === 2) {
     if (envKey === 'fungal_grottoes') {
-      const foodRoll = r2d6();
-      const mushroom = rollRareMushroomTable();
+      const foodRoll = r2d6(rng, rollLog);
+      const mushroom = rollRareMushroomTable(null, ctx);
       const logText = `${formatRollPrefix(roll)}Treasure: 2d6 food rations (${foodRoll}) or Rare Mushroom (${mushroom.item}).`;
       dispatch({ type: 'LOG', t: logText });
       dispatch({ type: SHOW_MODAL, message: logText, msgType: 'info', autoClose: 4000 });
       return { roll, type: 'food_or_mushroom', food: foodRoll, mushroom };
     }
 
-    const baseGold = r2d6();
+    const baseGold = r2d6(rng, rollLog);
     const gold = applyGoldModifiers(baseGold, multiplier, minGold);
     const multiplierText = multiplier > 1 ? ` (x${multiplier})` : '';
     const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
@@ -135,7 +141,7 @@ export const rollTreasure = (dispatch, options = {}) => {
 
   if (roll === 3) {
     if (envKey === 'dungeon') {
-      const scrollKey = generateRandomScroll('wizard');
+      const scrollKey = generateRandomScroll('wizard', ctx);
       const logText = `${formatRollPrefix(roll)}Treasure: ${getScrollName(scrollKey)}.`;
       dispatch({ type: 'LOG', t: logText });
       dispatch({ type: SHOW_MODAL, message: logText, msgType: 'info', autoClose: 4000 });
@@ -143,15 +149,15 @@ export const rollTreasure = (dispatch, options = {}) => {
     }
 
     if (envKey === 'caverns') {
-      const scrollKey = generateRandomScroll('illusionist');
+      const scrollKey = generateRandomScroll('illusionist', ctx);
       const logText = `${formatRollPrefix(roll)}Treasure: ${getScrollName(scrollKey)}.`;
       dispatch({ type: 'LOG', t: logText });
       dispatch({ type: SHOW_MODAL, message: logText, msgType: 'info', autoClose: 4000 });
       return { roll, type: 'scroll', scrollKey };
     }
 
-    const scrollKey = generateRandomScroll('druid');
-    const mushroom = rollRareMushroomTable();
+    const scrollKey = generateRandomScroll('druid', ctx);
+    const mushroom = rollRareMushroomTable(null, ctx);
     const logText = `${formatRollPrefix(roll)}Treasure: Choose ${getScrollName(scrollKey)} or Rare Mushroom (${mushroom.item}).`;
     dispatch({ type: 'LOG', t: logText });
     dispatch({ type: SHOW_MODAL, message: logText, msgType: 'info', autoClose: 4000 });
@@ -160,8 +166,8 @@ export const rollTreasure = (dispatch, options = {}) => {
 
   if (roll === 4) {
     const baseGold = envKey === 'caverns'
-      ? rollXd6(3) * 5
-      : r2d6() * 5;
+      ? rollXd6(3, rng, rollLog) * 5
+      : r2d6(rng, rollLog) * 5;
     const gold = applyGoldModifiers(baseGold, multiplier, minGold);
     const multiplierText = multiplier > 1 ? ` (x${multiplier})` : '';
     const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
@@ -174,7 +180,7 @@ export const rollTreasure = (dispatch, options = {}) => {
 
   if (roll === 5) {
     if (envKey === 'caverns') {
-      const baseGold = rollXd6(3) * 10;
+      const baseGold = rollXd6(3, rng, rollLog) * 10;
       const gold = applyGoldModifiers(baseGold, multiplier, minGold);
       const logText = `${formatRollPrefix(roll)}Treasure: Choose gem worth ${gold} gp or a prism with a random illusionist spell.`;
       dispatch({ type: 'LOG', t: logText });
@@ -184,7 +190,7 @@ export const rollTreasure = (dispatch, options = {}) => {
     }
 
     if (envKey === 'fungal_grottoes') {
-      const baseGold = r2d6() * 10;
+      const baseGold = r2d6(rng, rollLog) * 10;
       const gold = applyGoldModifiers(baseGold, multiplier, minGold);
       const logText = `${formatRollPrefix(roll)}Treasure: Choose gem worth ${gold} gp or 3 rolls on the Rare Mushroom table.`;
       dispatch({ type: 'LOG', t: logText });
@@ -193,7 +199,7 @@ export const rollTreasure = (dispatch, options = {}) => {
       return { roll, type: 'gem_or_mushrooms', amount: gold };
     }
 
-    const baseGold = rollXd6(3) * 10;
+    const baseGold = rollXd6(3, rng, rollLog) * 10;
     const gold = applyGoldModifiers(baseGold, multiplier, minGold);
     const multiplierText = multiplier > 1 ? ` (x${multiplier})` : '';
     const minText = minGold > 0 && gold === minGold ? ` (min ${minGold}gp)` : '';
@@ -206,7 +212,7 @@ export const rollTreasure = (dispatch, options = {}) => {
 
   if (roll === 6) {
     if (envKey === 'caverns') {
-      const item = rollCavernsSpecialItem();
+      const item = rollCavernsSpecialItem(ctx);
       const logText = `${formatRollPrefix(roll)}Treasure: Caverns special item (${item.item}).`;
       dispatch({ type: 'LOG', t: logText });
       dispatch({ type: SHOW_MODAL, message: logText, msgType: 'info', autoClose: 4000 });
@@ -214,15 +220,15 @@ export const rollTreasure = (dispatch, options = {}) => {
     }
 
     if (envKey === 'fungal_grottoes') {
-      const magic = rollDungeonMagicTreasure(envKey);
-      const rareItem = rollFungalRareItem();
+      const magic = rollDungeonMagicTreasure(envKey, ctx);
+      const rareItem = rollFungalRareItem(ctx);
       const logText = `${formatRollPrefix(roll)}Treasure: Choose dungeon magic treasure (${magic.item}) or fungal rare item (${rareItem.item}).`;
       dispatch({ type: 'LOG', t: logText });
       dispatch({ type: SHOW_MODAL, message: logText, msgType: 'info', autoClose: 4000 });
       return { roll, type: 'magic_or_rare', magic, rareItem };
     }
 
-    const item = rollDungeonMagicTreasure(envKey);
+    const item = rollDungeonMagicTreasure(envKey, ctx);
     const logText = `${formatRollPrefix(roll)}Treasure: ${item.item}.`;
     dispatch({ type: 'LOG', t: logText });
     dispatch({ type: SHOW_MODAL, message: logText, msgType: 'info', autoClose: 4000 });
@@ -237,9 +243,10 @@ export const rollTreasure = (dispatch, options = {}) => {
  * Useful for abilities that reveal potential treasure (e.g., Dwarf Gold Sense)
  * @returns {object} preview result similar to rollTreasure but without dispatch
  */
-export const previewTreasureRoll = (environment = 'dungeon') => {
+export const previewTreasureRoll = (environment = 'dungeon', ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const envKey = normalizeEnvironment(environment);
-  const roll = d6();
+  const roll = d6(rng, rollLog);
 
   if (roll === 1) return { roll, type: 'none', label: 'no treasure' };
 
@@ -247,7 +254,7 @@ export const previewTreasureRoll = (environment = 'dungeon') => {
     if (envKey === 'fungal_grottoes') {
       return { roll, type: 'food_or_mushroom', label: 'food rations or rare mushroom' };
     }
-    const gold = r2d6();
+    const gold = r2d6(rng, rollLog);
     return { roll, type: 'gold', amount: gold, label: `${gold} gp` };
   }
 
@@ -256,7 +263,7 @@ export const previewTreasureRoll = (environment = 'dungeon') => {
   }
 
   if (roll === 4) {
-    const gold = envKey === 'caverns' ? rollXd6(3) * 5 : r2d6() * 5;
+    const gold = envKey === 'caverns' ? rollXd6(3, rng, rollLog) * 5 : r2d6(rng, rollLog) * 5;
     return { roll, type: 'gem', amount: gold, label: `gem worth ${gold} gp` };
   }
 
@@ -272,8 +279,9 @@ export const previewTreasureRoll = (environment = 'dungeon') => {
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Search result info
  */
-export const performSearch = (dispatch) => {
-  const roll = d6();
+export const performSearch = (dispatch, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   let result;
 
   if (roll <= 1) {

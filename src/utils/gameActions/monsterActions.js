@@ -2,6 +2,7 @@
  * Monster Actions - Spawning, reactions, XP, morale, and monster-specific logic
  */
 import { d6 } from '../dice.js';
+import { getDefaultContext } from '../../game/context.js';
 import { formatRollPrefix } from '../rollLog.js';
 import {
   createMonster,
@@ -19,8 +20,8 @@ import { ENVIRONMENT_LABELS, ENVIRONMENT_MONSTER_CATEGORIES, normalizeEnvironmen
  * @param {string} type - Monster template key
  * @param {number} level - Override level (optional)
  */
-export const spawnMonster = (dispatch, type, level = null, opts = {}) => {
-  const monster = createMonster(type, level);
+export const spawnMonster = (dispatch, type, level = null, opts = {}, ctx) => {
+  const monster = createMonster(type, level, ctx);
   if (!monster) return;
 
   // Allow callers to mark spawned monsters as part of an ambush (target rear)
@@ -44,8 +45,8 @@ export const spawnMonster = (dispatch, type, level = null, opts = {}) => {
  * @param {number} hcl - Party HCL (Hero Challenge Level)
  * @param {boolean} isBoss - Whether this is THE BOSS (gets +1 Life, +1 Attack, 3x treasure)
  */
-export const spawnMajorFoe = (dispatch, hcl, isBoss = false) => {
-  const monster = createMonster('major', hcl);
+export const spawnMajorFoe = (dispatch, hcl, isBoss = false, ctx) => {
+  const monster = createMonster('major', hcl, ctx);
   if (!monster) return;
 
   if (isBoss) {
@@ -68,12 +69,12 @@ export const spawnMajorFoe = (dispatch, hcl, isBoss = false) => {
   }
 };
 
-const getRandomMonsterKeyByCategory = (category) => {
+const getRandomMonsterKeyByCategory = (category, rng) => {
   const candidates = Object.entries(MONSTER_TABLE)
     .filter(([, t]) => t.category === category)
     .map(([k]) => k);
   if (!candidates.length) return null;
-  return candidates[Math.floor(Math.random() * candidates.length)];
+  return candidates[rng.nextInt(candidates.length)];
 };
 
 /**
@@ -81,21 +82,22 @@ const getRandomMonsterKeyByCategory = (category) => {
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Roll result info
  */
-export const rollWanderingMonster = (dispatch, opts = {}) => {
-  const roll = d6();
+export const rollWanderingMonster = (dispatch, opts = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   const envKey = normalizeEnvironment(opts.environment || opts.state?.currentEnvironment);
   const categories = ENVIRONMENT_MONSTER_CATEGORIES[envKey] || ENVIRONMENT_MONSTER_CATEGORIES.dungeon;
 
   let monsterKey = null;
-  if (roll <= 3) monsterKey = getRandomMonsterKeyByCategory(categories.vermin);
-  else if (roll === 4) monsterKey = getRandomMonsterKeyByCategory(categories.minions);
-  else if (roll === 5) monsterKey = getRandomMonsterKeyByCategory(categories.weird);
-  else monsterKey = getRandomMonsterKeyByCategory(categories.boss);
+  if (roll <= 3) monsterKey = getRandomMonsterKeyByCategory(categories.vermin, rng);
+  else if (roll === 4) monsterKey = getRandomMonsterKeyByCategory(categories.minions, rng);
+  else if (roll === 5) monsterKey = getRandomMonsterKeyByCategory(categories.weird, rng);
+  else monsterKey = getRandomMonsterKeyByCategory(categories.boss, rng);
 
   let spawnedMonster = null;
   if (monsterKey) {
     const hcl = opts.state?.hcl || 1;
-    spawnedMonster = createMonsterFromTable(monsterKey, hcl);
+    spawnedMonster = createMonsterFromTable(monsterKey, hcl, ctx);
     if (spawnedMonster) {
       if (spawnedMonster.count !== undefined) spawnedMonster.isMinorFoe = true;
       if (opts.ambush) spawnedMonster.ambush = true;
@@ -123,7 +125,7 @@ export const rollWanderingMonster = (dispatch, opts = {}) => {
       const combatActions = require('./combatActions.js');
       // We need to pass the current state - caller can supply state in opts.state; fallback: skip if not provided
       if (opts.state) {
-        combatActions.initialWanderingStrikes(dispatch, opts.state);
+        combatActions.initialWanderingStrikes(dispatch, opts.state, ctx);
       } else {
         // If state not provided, log a warning (non-fatal)
         dispatch({ type: 'LOG', t: '⚠️ Wandering ambush occurred but state was not provided for immediate strikes.' });
@@ -146,8 +148,8 @@ export const rollWanderingMonster = (dispatch, opts = {}) => {
  * @param {number} monsterIdx - Monster index in state
  * @returns {object} Reaction result
  */
-export const rollMonsterReaction = (dispatch, monsterIdx) => {
-  const reaction = rollReaction();
+export const rollMonsterReaction = (dispatch, monsterIdx, ctx) => {
+  const reaction = rollReaction(null, ctx);
 
   dispatch({ type: 'SET_MONSTER_REACTION', monsterIdx, reaction: reaction.reaction });
   dispatch({ type: 'LOG', t: `${formatRollPrefix(reaction.roll)}🎲 Reaction: ${reaction.description}` });
@@ -170,7 +172,8 @@ export const rollMonsterReaction = (dispatch, monsterIdx) => {
  * @param {array} party - Party array
  * @returns {object} XP distribution result with individual rolls
  */
-export const awardXP = (dispatch, monster, party) => {
+export const awardXP = (dispatch, monster, party, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const baseXP = monster.xp || monster.level;
   const aliveHeroes = party.filter(h => h.hp > 0);
 
@@ -181,7 +184,7 @@ export const awardXP = (dispatch, monster, party) => {
   // Each surviving hero rolls d6 for their XP
   party.forEach((hero, idx) => {
     if (hero.hp > 0) {
-      const roll = d6();
+      const roll = d6(rng, rollLog);
       // XP = (Monster XP × roll) / 6, rounded down
       const earnedXP = Math.floor((baseXP * roll) / 6);
 
@@ -293,7 +296,8 @@ export const processMonsterRoundStart = (dispatch, monsters) => {
  * @param {number} currentCount - Current count
  * @returns {object} Morale check result
  */
-export const checkMinorFoeMorale = (foe, initialCount, currentCount) => {
+export const checkMinorFoeMorale = (foe, initialCount, currentCount, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   // Check if morale should never be checked:
   // 1. Foe has neverChecksMorale property (e.g., boss), OR
   // 2. Foe rolled "Fight to the Death" reaction (checksMorale: false)
@@ -307,7 +311,7 @@ export const checkMinorFoeMorale = (foe, initialCount, currentCount) => {
     return { checked: false, fled: false };
   }
 
-  const roll = d6();
+  const roll = d6(rng, rollLog);
   const moraleMod = foe.moraleMod || 0;
   const adjustedRoll = roll + moraleMod;
 
@@ -354,7 +358,8 @@ export const checkMajorFoeLevelReduction = (foe) => {
  * @param {number} [surpriseChanceOverride] - Optional X for X-in-6 surprise override
  * @returns {object} Surprise result
  */
-export const rollSurprise = (monster, surpriseChanceOverride = null) => {
+export const rollSurprise = (monster, surpriseChanceOverride = null, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   // Allow caller (UI or encounter generator) to provide an X-in-6 override.
   const surpriseChance = (typeof surpriseChanceOverride === 'number')
     ? surpriseChanceOverride
@@ -364,7 +369,7 @@ export const rollSurprise = (monster, surpriseChanceOverride = null) => {
     return { surprised: false, roll: null, chance: 0 };
   }
 
-  const roll = d6();
+  const roll = d6(rng, rollLog);
   const surprised = roll <= surpriseChance;
 
   return {

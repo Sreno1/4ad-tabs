@@ -6,19 +6,33 @@
 /* ========================================
    0. CUSTOM FONT DECLARATIONS
    ======================================== */
-/* Note this - For body text */
+/* Dank Depths - For body and headers */
 @font-face {
-  font-family: 'Note this';
-  src: url('/4ad-tabs/fonts/note-this.ttf') format('truetype');
+  font-family: 'Dank Depths';
+  src: url('/fonts/Dank-Depths.ttf') format('truetype');
+  text-transform: uppercase;
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
-/* J.D. Handcrafted - For headers */
+body.doodle span {
+  text-transform: uppercase !important;
+}
+
+/* Note this - Legacy font */
+@font-face {
+  font-family: 'Note this';
+  src: url('/fonts/note-this.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* J.D. Handcrafted - Legacy font */
 @font-face {
   font-family: 'JD Handcrafted';
-  src: url('/4ad-tabs/fonts/jd-handcrafted.ttf') format('truetype');
+  src: url('/fonts/jd-handcrafted.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -28,13 +42,13 @@
    1. BODY AND LAYOUT FIXES
    ======================================== */
 body.doodle {
-  background-image: url('/4ad-tabs/paper.webp') !important;
+  background-image: url('/public/paper.webp') !important;
   background-size: cover !important;
   background-attachment: fixed !important;
   background-position: center !important;
   color: #3c3c3c !important;
   min-height: 100vh;
-  font-family: 'Note this', cursive, sans-serif !important;
+  font-family: 'Dank Depths', cursive, sans-serif !important;
   font-size: 20px !important;
 }
 
@@ -50,7 +64,7 @@ body.doodle h3,
 body.doodle h4,
 body.doodle h5,
 body.doodle h6 {
-  font-family: 'JD Handcrafted', cursive, sans-serif !important;
+  font-family: 'Dank Depths', cursive, sans-serif !important;
   font-weight: normal !important;
   letter-spacing: 0.5px;
   font-size: 1.8em !important;
@@ -66,7 +80,7 @@ body.doodle h3 {
 
 /* Tab titles and navigation */
 body.doodle nav button {
-  font-family: 'JD Handcrafted', cursive, sans-serif !important;
+  font-family: 'Dank Depths', cursive, sans-serif !important;
   font-weight: normal !important;
   font-size: 1.2em !important;
 }
@@ -113,7 +127,7 @@ body.doodle button:not([data-dungeon-cell]) {
   border-width: 10px !important;
   border-image: url('/4ad-tabs/doodlecss/button.svg') 10 10 10 10 stretch stretch !important;
   color: #3c3c3c !important;
-  font-family: 'Note this', cursive, sans-serif !important;
+  font-family: 'Dank Depths', cursive, sans-serif !important;
   font-weight: bold !important;
   font-size: 1.05em !important;
   text-shadow: none !important;
@@ -192,7 +206,7 @@ body.doodle select {
   border-width: 10px !important;
   border-image: url('/4ad-tabs/doodlecss/border.svg') 10 10 10 10 stretch stretch !important;
   color: #3c3c3c !important;
-  font-family: 'Note this', cursive, sans-serif !important;
+  font-family: 'Dank Depths', cursive, sans-serif !important;
   font-size: 1.2em !important;
   -webkit-user-select: text !important;
   user-select: text !important;
@@ -321,7 +335,7 @@ body.doodle .bg-red-600 {
    ======================================== */
 /* Ensure all text elements use custom fonts */
 body.doodle *:not([data-dungeon-grid] *) {
-  font-family: 'Note this', cursive, sans-serif !important;
+  font-family: 'Dank Depths', cursive, sans-serif !important;
 }
 
 body.doodle h1 *,
@@ -332,7 +346,7 @@ body.doodle h5 *,
 body.doodle h6 *,
 body.doodle nav *,
 body.doodle header * {
-  font-family: 'JD Handcrafted', cursive, sans-serif !important;
+  font-family: 'Dank Depths', cursive, sans-serif !important;
 }
 
 /* Labels and spans */
@@ -340,7 +354,7 @@ body.doodle label,
 body.doodle span:not([data-dungeon-grid] span),
 body.doodle p,
 body.doodle div:not([data-dungeon-grid] div) {
-  font-family: 'Note this', cursive, sans-serif !important;
+  font-family: 'Dank Depths', cursive, sans-serif !important;
 }
 
 /* Larger text for readability */

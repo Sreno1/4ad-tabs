@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 
 // Components
 import Party from "./components/Party.jsx";
@@ -38,7 +38,6 @@ import { useRoomEvents } from "./hooks/useRoomEvents.js";
 import { rollWanderingMonster } from "./utils/gameActions/index.js";
 import { addMonster, logMessage } from './state/actionCreators.js';
 import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE } from './data/rooms.js';
-import DungeonHeaderButtons from './components/DungeonHeaderButtons.jsx';
 
 // Constants
 import { ACTION_MODES } from "./constants/gameConstants.js";
@@ -81,7 +80,9 @@ export default function App() {
   // Layout state
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [leftPanelTab, setLeftPanelTab] = useState("party"); // 'party', 'stats', 'story', or 'rules'
-  const [showLogMiddle, setShowLogMiddle] = useState(false);
+  const [middleView, setMiddleView] = useState("map"); // 'map' | 'log' | 'firstPerson'
+  const [pendingMiddleView, setPendingMiddleView] = useState(null);
+  const [viewTransition, setViewTransition] = useState(null); // 'off' | 'on' | null
   const [showLogSidebar, setShowLogSidebar] = useState(false);
   // When the bottom log expands we want the sidebar to visually contract
   // (like the dungeon pane) but not change the logical `leftPanelOpen` state.
@@ -101,6 +102,63 @@ export default function App() {
   React.useEffect(() => {
     setLeftPanelContracted(false);
   }, []);
+
+  const CRT_TURN_OFF_MS = 420;
+  const CRT_TURN_ON_MS = 520;
+  const viewTransitionClass =
+    viewTransition === "off"
+      ? "crt-turn-off"
+      : viewTransition === "on"
+      ? "crt-turn-on"
+      : "";
+
+  const requestMiddleView = useCallback(
+    (nextView) => {
+      if (!nextView) return;
+      if (viewTransition === "off" && nextView === middleView) {
+        setPendingMiddleView(null);
+        setViewTransition(null);
+        return;
+      }
+      if (nextView === middleView) return;
+      setPendingMiddleView(nextView);
+      setViewTransition("off");
+    },
+    [middleView, viewTransition]
+  );
+
+  const handleHeaderViewChange = useCallback(
+    (nextView) => {
+      if (nextView === 'log') {
+        setShowLogSidebar(false);
+        try { if (leftPanelTab === 'log') setLeftPanelTab('party'); } catch (e) {}
+      }
+      requestMiddleView(nextView);
+    },
+    [leftPanelTab, requestMiddleView]
+  );
+
+  React.useEffect(() => {
+    if (viewTransition !== "off") return;
+    if (!pendingMiddleView) {
+      setViewTransition(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setMiddleView(pendingMiddleView);
+      setViewTransition("on");
+    }, CRT_TURN_OFF_MS);
+    return () => clearTimeout(timer);
+  }, [viewTransition, pendingMiddleView, CRT_TURN_OFF_MS]);
+
+  React.useEffect(() => {
+    if (viewTransition !== "on") return;
+    const timer = setTimeout(() => {
+      setViewTransition(null);
+      setPendingMiddleView(null);
+    }, CRT_TURN_ON_MS);
+    return () => clearTimeout(timer);
+  }, [viewTransition, CRT_TURN_ON_MS]);
   // Compute light source / darkvision summary for header
   const party = state.party || [];
   const partyHasEquippedLight = party.some((h) => {
@@ -272,10 +330,126 @@ export default function App() {
   });
 
   // Helper to clear tile and reset combat
-  const clearTileAndCombat = () => {
-    roomEvents.clearTile();
+  const clearTileAndCombat = useCallback(() => {
+    if (roomEvents?.clearTile) {
+      roomEvents.clearTile();
+    }
     combatFlow.resetCombat();
-  };
+  }, [roomEvents, combatFlow]);
+
+  const handleShowRoomDesigner = useCallback(() => {
+    setShowRoomDesigner(true);
+  }, [setShowRoomDesigner]);
+
+  const handleGenerateTile = useCallback(() => {
+    try {
+      roomEvents.generateTile && roomEvents.generateTile();
+    } catch (e) {
+      /* ignore */
+    }
+  }, [roomEvents]);
+
+  const handleWandering = useCallback(() => {
+    try {
+      rollWanderingMonster(dispatch, { state });
+    } catch (e) {
+      /* ignore */
+    }
+  }, [dispatch, state]);
+
+  const handleCustomTile = useCallback(() => {
+    try {
+      const rawD66 = prompt("Enter d66 (e.g. 11, 12, 21, 66):", "11");
+      if (!rawD66) return;
+      const shapeRoll = parseInt(rawD66, 10);
+      if (Number.isNaN(shapeRoll) || !Object.keys(TILE_SHAPE_TABLE).includes(String(shapeRoll))) {
+        alert("Invalid d66 value");
+        return;
+      }
+      const raw2d6 = prompt("Enter 2d6 result (2-12):", "8");
+      if (!raw2d6) return;
+      const contentsRoll = parseInt(raw2d6, 10);
+      if (Number.isNaN(contentsRoll) || contentsRoll < 2 || contentsRoll > 12) {
+        alert("Invalid 2d6 value");
+        return;
+      }
+      if (typeof roomEvents.generateTile === "function") {
+        roomEvents.generateTile({ shapeRoll, contentsRoll });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [roomEvents]);
+
+  const handleCustomMonster = useCallback(() => {
+    try {
+      const name = prompt("Monster Name?", "Custom Monster") || "Custom Monster";
+      const level = parseInt(prompt("Monster Level (1-5)?", "2")) || 2;
+      const isMajor = confirm("Is this a Major Foe (single creature with HP)? Cancel for Minor Foe (group with count).");
+      let monster;
+      if (isMajor) {
+        const hp = parseInt(prompt("HP?", "6")) || 6;
+        monster = { id: Date.now(), name, level, hp, maxHp: hp, type: "custom", isMinorFoe: false };
+        dispatch({ type: "ADD_MONSTER", m: monster });
+        dispatch(logMessage(`ƒs"‹,? ${name} L${level} (${hp}HP) Major Foe added`));
+      } else {
+        const count = parseInt(prompt("How many?", "6")) || 6;
+        monster = {
+          id: Date.now(),
+          name,
+          level,
+          hp: 1,
+          maxHp: 1,
+          count,
+          initialCount: count,
+          type: "custom",
+          isMinorFoe: true,
+        };
+        dispatch({ type: "ADD_MONSTER", m: monster });
+        dispatch(logMessage(`dY ${count}x ${name} L${level} Minor Foes added`));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [dispatch]);
+
+  const handleClearMap = useCallback(() => {
+    try {
+      clearTileAndCombat();
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      dispatch({ type: "CLEAR_GRID" });
+    } catch (e) {
+      /* ignore */
+    }
+    try {
+      localStorage.removeItem("roomMarkers");
+      window.dispatchEvent(new CustomEvent("roomMarkersUpdated"));
+    } catch (e) {
+      /* ignore */
+    }
+  }, [clearTileAndCombat, dispatch]);
+
+  const mapActions = useMemo(
+    () => ({
+      onShowRoomDesigner: handleShowRoomDesigner,
+      onGenerateTile: handleGenerateTile,
+      onWandering: handleWandering,
+      onCustomTile: handleCustomTile,
+      onCustomMonster: handleCustomMonster,
+      onClearMap: handleClearMap,
+    }),
+    [
+      handleShowRoomDesigner,
+      handleGenerateTile,
+      handleWandering,
+      handleCustomTile,
+      handleCustomMonster,
+      handleClearMap,
+    ]
+  );
 
   // Handler for loading an existing campaign
   const handleLoadCampaign = (campaignId) => {
@@ -357,12 +531,12 @@ export default function App() {
 
   return (
     <div id="app_root" className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
-  {/* Global result modal for success/failure/treasure messages */}
-  <ResultModal state={state} dispatch={dispatch} />
+      {/* Global result modal for success/failure/treasure messages */}
+      <ResultModal state={state} dispatch={dispatch} />
       {/* Header */}
       <AppHeader
         state={state}
-  dispatch={dispatch}
+        dispatch={dispatch}
         selectedHero={selectedHero}
         onSelectHero={setSelectedHero}
         onShowRules={() => setShowRules(true)}
@@ -370,15 +544,18 @@ export default function App() {
         onShowEquipment={() => setShowEquipment(true)}
         onShowAbilities={() => setShowAbilities(true)}
         onShowCampaign={() => setShowCampaign(true)}
-  onShowSettings={() => setShowSettings(true)}
+        onShowSettings={() => setShowSettings(true)}
         onBackToCampaigns={handleBackToCampaigns}
-  hasLightSource={effectiveHasLight}
-  partyLightNames={partyLightNames}
-  onShowLantern={() => setShowLantern(true)}
+        hasLightSource={effectiveHasLight}
+        partyLightNames={partyLightNames}
+        onShowLantern={() => setShowLantern(true)}
+        mapActions={mapActions}
+        activeView={middleView}
+        onViewChange={handleHeaderViewChange}
       />
 
       <LanternModal isOpen={showLantern} onClose={() => setShowLantern(false)} state={state} dispatch={dispatch} />
-  <EntranceRollModal isOpen={showEntranceRoll} roll={entranceRoll} onClose={finalizeOnboardingWithEntrance} />
+      <EntranceRollModal isOpen={showEntranceRoll} roll={entranceRoll} onClose={finalizeOnboardingWithEntrance} />
 
       {/* Main Content */}
       <main id="main_content" className="flex-1 overflow-hidden flex flex-col">
@@ -404,7 +581,7 @@ export default function App() {
                 roomDetails={roomEvents.roomDetails}
                 autoPlacedRoom={roomEvents.autoPlacedRoom}
                 setAutoPlacedRoom={roomEvents.setAutoPlacedRoom}
-                onShowRoomDesigner={() => setShowRoomDesigner(true)}
+                mapActions={mapActions}
               />
             )}
             {tab === "combat" && (
@@ -459,237 +636,191 @@ export default function App() {
                   setLeftPanelOpen(open);
                 }}
                 onTabChange={(tab) => {
-                  // If switching to the log tab, ensure middle log is closed
                   if (tab === 'log') {
-                    setShowLogMiddle(false);
+                    requestMiddleView('log');
                     setShowLogSidebar(true);
                     setLeftPanelTab(tab);
                   } else {
-                    // turning off sidebar log state if we navigate away
                     if (leftPanelTab === 'log') setShowLogSidebar(false);
                     setLeftPanelTab(tab);
                   }
                 }}
                 onOpenCampaign={() => { setShowCampaign(true); }}
-                onOpenLog={() => { setShowLogMiddle(false); setShowLogSidebar(true); setLeftPanelTab('log'); setLeftPanelOpen(true); }}
+                onOpenLog={() => {
+                  requestMiddleView('log');
+                  setShowLogSidebar(true);
+                  setLeftPanelTab('log');
+                  setLeftPanelOpen(true);
+                }}
                 selectedHero={selectedHero}
                 onSelectHero={setSelectedHero}
               />
             </div>
 
             {/* Middle Column - Dungeon Map or Full Log (col 2) */}
-            <div style={{ gridColumn: '2 / 3', gridRow: '1 / 2' }} className="flex flex-col min-w-0 border-l border-slate-700">
-              <div className="flex-1 overflow-y-auto p-2">
-                {!showLogMiddle ? (
-                  <Dungeon
-                    state={state}
-                    dispatch={dispatch}
-                    tileResult={roomEvents.tileResult}
-                    generateTile={roomEvents.generateTile}
-                    clearTile={clearTileAndCombat}
-                    bossCheckResult={roomEvents.bossCheckResult}
-                    roomDetails={roomEvents.roomDetails}
-                    placementTemplate={placementTemplate}
-                    autoPlacedRoom={roomEvents.autoPlacedRoom}
-                    setAutoPlacedRoom={roomEvents.setAutoPlacedRoom}
-                    onCommitPlacement={(startX, startY, tpl) => {
-                      const lastTile = roomEvents.tileResult || null;
-                      try {
-                        // tpl may be {grid, doors}
-                        try { const sfx = require('./utils/sfx.js').default; sfx.play('hurt2', { volume: 0.9 }); } catch (e) {}
-                        const templateGrid = tpl.grid || tpl;
-                        const templateDoors = tpl.doors || [];
-                        const tplStyles = tpl.cellStyles || {};
-                        templateGrid.forEach((row, ry) => {
-                          row.forEach((val, rx) => {
-                            if (val && val !== 0) {
-                              const x = startX + rx;
-                              const y = startY + ry;
-                              if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
-                                const styleKey = `${rx},${ry}`;
-                                const style = tplStyles[styleKey];
-                                if (style) dispatch({ type: 'SET_CELL', x, y, value: val, style });
-                                else if (val === 1) dispatch({ type: 'SET_CELL', x, y, value: val, style: 'full' });
-                                else dispatch({ type: 'SET_CELL', x, y, value: val });
-                              }
-                            }
-                          });
-                        });
-                        templateDoors.forEach(d => {
-                          const x = startX + (d.x || 0);
-                          const y = startY + (d.y || 0);
-                          if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
-                            dispatch({ type: 'TOGGLE_DOOR', x, y, edge: d.edge });
-                          }
-                        });
-                        // Merge walls from template (if any)
-                        const templateWalls = tpl.walls || [];
-                        const computedWalls = buildWallOffPerimeters(templateGrid, tplStyles, { allowFallback: true });
-                        const mergedTemplateWalls = [...templateWalls];
-                        computedWalls.forEach(w => {
-                          if (!mergedTemplateWalls.some(m => m.x === w.x && m.y === w.y && m.edge === w.edge)) {
-                            mergedTemplateWalls.push(w);
-                          }
-                        });
-                        if (mergedTemplateWalls.length > 0) {
-                          const existingWalls = state.walls || [];
-                          const union = [...existingWalls];
-                          // Determine template tag (prefer saved tag from library match; fall back to tileResult)
-                          const templateTag = (roomEvents.autoPlacedRoom && roomEvents.autoPlacedRoom.tag)
-                            ? roomEvents.autoPlacedRoom.tag
-                            : (lastTile && lastTile.isCorridor ? 'Corridor' : 'Room');
-                          mergedTemplateWalls.forEach(w => {
-                            const wx = startX + (w.x || 0);
-                            const wy = startY + (w.y || 0);
-                            if (wy >= 0 && wy < state.grid.length && wx >= 0 && wx < (state.grid[0]?.length||0)) {
-                              if (!union.some(u => u.x === wx && u.y === wy && u.edge === w.edge)) union.push({ x: wx, y: wy, edge: w.edge, srcTag: templateTag });
-                            }
-                          });
-                          dispatch({ type: 'SET_WALLS', walls: union });
-                        }
-                        // If this placement originated from an auto-placed library room and
-                        // we have a recorded 2d6 contents roll for the last generated tile,
-                        // persist a marker/note in localStorage so the placed tile shows
-                        // the 2d6 result on hover. Emit an event so the Dungeon component
-                        // can reload markers immediately.
-                        try {
-                          const autoPlaced = roomEvents.autoPlacedRoom;
-                          if (autoPlaced && lastTile && typeof lastTile.contentsRoll === 'number') {
-                            const tplGrid = templateGrid;
-                            const tplH = tplGrid.length;
-                            const tplW = (tplGrid[0] || []).length || 0;
-                            const centerRX = Math.floor(tplW / 2);
-                            const centerRY = Math.floor(tplH / 2);
-                            const markX = startX + centerRX;
-                            const markY = startY + centerRY;
-                            if (markY >= 0 && markY < state.grid.length && markX >= 0 && markX < (state.grid[0]?.length||0)) {
-                              const key = `${markX},${markY}`;
-                              // Build tooltip from the exact log lines produced during tile generation
-                              let tooltipText = `2d6=${lastTile.contentsRoll}`;
+            <div
+              style={{ gridColumn: '2 / 3', gridRow: '1 / 2' }}
+              className="central-pane flex flex-col min-w-0 border-l border-slate-700"
+              data-crt-frame="true"
+            >
+              <div className="central-pane-inner flex-1 min-h-0 flex flex-col" data-crt-barrel="true">
+                <div className={`central-pane-surface crt-power-surface flex-1 min-h-0 flex flex-col ${viewTransitionClass}`}> 
+                  <div className="central-pane-content flex-1 flex flex-col min-h-0 min-w-0 w-full h-full">
+                    {middleView === 'log' ? (
+                      <div className="central-pane-log flex-1 flex flex-col min-h-0 min-w-0 w-full h-full">
+                        <div className="central-pane-log-scroll flex-1 overflow-hidden crt-screen min-h-0 min-w-0 w-full h-full">
+                          <Log state={state} dispatch={dispatch} isBottomPanel={true} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="central-pane-map flex flex-col min-h-0 min-w-0 w-full h-full">
+                        <div className="central-pane-map-scroll flex-1 overflow-y-auto p-2 crt-screen min-h-0 min-w-0 w-full h-full">
+                          <Dungeon
+                            state={state}
+                            dispatch={dispatch}
+                            tileResult={roomEvents.tileResult}
+                            generateTile={roomEvents.generateTile}
+                            clearTile={clearTileAndCombat}
+                            bossCheckResult={roomEvents.bossCheckResult}
+                            roomDetails={roomEvents.roomDetails}
+                            placementTemplate={placementTemplate}
+                            autoPlacedRoom={roomEvents.autoPlacedRoom}
+                            setAutoPlacedRoom={roomEvents.setAutoPlacedRoom}
+                            mapActions={mapActions}
+                            onCommitPlacement={(startX, startY, tpl) => {
+                              const lastTile = roomEvents.tileResult || null;
                               try {
-                                // Determine a cutoff timestamp from recent roomEvents so we only capture
-                                // log entries produced during the last generation (D66/CONTENTS events).
-                                const evts = roomEvents.roomEvents || [];
-                                let cutoff = null;
-                                if (evts && evts.length > 0) {
-                                  // Use the earliest timestamp among the last few relevant events
-                                  const tsList = evts.filter(e => ['D66_ROLL', 'CONTENTS_ROLL', 'LIBRARY_MATCH'].includes(e.type)).map(e => e.timestamp).filter(Boolean);
-                                  if (tsList.length > 0) cutoff = Math.min(...tsList);
-                                }
-                                // If we have a cutoff, collect all log entries with timestamp >= cutoff
-                                const lines = [];
-                                try {
-                                  if (cutoff) {
-                                    (state.log || []).forEach(l => {
-                                      try {
-                                        const lt = l.timestamp ? (typeof l.timestamp === 'string' ? (new Date(l.timestamp)).getTime() : l.timestamp) : null;
-                                        if (lt && lt >= cutoff) lines.push(l.message);
-                                      } catch (e) {}
-                                    });
+                                // tpl may be {grid, doors}
+                                try { const sfx = require('./utils/sfx.js').default; sfx.play('hurt2', { volume: 0.9 }); } catch (e) {}
+                                const templateGrid = tpl.grid || tpl;
+                                const templateDoors = tpl.doors || [];
+                                const tplStyles = tpl.cellStyles || {};
+                                templateGrid.forEach((row, ry) => {
+                                  row.forEach((val, rx) => {
+                                    if (val && val !== 0) {
+                                      const x = startX + rx;
+                                      const y = startY + ry;
+                                      if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
+                                        const styleKey = `${rx},${ry}`;
+                                        const style = tplStyles[styleKey];
+                                        if (style) dispatch({ type: 'SET_CELL', x, y, value: val, style });
+                                        else if (val === 1) dispatch({ type: 'SET_CELL', x, y, value: val, style: 'full' });
+                                        else dispatch({ type: 'SET_CELL', x, y, value: val });
+                                      }
+                                    }
+                                  });
+                                });
+                                templateDoors.forEach(d => {
+                                  const x = startX + (d.x || 0);
+                                  const y = startY + (d.y || 0);
+                                  if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
+                                    dispatch({ type: 'TOGGLE_DOOR', x, y, edge: d.edge });
                                   }
-                                } catch (e) {}
-                                // Fallback: if no lines collected, include the most recent 3 log entries
-                                if (lines.length === 0) {
-                                  const recent = (state.log || []).slice(0, 3).map(l => l.message).reverse();
-                                  tooltipText = recent.join(' \n ');
-                                } else {
-                                  tooltipText = lines.join(' \n ');
+                                });
+                                // Merge walls from template (if any)
+                                const templateWalls = tpl.walls || [];
+                                const computedWalls = buildWallOffPerimeters(templateGrid, tplStyles, { allowFallback: true });
+                                const mergedTemplateWalls = [...templateWalls];
+                                computedWalls.forEach(w => {
+                                  if (!mergedTemplateWalls.some(m => m.x === w.x && m.y === w.y && m.edge === w.edge)) {
+                                    mergedTemplateWalls.push(w);
+                                  }
+                                });
+                                if (mergedTemplateWalls.length > 0) {
+                                  const existingWalls = state.walls || [];
+                                  const union = [...existingWalls];
+                                  const templateTag = (roomEvents.autoPlacedRoom && roomEvents.autoPlacedRoom.tag)
+                                    ? roomEvents.autoPlacedRoom.tag
+                                    : (lastTile && lastTile.isCorridor ? 'Corridor' : 'Room');
+                                  mergedTemplateWalls.forEach(w => {
+                                    const wx = startX + (w.x || 0);
+                                    const wy = startY + (w.y || 0);
+                                    if (wy >= 0 && wy < state.grid.length && wx >= 0 && wx < (state.grid[0]?.length||0)) {
+                                      if (!union.some(u => u.x === wx && u.y === wy && u.edge === w.edge)) union.push({ x: wx, y: wy, edge: w.edge, srcTag: templateTag });
+                                    }
+                                  });
+                                  dispatch({ type: 'SET_WALLS', walls: union });
                                 }
-                              } catch (e) { /* ignore */ }
-                              // Append whether this tile was a Room or Corridor for quick glance
-                              try {
-                                const typeLabel = lastTile.isCorridor ? 'Corridor' : 'Room';
-                                tooltipText = `${tooltipText} (${typeLabel})`;
-                              } catch (e) { /* ignore */ }
-                              try {
-                                const raw = localStorage.getItem('roomMarkers');
-                                const parsed = raw ? JSON.parse(raw) : {};
-                                const existing = parsed[key];
-                                if (existing) {
-                                  parsed[key] = { type: existing.type, label: existing.label, tooltip: existing.tooltip && existing.tooltip.length > 0 ? `${existing.tooltip} — ${tooltipText}` : tooltipText };
-                                } else {
-                                  parsed[key] = { type: 'note', label: 'Note', tooltip: tooltipText };
+                                try {
+                                  const autoPlaced = roomEvents.autoPlacedRoom;
+                                  if (autoPlaced && lastTile && typeof lastTile.contentsRoll === 'number') {
+                                    const tplGrid = templateGrid;
+                                    const tplH = tplGrid.length;
+                                    const tplW = (tplGrid[0] || []).length || 0;
+                                    const centerRX = Math.floor(tplW / 2);
+                                    const centerRY = Math.floor(tplH / 2);
+                                    const markX = startX + centerRX;
+                                    const markY = startY + centerRY;
+                                    if (markY >= 0 && markY < state.grid.length && markX >= 0 && markX < (state.grid[0]?.length||0)) {
+                                      const key = `${markX},${markY}`;
+                                      let tooltipText = `2d6=${lastTile.contentsRoll}`;
+                                      try {
+                                        const evts = roomEvents.roomEvents || [];
+                                        let cutoff = null;
+                                        if (evts && evts.length > 0) {
+                                          const tsList = evts.filter(e => ['D66_ROLL', 'CONTENTS_ROLL', 'LIBRARY_MATCH'].includes(e.type)).map(e => e.timestamp).filter(Boolean);
+                                          if (tsList.length > 0) cutoff = Math.min(...tsList);
+                                        }
+                                        const lines = [];
+                                        try {
+                                          if (cutoff) {
+                                            (state.log || []).forEach(l => {
+                                              try {
+                                                const lt = l.timestamp ? (typeof l.timestamp === 'string' ? (new Date(l.timestamp)).getTime() : l.timestamp) : null;
+                                                if (lt && lt >= cutoff) lines.push(l.message);
+                                              } catch (e) {}
+                                            });
+                                          }
+                                        } catch (e) {}
+                                        if (lines.length === 0) {
+                                          const recent = (state.log || []).slice(0, 3).map(l => l.message).reverse();
+                                          tooltipText = recent.join(' \n ');
+                                        } else {
+                                          tooltipText = lines.join(' \n ');
+                                        }
+                                      } catch (e) { /* ignore */ }
+                                      try {
+                                        const typeLabel = lastTile.isCorridor ? 'Corridor' : 'Room';
+                                        tooltipText = `${tooltipText} (${typeLabel})`;
+                                      } catch (e) { /* ignore */ }
+                                      try {
+                                        const raw = localStorage.getItem('roomMarkers');
+                                        const parsed = raw ? JSON.parse(raw) : {};
+                                        const existing = parsed[key];
+                                        if (existing) {
+                                          parsed[key] = { type: existing.type, label: existing.label, tooltip: existing.tooltip && existing.tooltip.length > 0 ? `${existing.tooltip} ƒ?" ${tooltipText}` : tooltipText };
+                                        } else {
+                                          parsed[key] = { type: 'note', label: 'Note', tooltip: tooltipText };
+                                        }
+                                        localStorage.setItem('roomMarkers', JSON.stringify(parsed));
+                                        try { window.dispatchEvent(new CustomEvent('roomMarkersUpdated')); } catch (e) {}
+                                      } catch (e) { /* ignore storage errors */ }
+                                    }
+                                  }
+                                } catch (e) { /* ignore */ } finally {
+                                  setPlacementTemplate(null);
+                                  roomEvents.setAutoPlacedRoom(null);
                                 }
-                                localStorage.setItem('roomMarkers', JSON.stringify(parsed));
-                                // let Dungeon component know to reload markers
-                                try { window.dispatchEvent(new CustomEvent('roomMarkersUpdated')); } catch (e) {}
-                              } catch (e) { /* ignore storage errors */ }
-                            }
-                          }
-                        } catch (e) { /* ignore */ }
-                      } catch (e) { /* ignore */ } finally {
-                        setPlacementTemplate(null);
-                        roomEvents.setAutoPlacedRoom(null);
-                      }
-                    }}
-                    sidebarCollapsed={!leftPanelOpen}
-                    onToggleShowLog={() => {
-                      setShowLogSidebar(false);
-                      setShowLogMiddle((s) => !s);
-                      try { if (leftPanelTab === 'log') setLeftPanelTab('party'); } catch (e) {}
-                    }}
-                    showLogMiddle={showLogMiddle}
-                    onShowRoomDesigner={() => setShowRoomDesigner(true)}
-                  />
-                ) : (
-                  <div className="flex-1 flex flex-col min-h-0">
-                    <div className="flex items-center justify-end p-2 border-b border-slate-700 bg-slate-800">
-                      <DungeonHeaderButtons
-                        showLogMiddle={showLogMiddle}
-                        onToggleShowLog={() => { setShowLogSidebar(false); setShowLogMiddle(false); try { if (leftPanelTab === 'log') setLeftPanelTab('party'); } catch (e) {} }}
-                        onShowRoomDesigner={() => setShowRoomDesigner(true)}
-                        onGenerateTile={() => { try { roomEvents.generateTile && roomEvents.generateTile(); } catch (e) {} }}
-                        onWandering={() => { try { rollWanderingMonster(dispatch, { state }); } catch (e) {} }}
-                        onCustomTile={() => {
-                          try {
-                            const rawD66 = prompt('Enter d66 (e.g. 11, 12, 21, 66):', '11');
-                            if (!rawD66) return;
-                            const shapeRoll = parseInt(rawD66, 10);
-                            if (Number.isNaN(shapeRoll) || !Object.keys(TILE_SHAPE_TABLE).includes(String(shapeRoll))) {
-                              alert('Invalid d66 value');
-                              return;
-                            }
-                            const raw2d6 = prompt('Enter 2d6 result (2-12):', '8');
-                            if (!raw2d6) return;
-                            const contentsRoll = parseInt(raw2d6, 10);
-                            if (Number.isNaN(contentsRoll) || contentsRoll < 2 || contentsRoll > 12) {
-                              alert('Invalid 2d6 value');
-                              return;
-                            }
-                            roomEvents.generateTile && roomEvents.generateTile({ shapeRoll, contentsRoll });
-                          } catch (e) { console.error(e); }
-                        }}
-                        onCustomMonster={() => {
-                          try {
-                            const name = prompt('Monster Name?', 'Custom Monster') || 'Custom Monster';
-                            const level = parseInt(prompt('Monster Level (1-5)?', '2')) || 2;
-                            const isMajor = confirm('Is this a Major Foe (single creature with HP)? Cancel for Minor Foe (group with count).');
-                            let monster;
-                            if (isMajor) {
-                              const hp = parseInt(prompt('HP?', '6')) || 6;
-                              monster = { id: Date.now(), name, level, hp, maxHp: hp, type: 'custom', isMinorFoe: false };
-                              dispatch({ type: 'ADD_MONSTER', m: monster });
-                              dispatch(logMessage(`⚔️ ${name} L${level} (${hp}HP) Major Foe added`));
-                            } else {
-                              const count = parseInt(prompt('How many?', '6')) || 6;
-                              monster = { id: Date.now(), name, level, hp: 1, maxHp: 1, count, initialCount: count, type: 'custom', isMinorFoe: true };
-                              dispatch({ type: 'ADD_MONSTER', m: monster });
-                              dispatch(logMessage(`👥 ${count}x ${name} L${level} Minor Foes added`));
-                            }
-                          } catch (e) { console.error(e); }
-                        }}
-                        onClearMap={() => {
-                          try { dispatch({ type: 'CLEAR_GRID' }); } catch (e) {}
-                          try { roomEvents.clearTile && roomEvents.clearTile(); } catch (e) {}
-                          try { localStorage.removeItem('roomMarkers'); try { window.dispatchEvent(new CustomEvent('roomMarkersUpdated')); } catch (e) {} } catch (e) {}
-                        }}
-                      />
-                    </div>
-                    <div className="flex-1 overflow-hidden min-h-0">
-                      <Log state={state} dispatch={dispatch} isBottomPanel={true} />
-                    </div>
+                              } catch (e) { /* ignore */ } finally {
+                                setPlacementTemplate(null);
+                                roomEvents.setAutoPlacedRoom(null);
+                              }
+                            }}
+                            sidebarCollapsed={!leftPanelOpen}
+                            activeView={middleView}
+                            onViewChange={(nextView) => {
+                              if (nextView === 'log') {
+                                setShowLogSidebar(false);
+                                try { if (leftPanelTab === 'log') setLeftPanelTab('party'); } catch (e) {}
+                              }
+                              requestMiddleView(nextView);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             </div>
 
@@ -736,28 +867,29 @@ export default function App() {
             </div>
 
             {/* Log Bar - span left + middle columns only */}
-            <div style={{ gridColumn: '1 / 3', gridRow: '2 / 3' }}>
-              <LogBar
-                state={state}
-                dispatch={dispatch}
-                collapsed={logCollapsed}
-                onToggle={() => setLogCollapsed(!logCollapsed)}
-                selectedHero={selectedHero}
-                onSelectHero={setSelectedHero}
-              />
+            <div style={{ gridColumn: '1 / 3', gridRow: '2 / 3' }} data-crt-frame="true">
+              <div data-crt-barrel="true" className="h-full flex flex-col crt-screen">
+                <LogBar
+                  state={state}
+                  dispatch={dispatch}
+                  collapsed={logCollapsed}
+                  onToggle={() => setLogCollapsed(!logCollapsed)}
+                  selectedHero={selectedHero}
+                  onSelectHero={setSelectedHero}
+                />
+              </div>
             </div>
           </div>
         </div>
-      {showRoomDesigner && (
-        <RoomDesigner
-          onClose={() => setShowRoomDesigner(false)}
-          onPlaceTemplate={(tpl) => {
-            // Enter placement mode: let user click a map cell to place the template
-            setPlacementTemplate(normalizePlacementTemplate(tpl));
-            setShowRoomDesigner(false);
-          }}
-        />
-      )}
+        {showRoomDesigner && (
+          <RoomDesigner
+            onClose={() => setShowRoomDesigner(false)}
+            onPlaceTemplate={(tpl) => {
+              setPlacementTemplate(normalizePlacementTemplate(tpl));
+              setShowRoomDesigner(false);
+            }}
+          />
+        )}
       </main>
 
       {/* Mobile Navigation */}
@@ -765,55 +897,52 @@ export default function App() {
 
       {/* Modals */}
       <div id="modals_container">
-      <SettingsModal
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        state={state}
-        dispatch={dispatch}
-      />
-      <RulesReference isOpen={showRules} onClose={() => setShowRules(false)} />
-
-      <DungeonFeaturesModal
-        isOpen={showDungeonFeatures}
-        onClose={() => { setShowDungeonFeatures(false); setActiveDungeonFeature(null); }}
-        state={state}
-        dispatch={dispatch}
-        selectedHero={selectedHero}
-        activeSection={activeDungeonFeature}
-      />
-      <CampaignManagerModal
-        isOpen={showCampaign}
-        onClose={() => setShowCampaign(false)}
-        state={state}
-        dispatch={dispatch}
-      />
-      <Equipment
-        isOpen={showEquipment}
-        state={state}
-        dispatch={dispatch}
-        onClose={() => setShowEquipment(false)}
-      />
-      <Abilities
-        isOpen={showAbilities}
-        state={state}
-        dispatch={dispatch}
-        onClose={() => setShowAbilities(false)}
-      />
-
-      {/* Gold Sense Modal (visible when a dwarf successfully previews treasure) */}
-      <GoldSenseModal
-        isOpen={showGoldSenseModal}
-        data={goldSenseModalData}
-        onClose={() => {
-          setShowGoldSenseModal(false);
-          setGoldSenseModalData(null);
-        }}
-      />
+        <SettingsModal
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+          state={state}
+          dispatch={dispatch}
+        />
+        <RulesReference isOpen={showRules} onClose={() => setShowRules(false)} />
+        <DungeonFeaturesModal
+          isOpen={showDungeonFeatures}
+          onClose={() => { setShowDungeonFeatures(false); setActiveDungeonFeature(null); }}
+          state={state}
+          dispatch={dispatch}
+          selectedHero={selectedHero}
+          activeSection={activeDungeonFeature}
+        />
+        <CampaignManagerModal
+          isOpen={showCampaign}
+          onClose={() => setShowCampaign(false)}
+          state={state}
+          dispatch={dispatch}
+        />
+        <Equipment
+          isOpen={showEquipment}
+          state={state}
+          dispatch={dispatch}
+          onClose={() => setShowEquipment(false)}
+        />
+        <Abilities
+          isOpen={showAbilities}
+          state={state}
+          dispatch={dispatch}
+          onClose={() => setShowAbilities(false)}
+        />
+        {/* Gold Sense Modal (visible when a dwarf successfully previews treasure) */}
+        <GoldSenseModal
+          isOpen={showGoldSenseModal}
+          data={goldSenseModalData}
+          onClose={() => {
+            setShowGoldSenseModal(false);
+            setGoldSenseModalData(null);
+          }}
+        />
       </div>
 
-  {/* Floating Dice Roller moved into header */}
-  {/* Floating Dice Roller: fixed bottom-right on desktop */}
-  <FloatingDice inline={false} onShowFeatures={(key) => { setActiveDungeonFeature(key); setShowDungeonFeatures(true); }} onShowAbilities={() => setShowAbilities(true)} state={state} dispatch={dispatch} />
+      {/* Floating Dice Roller: fixed bottom-right on desktop */}
+      <FloatingDice inline={false} onShowFeatures={(key) => { setActiveDungeonFeature(key); setShowDungeonFeatures(true); }} onShowAbilities={() => setShowAbilities(true)} state={state} dispatch={dispatch} />
     </div>
   );
 }

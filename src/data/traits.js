@@ -2,6 +2,7 @@
  * Character Traits System
  * Optional traits for various character classes
  */
+import { getDefaultContext } from "../game/context.js";
 
 // Warrior Traits
 export const WARRIOR_TRAITS = [
@@ -977,10 +978,11 @@ export function getTrait(classKey, traitKey) {
  * @param {string} classKey - Character class key
  * @returns {Object|null}
  */
-export function rollRandomTrait(classKey) {
+export function rollRandomTrait(classKey, ctx) {
   const traits = getTraitsForClass(classKey);
   if (traits.length === 0) return null;
 
-  const roll = Math.floor(Math.random() * 6); // 0-5, maps to traits[0-5]
+  const { rng } = ctx || getDefaultContext();
+  const roll = rng.nextInt(6); // 0-5, maps to traits[0-5]
   return traits[roll] || traits[0];
 }

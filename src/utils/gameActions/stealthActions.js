@@ -1,4 +1,5 @@
 import { explodingD6 } from '../../utils/dice.js';
+import { getDefaultContext } from '../../game/context.js';
 import { formatRollPrefix } from '../rollLog.js';
 import { calculateEquipmentBonuses, hasEquipment } from '../../data/equipment.js';
 import { logMessage } from '../../state/actionCreators.js';
@@ -78,7 +79,8 @@ export const computeStealthModifier = (hero, options = {}) => {
  * @param {object} options - passthrough options
  * @returns {{success:boolean, roll:number, total:number, mod:number, reasons:string[]}}
  */
-export const performStealthSave = (dispatch, heroOrHeroes, foeLevel = 1, options = {}) => {
+export const performStealthSave = (dispatch, heroOrHeroes, foeLevel = 1, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const heroes = Array.isArray(heroOrHeroes) ? heroOrHeroes : [heroOrHeroes];
   if (!heroes || heroes.length === 0) return null;
 
@@ -92,7 +94,7 @@ export const performStealthSave = (dispatch, heroOrHeroes, foeLevel = 1, options
   const worst = mods.reduce((acc, cur) => (cur.mod < acc.mod ? cur : acc), mods[0]);
 
   // Roll exploding d6
-  const rollResult = explodingD6(worst.mod);
+  const rollResult = explodingD6(rng, worst.mod, rollLog);
   const rawRollSum = rollResult.rolls.reduce((s, r) => s + r, 0);
 
   const total = rollResult.total;

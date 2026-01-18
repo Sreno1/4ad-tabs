@@ -2,6 +2,7 @@
  * Ability Actions - Class-specific abilities and special powers
  */
 import { d6 } from '../dice.js';
+import { getDefaultContext } from '../../game/context.js';
 import { getFlurryAttacks } from '../../data/classes.js';
 
 /**
@@ -12,8 +13,9 @@ import { getFlurryAttacks } from '../../data/classes.js';
  * @param {object} targetHero - Target hero object
  * @returns {object} Heal result
  */
-export const useClericHeal = (dispatch, clericIdx, targetIdx, targetHero) => {
-  const healAmount = d6();
+export const useClericHeal = (dispatch, clericIdx, targetIdx, targetHero, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const healAmount = d6(rng, rollLog);
   const newHP = Math.min(targetHero.maxHp, targetHero.hp + healAmount);
 
   dispatch({ type: 'USE_HEAL', heroIdx: clericIdx });

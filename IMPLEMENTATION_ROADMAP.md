@@ -1,8 +1,8 @@
 # Four Against Darkness - Implementation Roadmap
 *A comprehensive analysis and architecture plan for missing mechanics*
 
-**Last Updated:** 2026-01-16 (Updated with Session Completion)
-**Status:** Implementation Phase - Focus on Exploration & Campaign Features
+**Last Updated:** 2026-01-17 (Roadmap reorganized; completed work archived)
+**Status:** Implementation Phase - Refactors and remaining mechanics
 
 ---
 
@@ -10,172 +10,33 @@
 
 This document provides a complete audit of the Four Against Darkness companion app implementation, comparing current code against official 4AD rules. It categorizes all mechanics by implementation status and provides architectural recommendations.
 
-**Current Implementation Status:** ~75% Complete (Up from ~55%)
+**Current Implementation Status:** ~75% Complete (snapshot; see archive for completed work)
 
 - ✅ **Fully Implemented:** 55%
 - ⚠️ **Partially Implemented:** 20%
 - ❌ **Not Implemented:** 25%
 
-**Recent Session Improvements:**
-- ✅ Hero selection modal for clue discovery
-- ✅ Rogue disarm trap mechanics
-- ✅ Cleric banish ghost system
-- ✅ Environment switching for secret passages
-- ✅ Party-wide damage application
+**Completed work archive:** `archived_completed_tasks.md`
 
 ---
 
 ## Table of Contents
 
-1. [✅ Fully Implemented Features](#fully-implemented)
-2. [⚠️ Partially Implemented Features](#partially-implemented)
-3. [❌ Not Implemented Features](#not-implemented)
-4. [Architecture Recommendations](#architecture-recommendations)
-5. [Implementation Priority](#implementation-priority)
-6. [Rules Verification](#rules-verification)
+1. [Fully Implemented Features (Archived)](#fully-implemented)
+2. [Partially Implemented Features](#partially-implemented)
+3. [Not Implemented Features](#not-implemented)
+4. [Architecture Refactors](#architecture-recommendations)
+5. [Implementation Priority (Remaining)](#implementation-priority)
+6. [Rules Verification (Outstanding)](#rules-verification)
+7. [Timeline (Remaining Work)](#timeline)
+8. [Testing Strategy (Remaining)](#testing-strategy)
 
 ---
 
 <a name="fully-implemented"></a>
-## 1. ✅ FULLY IMPLEMENTED FEATURES
+## 1. Fully Implemented Features (Archived)
 
-### Combat System (Core)
-| Feature | Rule Reference | Implementation Location |
-|---------|----------------|------------------------|
-| **Exploding d6 rolls** | Combat.txt p.92 | `src/utils/dice.js` |
-| **Attack modifiers by class** | Combat.txt p.91-92 | `src/utils/gameActions/combatActions.js:66-135` |
-| **Defense rolls** | Combat.txt p.96 | `src/utils/gameActions/combatActions.js:379-458` |
-| **Minor Foe multi-kill** | Combat.txt p.99 | `src/utils/gameActions/combatActions.js:196-217` |
-| **Major Foe level reduction at 50% HP** | Combat.txt p.106 | `src/utils/gameActions/combatActions.js:985-993` |
-| **Minor Foe morale checks (50%)** | Combat.txt p.102 | `src/utils/gameActions/monsterActions.js` |
-| **Withdraw vs Flee mechanics** | Combat.txt p.95 | `src/utils/gameActions/combatActions.js:713-788` |
-| **Ranged weapons strike first** | Combat.txt p.90 | `src/utils/gameActions/combatActions.js:815-825` |
-| **Equipment bonuses** | Equipment.txt | `src/data/equipment.js:313-349` |
-| **Darkness penalties (-2 all rolls)** | Combat.txt p.92 | `src/utils/gameActions/combatActions.js:73-76` |
-| **Darkvision (Dwarf/Elf immune)** | Characters.txt | `src/data/classes.js:67,77` |
-
-### Class Abilities
-| Feature | Rule Reference | Implementation Location |
-|---------|----------------|------------------------|
-| **Cleric: Heal (3x)** | Characters.txt | `src/components/Combat.jsx:368-378` |
-| **Cleric: Bless (3x)** | Characters.txt | `src/components/Combat.jsx:368-378` |
-| **Barbarian: Rage** | Characters.txt | `src/components/Combat.jsx:380-384` |
-| **Halfling: Luck (L+1)** | Characters.txt | `src/components/Combat.jsx:386-389` |
-| **Wizard/Elf: Spellcasting** | Magic.txt | `src/components/Combat.jsx:837-846` |
-| **Rogue: +L when outnumbered** | Combat.txt p.92 | `src/utils/gameActions/combatActions.js:131-145` |
-| **Rogue: +L Defense** | Combat.txt p.96 | `src/utils/gameActions/combatActions.js:402-404` |
-| **Paladin: Prayer** | Characters.txt | `src/components/Combat.jsx:873-882` |
-| **Ranger: Dual Wield** | Characters.txt | `src/components/Combat.jsx:884-896` |
-| **Assassin: Hide in Shadows** | Characters.txt | `src/components/Combat.jsx:898-910` |
-
-### Party Management
-| Feature | Rule Reference | Implementation Location |
-|---------|----------------|------------------------|
-| **XP tracking** | Base Rules.txt | `src/state/initialState.js:47` |
-| **Level progression** | Base Rules.txt | `src/state/reducers/partyReducer.js` |
-| **HP management** | Base Rules.txt | `src/state/initialState.js:48-49` |
-| **Save rolls** | Combat.txt | `src/data/saves.js` |
-| **Status effects (poisoned, blessed, cursed)** | | `src/state/initialState.js:75-79` |
-| **Dwarf Gold Sense** | Characters.txt | `src/data/traits.js:314-318` |
-
-### Resource Tracking
-| Feature | Rule Reference | Implementation Location |
-|---------|----------------|------------------------|
-| **Light sources (Torch/Lantern)** | Exploration.txt p.110 | `src/state/initialState.js:180` |
-| **Light source tracking** | Exploration.txt p.110 | `src/data/equipment.js:188-204,246-255` |
-| **Gold tracking** | Base Rules.txt | `src/state/initialState.js:99,136` |
-
-### Dungeon Exploration
-| Feature | Rule Reference | Implementation Location |
-|---------|----------------|------------------------|
-| **Grid mapping (20x28)** | Exploration.txt p.104 | `src/state/initialState.js:15` |
-| **Room vs Corridor cell types** | Exploration.txt p.104 | `src/state/initialState.js:15` (0=empty, 1=room, 2=corridor) |
-| **Door tracking** | Exploration.txt p.109 | `src/state/initialState.js:16,163` |
-
-- **Status:** IMPLEMENTED
-- **Rule:**
-  - Corridors: Only positions 1-2 can melee (Combat.txt p.121)
-  - Rooms: All PCs can fight
-  - Narrow corridors: 2H weapons -1, light weapons no penalty
-- **Current Issue:** Grid tracks room/corridor but no combat logic checks this
-- **Architecture Needed:**
-  ```javascript
-  // Add to combat state:
-  {
-    currentLocation: {
-      type: 'room' | 'corridor',
-      width: 'normal' | 'narrow',
-      x: number,
-      y: number
-    }
-  }
-
-  // Modify attack validation:
-  const canAttack = (hero, heroIdx, location) => {
-    if (location.type === 'corridor') {
-      const position = state.marchingOrder.indexOf(heroIdx);
-      return position < 2; // Only front 2 can melee
-    }
-    return true;
-  };
-  ```
-- **Files to Modify:**
-  - `src/components/Combat.jsx` - Add location context
-  - `src/utils/gameActions/combatActions.js` - Add location checks
-  - `src/components/Dungeon.jsx` - Track current location
-- **Priority:** HIGH (core 4AD rule)
-
-#### **Secret Door Discovery**
-- **Status:** ✅ IMPLEMENTED
-- **Implementation:** `src/utils/gameActions/explorationActions.js:161-187`
-- **Features:**
-  - ✅ Search roll 5-6 gives option to find secret door
-  - ✅ 1-in-6 chance it's a shortcut out
-  - ✅ Treasure behind secret doors DOUBLED (treasureMultiplier: 2)
-  - ✅ UI modal for secret door discovery
-- **Completed Date:** 2026-01-16
-
-#### **Secret Passage**
-- **Status:** ✅ IMPLEMENTED
-- **Implementation:**
-  - Logic: `src/utils/gameActions/explorationActions.js:195-218`
-  - Action: `src/state/actions.js:37-38` (CHANGE_ENVIRONMENT)
-  - Reducer: `src/state/reducers/dungeonReducer.js:40-45`
-  - Initial State: `src/state/initialState.js:21`
-- **Features:**
-  - ✅ Passage to different environment (dungeon/fungal_grottoes/caverns)
-  - ✅ State properly tracks environment
-  - ✅ UI modal shows passage discovery
-  - ✅ Dispatch action changes environment
-- **Completed Date:** 2026-01-16
-
-#### **Hidden Treasure Complications**
-- **Status:** ✅ IMPLEMENTED
-- **Implementation:** `src/utils/gameActions/explorationActions.js:100-124`
-- **Features:**
-  - ✅ Alarm (1-2): Triggers wandering monsters
-  - ✅ Trap (3-5): Rogue can attempt disarm at L+1 DC
-  - ✅ Ghost (6): Cleric can banish at L/2 bonus vs DC(3+HCL)
-  - ✅ All complications wired to SearchModal with action handlers
-  - ✅ HiddenTreasureModal shows complications and resolution options
-- **Completed Date:** 2026-01-16
-
-#### **Retracing Steps Wandering Monster (1-in-6)**
-- **Status:** ❌ NOT FULLY IMPLEMENTED
-- **Rule:** When revisiting tiles, 1-in-6 wandering monster (Exploration.txt p.104)
-- **Current Issue:** Implemented for Withdraw but not general retracing
-- **Architecture Needed:**
-  ```javascript
-  const onEnterTile = (x, y) => {
-    const tile = state.grid[y][x];
-    if (tile.visited) {
-      if (d6() === 1) {
-        rollWanderingMonster();
-      }
-    }
-  };
-  ```
-- **Priority:** LOW
+Completed features and session work have moved to `archived_completed_tasks.md`.
 
 ---
 
@@ -184,7 +45,6 @@ This document provides a complete audit of the Four Against Darkness companion a
 
 ### Combat System
 
-#### **Marching Order**
 #### **Marching Order**
 - **Status:** Implemented (corridor restrictions, narrow-corridor penalties, and wandering-monster rear-attack behavior)
 - **What Exists:**
@@ -300,44 +160,6 @@ This document provides a complete audit of the Four Against Darkness companion a
 - **Rule Reference:** Characters.txt
 - **Priority:** Low (most traits functional)
 
-#### **Final Boss Trigger**
-- **Status:** State exists but mechanics need testing
-- **What Exists:**
-  - Boss room state: `src/state/initialState.js:172`
-  - Referenced in exploration code
-- **What's Missing:**
-  - ❌ Roll d6 + major foes defeated, trigger on 6+
-  - ❌ Boss enhancements (+1 Life, +1 attack, triple treasure)
-  - ❌ "Last tile" boss trigger
-- **Rule Reference:** Exploration.txt p.105
-- **Architecture Needed:**
-  ```javascript
-  // On major foe encounter:
-  const checkBossTrigger = (state) => {
-    const roll = d6();
-    const majorFoesDefeated = state.majorFoes;
-    if (roll + majorFoesDefeated >= 6 || state.tilesExplored >= maxTiles) {
-      return enhanceBoss(currentMonster);
-    }
-  }
-  ```
-
-#### **XP Rolls**
-- **Status:** ❌ Partially IMPLEMENTED in VictoryPhase.jsx, needs testing and need to make sure any character having 3 clues also immediately triggers an XP roll for them. Also level up logic needs to be fully implemented for each class(? most things are just +L)
-- **Rule:** d6 roll to determine actual XP gained from encounters
-- **Current Issue:** XP tracked but no roll mechanic
-- **Architecture Needed:**
-  ```javascript
-  // Replace auto XP award with roll:
-  const rollForXP = (monster) => {
-    const roll = d6();
-    const baseXP = monster.xp;
-    const earnedXP = Math.floor(baseXP * roll / 6);
-    return earnedXP;
-  };
-  ```
-- **Priority:** MEDIUM
-
 ---
 
 <a name="not-implemented"></a>
@@ -346,36 +168,28 @@ This document provides a complete audit of the Four Against Darkness companion a
 - ADD CURVED AND ENTRANCE ROOMS (1-6, 25, 34, 36)
 - add xp roll button to each party card
 - when placing a recognized tile from the library that was generated, the walls need to be two different colors for the two tile types, corridor and room.
+- manually update monsters.js
 
-### Combat System
+### Dungeon Exploration
 
-#### **Corridor vs Room Combat Restrictions**
-
-#### **Narrow Corridor Rules**
-- **Status:** ❌ NOT IMPLEMENTED
-- **Rule:** 2-handed weapons -1, light weapons no penalty (Combat.txt p.122)
-- **Current Issue:** Equipment has `corridorPenalty: -1` property but never applied
+#### **Retracing Steps Wandering Monster (1-in-6)**
+- **Status:** NOT FULLY IMPLEMENTED
+- **Rule:** When revisiting tiles, 1-in-6 wandering monster (Exploration.txt p.104)
+- **Current Issue:** Implemented for Withdraw but not general retracing
 - **Architecture Needed:**
   ```javascript
-  // In calculateEnhancedAttack:
-  if (options.location?.width === 'narrow') {
-    const weapon = getEquippedWeapon(hero);
-    if (weapon?.key === 'two_handed') {
-      mod += weapon.corridorPenalty || -1;
-      modifiers.push("-1 (narrow corridor)");
+  const onEnterTile = (x, y) => {
+    const tile = state.grid[y][x];
+    if (tile.visited) {
+      if (d6() === 1) {
+        rollWanderingMonster();
+      }
     }
-  }
+  };
   ```
-- **Priority:** MEDIUM
+- **Priority:** LOW
 
-### Recent Spell/Status Integration (work completed 2026-01-16)
-- Implemented MR two-stage checks (MR roll then casting roll) and exposed both rolls in combat log via `performCastSpell` and `performCastScrollSpell`.
-- Implemented passing of casting bonuses from traits and scrolls into `castSpell` (via `targets[0].castingBonus`). Currently wired: Specialist (hero.specialistChoice), Shadow Adept, and scroll +L/+1 bonuses.
-- Implemented entangle/bound/asleep effects being applied as monster status flags and updating combat behavior:
-  - asleep: monsters skip attacks
-  - entangled: monsters attack with effective level -1
-  - bound: attackers receive +2 vs bound targets
-- Implemented Fireball minor-foe exact slay rule in the combat handler and Fireball=1 vs Major Foe handling in `castSpell`.
+### Combat System
 
 ### Remaining Spell/Combat Tasks (high priority)
 - Wire trait effect flags into `getTraitRollModifiers` (expose `spellCastingBonus` from trait effects consistently).
@@ -407,7 +221,7 @@ This document provides a complete audit of the Four Against Darkness companion a
 
 #### **Quest System**
 - **Status:** ❌ NOT IMPLEMENTED
-- **Rule:** Random quest assignment on dungeon entry
+- **Rule:** Quests are rolled from the quest table (tables.txt) and given to the player via Reactions (if the monster reaction roll lands on "Quest") or from Dungeon Special Events, when the Lady in White gives the characters a quest.
 - **Architecture Needed:**
   ```javascript
   // Add to adventure state:
@@ -455,32 +269,6 @@ This document provides a complete audit of the Four Against Darkness companion a
 
 ### Resource Tracking
 
-#### **Carried Treasure Weight (200gp max) - NEEDS TESTING**
-#### **Carried Treasure Weight (200gp max)**
-- **Status:** ✅ IMPLEMENTED
-- **Rule:** Each PC can carry max 200gp worth of treasure
-- **Implementation:** Added per-hero carried treasure tracking and enforced limit on treasure pickup. Treasure is first stowed with heroes up to their 200gp capacity; any remainder becomes party gold.
-- **Files Changed:**
-  - `src/state/initialState.js` - added `carriedTreasureWeight` and `maxCarryWeight` to `createHero`
-  - `src/state/actions.js` - added `ASSIGN_TREASURE` action
-  - `src/state/reducers/partyReducer.js` - implemented `assignTreasureToParty` logic and integrated allocation
-  - `src/utils/gameActions/treasureActions.js` - use `ASSIGN_TREASURE` when awarding rolled treasure
-  - `src/components/ActionPane.jsx` - award hidden-treasure via `ASSIGN_TREASURE` (respects per-hero carry limits)
-- **Architecture Notes:**
-  ```javascript
-  // Add to hero state:
-  {
-    carriedTreasureWeight: number, // sum of treasure gp values
-    maxCarryWeight: 200
-  }
-
-  // Validate on treasure pickup:
-  const canCarryTreasure = (hero, treasureValue) => {
-    return (hero.carriedTreasureWeight + treasureValue) <= hero.maxCarryWeight;
-  };
-  ```
- - **Priority:** MEDIUM
-
 #### **Food Rations**
 - **Status:** ❌ NOT IMPLEMENTED
 - **Rule:** Required for wilderness survival
@@ -489,435 +277,127 @@ This document provides a complete audit of the Four Against Darkness companion a
 ---
 
 <a name="architecture-recommendations"></a>
-## 4. ARCHITECTURE RECOMMENDATIONS
+## 4. ARCHITECTURE REFACTORS
 
-### 4.1 Location-Aware Combat System
+This roadmap prioritizes the following refactors (in order):
 
-**Problem:** Combat doesn't know if it's in a room or corridor
+1. Deterministic Rules and RNG Injection (#2) - `docs/ARCH_REFACTOR_02_DETERMINISTIC_RULES.md`
+2. Core Rules Test Harness (#6) - `docs/ARCH_REFACTOR_06_TEST_HARNESS.md`
+3. Data Schema and Validation (#5) - `docs/ARCH_REFACTOR_05_DATA_SCHEMA_VALIDATION.md`
 
-**Solution:** Enhance combat state with location context
-
-```javascript
-// src/state/initialState.js
-{
-  currentCombatLocation: {
-    type: 'room' | 'corridor',
-    width: 'normal' | 'narrow',
-    gridX: number,
-    gridY: number
-  }
-}
-
-// Set when combat starts
-const startCombat = (x, y) => {
-  const cellType = state.grid[y][x]; // 0=empty, 1=room, 2=corridor
-  const location = {
-    type: cellType === 2 ? 'corridor' : 'room',
-    width: 'normal', // Could be determined by corridor properties
-    gridX: x,
-    gridY: y
-  };
-
-  dispatch({ type: 'START_COMBAT', location });
-};
-```
-
-**Files to Modify:**
-1. `src/state/initialState.js` - Add currentCombatLocation
-2. `src/state/actions.js` - Add START_COMBAT action
-3. `src/state/reducers/combatReducer.js` - Handle location state
-4. `src/utils/gameActions/combatActions.js` - Check location in attack/defense
-5. `src/components/Combat.jsx` - Display location, restrict actions
-
-### 4.2 Environment System
-
-**Problem:** No environment tracking for different treasure/monster tables
-
-**Solution:** Add environment state and table routing
-
-```javascript
-// src/state/initialState.js
-{
-  currentEnvironment: 'dungeon', // 'fungal_grottoes' | 'caverns'
-  environmentHistory: ['dungeon'] // track transitions
-}
-
-// src/data/environments.js
-export const ENVIRONMENTS = {
-  dungeon: {
-    monsters: DUNGEON_MONSTERS,
-    treasure: DUNGEON_TREASURE,
-    specialRules: []
-  },
-  fungal_grottoes: {
-    monsters: FUNGAL_MONSTERS,
-    treasure: FUNGAL_TREASURE,
-    specialRules: ['slippery']
-  },
-  caverns: {
-    monsters: CAVERN_MONSTERS,
-    treasure: CAVERN_TREASURE,
-    specialRules: ['no_doors', 'stalactites']
-  }
-};
-
-// Usage
-const rollMonster = (state) => {
-  const env = ENVIRONMENTS[state.currentEnvironment];
-  return rollFromTable(env.monsters);
-};
-```
-
-**Files to Create:**
-- `src/data/environments.js` - Environment definitions
-- `src/data/treasure/dungeonTreasure.js` - Dungeon-specific loot
-- `src/data/treasure/fungalTreasure.js` - Fungal grotto loot
-- `src/data/treasure/cavernTreasure.js` - Cavern loot
-
-**Files to Modify:**
-- `src/state/initialState.js` - Add environment state
-- `src/utils/gameActions/treasureActions.js` - Route by environment
-- `src/utils/gameActions/monsterActions.js` - Route by environment
-
-### 4.3 Clues & Secrets System
-
-**Problem:** Clues tracked but no acquisition/spending mechanics
-
-**Solution:** Implement search system with clue discovery
-
-```javascript
-// src/utils/gameActions/explorationActions.js
-export const performSearch = (dispatch, state, location) => {
-  const roll = d6();
-  const isInCorridor = state.grid[location.y][location.x] === 2;
-  const modifier = isInCorridor ? -1 : 0;
-  const total = roll + modifier;
-
-  if (total <= 1) {
-    dispatch({ type: 'LOG', t: 'Wandering Monsters attack!' });
-    rollWanderingMonster(dispatch);
-    return;
-  }
-
-  if (total >= 5) {
-    // Present choices
-    const choices = [
-      'Hidden Treasure',
-      'Secret Door',
-      'Secret Passage',
-      'Clue'
-    ];
-
-    // This would open a UI modal
-    return { success: true, choices };
-  }
-
-  dispatch({ type: 'LOG', t: 'Nothing found.' });
-  return { success: false };
-};
-
-// On clue selection:
-export const findClue = (dispatch, heroIdx) => {
-  dispatch({ type: 'ADD_CLUE', heroIdx });
-  dispatch({ type: 'LOG', t: `${hero.name} discovered a Clue!` });
-};
-
-// Spending clues:
-export const spendCluesForSecret = (dispatch, state) => {
-  if (state.clues < 3) {
-    return { error: 'Need 3 clues to reveal a secret' };
-  }
-
-  dispatch({ type: 'SPEND_CLUES', count: 3 });
-
-  // Reveal a secret (implementation varies)
-  const secret = rollOnSecretTable();
-  return { secret };
-};
-```
-
-**Files to Create:**
-- `src/utils/gameActions/explorationActions.js` - Search mechanics
-- `src/data/secrets.js` - Secret table
-- `src/components/SearchModal.jsx` - Search result UI
-
-**Files to Modify:**
-- `src/state/reducers/inventoryReducer.js` - ADD_CLUE, SPEND_CLUES actions
-- `src/components/Dungeon.jsx` - Add search button
-
-### 4.4 XP Roll System
-
-**Problem:** XP auto-awarded instead of rolled
-
-**Solution:** Replace auto XP with roll mechanic
-
-```javascript
-// src/utils/gameActions/combatActions.js
-export const awardXPRoll = (dispatch, monster, party, heroIndex) => {
-  const roll = d6();
-  const baseXP = monster.xp;
-
-  // XP = (Monster XP × roll) / 6, rounded down
-  const earnedXP = Math.floor((baseXP * roll) / 6);
-
-  dispatch({
-    type: 'ADD_XP',
-    heroIdx: heroIndex,
-    xp: earnedXP
-  });
-
-  dispatch({
-    type: 'LOG',
-    t: `${party[heroIndex].name} rolls ${roll} for XP: ${earnedXP} XP earned!`
-  });
-
-  return earnedXP;
-};
-```
-
-**Files to Modify:**
-- `src/utils/gameActions/combatActions.js` - Replace awardXP() calls
-- `src/components/Combat.jsx` - Show XP roll UI
-- `src/components/combat/VictoryPhase.jsx` - Trigger XP rolls
+Optional architecture work:
+- Input to Action Mapping Layer (#4) - `docs/ARCH_REFACTOR_04_INPUT_ACTION_LAYER.md`
+- Game Core Separation (#1) - `docs/ARCH_REFACTOR_01_GAME_CORE.md`
 
 ---
 
 <a name="implementation-priority"></a>
-## 5. IMPLEMENTATION PRIORITY
+## 5. IMPLEMENTATION PRIORITY (REMAINING)
 
-### 🔴 Critical Priority (Core 4AD Rules)
+### Priority 0: Refactor Foundations (sequence locked)
+1. Deterministic Rules and RNG Injection (#2) [[ARCH_REFACTOR_02_DETERMINISTIC_RULES_DETAIL]]
+2. Core Rules Test Harness (#6) [[ARCH_REFACTOR_06_TEST_HARNESS_DETAIL]]
+3. COMBAT_ACTIONS_REFACTOR_PLAN.md
+4. Data Schema and Validation (#5) [[ARCH_REFACTOR_05_DATA_SCHEMA_VALIDATION_DETAIL]]
+5. DGC_REFACTOR_PLAN.md
 
-These are essential mechanics from the official rules that significantly impact gameplay:
+### High Priority: Core Gameplay Gaps
+4. Spell targeting UI + casting edge cases (traits, resistances, status expiry)
+5. Reaction-based initiative and per-monster reaction tables (bribe/intimidate)
+6. Trap complications + rogue bonus + damage variety
+7. Environment-based treasure tables (depends on #5)
+8. Marching order targeting improvements (use marchingOrder positions)
 
-1. ✅ **Corridor vs Room Combat Restrictions** ⏱️ 4 hours **[COMPLETED]**
-   - ✅ Marching order enforcement in corridors
-   - ✅ Position-based attack restrictions
-   - ✅ Visual UI indicators for position restrictions
-   - ⚠️ Rear attacks from wandering monsters (TODO)
+### Medium Priority: Content and UX
+9. Retracing steps wandering monster (1-in-6)
+10. Character trait effects and activation UI
+11. Curved and entrance rooms (1-6, 25, 34, 36)
+12. Tile library wall colors for room vs corridor tiles
+13. Update monsters data (after #5 schema)
+14. XP roll button per party card (UI polish)
+15. Bandage limits
 
-2. ✅ **Narrow Corridor Penalties** ⏱️ 2 hours **[COMPLETED]**
-   - ✅ Apply 2H weapon -1 in narrow corridors
-   - ✅ No penalty for light weapons
-
-3. ✅ **Location-Aware Combat System** ⏱️ 6 hours **[COMPLETED]**
-   - ✅ Track current combat location (room/corridor/narrow)
-   - ✅ Pass location context to all combat functions
-   - ✅ Update UI to show location restrictions
-   - ✅ Helper functions for location checks
-
-4. **Campaign Save System Fix** ⏱️ ~8 hours
-   - Implement proper save slot management
-   - Fix localStorage persistence bugs
-   - Add save/load UI
-
-**Total Estimated Time:** 21 hours completed, ~8 hours remaining for Critical Priority
-
-### 🟡 High Priority (Significant Gameplay Impact)
-
-5. ✅ **Clues System** ⏱️ 6 hours **[COMPLETED]**
-   - ✅ Exploration actions created (search rolls, clue discovery)
-   - ✅ Hidden treasure complications (alarm/trap/ghost)
-   - ✅ Secret door mechanics (1-in-6 shortcut)
-   - ✅ Secret passage (environment transitions)
-   - ✅ Search modal UI with 4 choice options
-   - ✅ Tile searched tracking
-   - ✅ Integrated with ActionPane
-   - ✅ Corridor penalty (-1 to search rolls)
-
-6. ✅ **XP Rolls** ⏱️ 3 hours **[COMPLETED]**
-   - ✅ Roll d6 for XP after combat (formula: BaseXP × roll / 6)
-   - ✅ Updated awardXP function with individual rolls per hero
-   - ✅ UI for XP roll display in VictoryPhase
-   - ✅ Shows each hero's roll and earned XP
-   - ✅ Separate button for rolling XP before ending combat
-
-7. ✅ **Final Boss Trigger** ⏱️ 4 hours **[COMPLETED]**
-   - ✅ d6 + major foes >= 6 check (already existed)
-   - ✅ Boss enhancements (+1 Life, +1 attack, fights to death)
-   - ✅ Treasure multiplier properly applied (3x gold, 100gp min)
-   - ✅ Last tile boss spawn (auto-triggers at 90% grid full)
-   - ✅ Grid fullness tracking and warning UI
-   - ✅ Updated BossMechanics component with fullness display
-
-8. ✅ **Secret Door System** ⏱️ 5 hours **[COMPLETED]**
-   - ✅ Secret door discovery via Search (implemented in search system)
-   - ✅ 1-in-6 shortcut chance (implemented)
-   - ✅ Double treasure behind secret doors (treasureMultiplier: 2)
-   - ✅ SecretDoorModal UI with shortcut/new tile distinction
-   - Completed as part of the Clues System implementation
-
-9. ✅ **Secret Passage System** ⏱️ 3 hours **[COMPLETED]**
-   - ✅ Environment switching (dungeon ↔ fungal_grottoes ↔ caverns)
-   - ✅ State tracking with CHANGE_ENVIRONMENT action
-   - ✅ SecretPassageModal UI for discovery
-   - ✅ Integration with exploration system
-   - Completed 2026-01-16
-
-10. ✅ **Hidden Treasure Complications** ⏱️ 4 hours **[COMPLETED]**
-    - ✅ Alarm (1-2): Triggers wandering monsters
-    - ✅ Trap (3-5): Rogue disarm with success/failure handling
-    - ✅ Ghost (6): Cleric banish with level-based DC
-    - ✅ All complications wired in ActionPane.jsx
-    - ✅ HiddenTreasureModal handles resolution UI
-    - Completed 2026-01-16
-
-11. ✅ **Clue Discovery Hero Selection** ⏱️ 2 hours **[COMPLETED]**
-    - ✅ HeroSelectionModal for choosing discoverer
-    - ✅ Dead heroes excluded from selection
-    - ✅ Shows hero class and HP for quick identification
-    - Completed 2026-01-16
-
-12. **Treasure Weight Limits (200gp max)** ⏱️ ~4 hours
-   - Track carried treasure weight
-   - Enforce limits on pickup
-   - Encumbrance UI
-
-**Total Estimated Time:** ~4 hours remaining in High Priority (~25 hours completed including session work)
-
-### 🟢 Medium Priority (Nice to Have)
-
-13. **Environment-Based Treasure** ⏱️ ~8 hours
-    - Dungeon/Fungal/Cavern treasure tables
-    - Environment state tracking
-    - Secret passage environment transitions
-
-14. **Monster Reaction Assignment** ⏱️ ~6 hours
-    - Assign reaction tables per monster type
-    - Implement bribe mechanics
-    - Reaction-based initiative ordering
-
-15. **Spell Targeting UI** ⏱️ ~8 hours
-    - Single target selection
-    - AoE targeting
-    - Minor Foe group targeting
-
-16. **Bandage Limits** ⏱️ ~2 hours
-    - Track bandages used per adventure
-    - Enforce 1 per PC limit
-
-**Total Estimated Time:** ~28 hours
-
-### 🔵 Low Priority (Optional Content)
-
-17. **Quest System** ⏱️ ~12 hours
-18. **Epic Rewards** ⏱️ ~6 hours
-19. **Equipment Limit Enforcement** ⏱️ ~3 hours
-20. **Stealth Modifiers** ⏱️ ~4 hours
-21. **Food Rations** ⏱️ ~3 hours
-
-**Total Estimated Time:** ~28 hours
+### Low Priority: Optional Content
+16. Quest system
+17. Epic rewards
+18. Equipment limits
+19. Stealth modifiers
+20. Food rations
 
 ---
 
 <a name="rules-verification"></a>
-## 6. RULES VERIFICATION
+## 6. RULES VERIFICATION (OUTSTANDING)
 
-This section verifies each mechanic against official 4AD rulebooks to ensure accuracy.
-
-### ✅ Verified Against Official Rules
-
-| Mechanic | Rule Source | Page | Verified Accurate |
-|----------|-------------|------|-------------------|
-| Multi-kill formula (Attack ÷ Foe Level) | combat.txt | p.99-100 | ✅ Yes |
-| Darkness penalty (-2 all rolls) | combat.txt | p.92 | ✅ Yes |
-| Darkvision (Dwarf/Elf) | characters.txt | - | ✅ Yes (implied) |
-| Major Foe level reduction (>50% HP) | combat.txt | p.106 | ✅ Yes |
-| Minor Foe morale (50% = d6 check) | combat.txt | p.102 | ✅ Yes |
-| Withdraw (+1 Defense, 1-in-6 wandering) | combat.txt | - | ✅ Yes (from flee rules) |
-| Ranged strike first | combat.txt | p.90 | ✅ Yes |
-| Corridor restrictions (positions 1-2 only) | combat.txt | p.121 | ✅ Yes |
-| Narrow corridor (-1 two-handed) | combat.txt | p.122 | ✅ Yes |
-| Marching order 4 positions | combat.txt | p.118 | ✅ Yes |
-| Search roll (5-6 = find something) | exploration.txt | p.107 | ✅ Yes |
-| Clues (3 to reveal secret) | exploration.txt | p.107-108 | ✅ Yes |
-| Secret door (1-in-6 shortcut) | exploration.txt | p.108 | ✅ Yes |
-| Hidden treasure (2d6+HCL)×(2d6+HCL) gp | exploration.txt | p.108 | ✅ Yes |
-| Final Boss (d6+major foes, 6+ triggers) | exploration.txt | p.105 | ✅ Yes |
-| Retracing steps (1-in-6 wandering) | exploration.txt | p.104 | ✅ Yes |
-| Carried treasure (200gp max) | base rules.txt | - | ⚠️ Need to verify |
-| Rogue outnumbered bonus | combat.txt | p.92 | ✅ Yes |
-| Equipment bonuses | equipment.txt | - | ✅ Yes |
-
-### ❌ Not in Official Rules (Custom/Homebrew)
-
-- None identified - all mechanics in Missing Mechanics.md are from official rules
-
-### ⚠️ Needs Clarification
-
-- **Carried Treasure Weight (200gp):** Need to verify exact rule source
-- **XP Rolls:** Need to verify exact formula (assumed d6 × base XP / 6)
-- **Equipment Limits (3 weapons, 2 shields):** Need to verify in equipment rules
+- Carried treasure weight (200gp): verify exact rule source.
+- XP rolls: verify exact formula (assumed d6 * base XP / 6).
+- Equipment limits (3 weapons, 2 shields): verify in equipment rules.
 
 ---
 
-## 7. NEXT STEPS
+<a name="timeline"></a>
+## 7. TIMELINE (REMAINING WORK)
 
-### Recent Completion (2026-01-16)
-**COMPLETED - 5 Major Features Implemented:**
-✅ Hero selection modal for clue discovery
-✅ Rogue disarm trap mechanics with success/failure handling
-✅ Cleric banish ghost system with level-based DC
-✅ Environment system for secret passages (dungeon ↔ fungal_grottoes ↔ caverns)
-✅ Party-wide damage application for failed ghost banish
+### Phase 0: Refactor Foundations (sequence locked)
+1. Deterministic Rules and RNG Injection (#2)
+2. Core Rules Test Harness (#6)
+3. Data Schema and Validation (#5)
 
-### Phase 1: Critical Fixes (1-2 weeks)
-1. ✅ Fix campaign save system (COMPLETED)
-2. ✅ Implement corridor combat restrictions (COMPLETED)
-3. ✅ Add narrow corridor penalties (COMPLETED)
-4. ✅ Create location-aware combat system (COMPLETED)
+### Phase 1: Core Gameplay Gaps
+4. Spell targeting UI + casting edge cases
+5. Reaction-based initiative + reaction tables + bribe mechanics
+6. Trap complications + rogue bonus + damage variety
+7. Marching order targeting improvements
+8. Retracing steps wandering monster (1-in-6)
 
-### Phase 2: Core Mechanics (1-2 weeks remaining)
-5. ✅ Implement clues system (COMPLETED - search rolls, clue discovery, spending)
-6. ✅ Add XP rolls (COMPLETED - d6 roll per hero)
-7. ✅ Complete final boss trigger (COMPLETED - grid fullness tracking)
-8. ✅ Add secret door discovery (COMPLETED - 1-in-6 shortcut)
-9. ✅ Secret passage system (COMPLETED - environment transitions)
-10. ✅ Hidden treasure complications (COMPLETED - alarm/trap/ghost)
-11. ✅ Clue discovery hero selection (COMPLETED - modal UI)
-12. **Implement treasure weight limits** ← NEXT PRIORITY
+### Phase 2: Data-Driven Content and UX
+9. Environment-based treasure tables (after #5)
+10. Update monsters data (after #5)
+11. Curved and entrance rooms (1-6, 25, 34, 36)
+12. Tile library wall colors for room vs corridor tiles
+13. XP roll button per party card
+14. Bandage limits
 
-### Phase 3: Polish (2-3 weeks)
-13. Environment-based treasure (plan: separate treasure tables)
-14. Monster reaction assignment
-15. Spell targeting UI
-16. Bandage limits
+### Phase 3: Optional Content
+15. Quest system
+16. Epic rewards
+17. Equipment limits
+18. Stealth modifiers
+19. Food rations
 
-### Phase 4: Optional Content (1-2 weeks)
-17. Quest system
-18. Epic rewards
-19. Equipment limits
-20. Stealth modifiers
+### Verification Track (parallel)
+- Verify carried treasure weight rule source and behavior
+- Verify XP roll formula against rulebook
 
 ---
 
+<a name="testing-strategy"></a>
 ## 8. TESTING STRATEGY
 
-### Unit Tests Needed
-- [ ] Corridor position attack validation
-- [ ] Narrow corridor weapon penalties
-- [ ] XP roll calculations
-- [ ] Clue accumulation/spending
-- [ ] Treasure weight tracking
-- [ ] Secret door 1-in-6 chance
+Use the deterministic rules context and the test harness from #6 for all rule-level tests.
 
-### Integration Tests Needed
-- [ ] Full combat flow in corridor
-- [ ] Full combat flow in narrow corridor
-- [ ] Search → Clue → Secret flow
-- [ ] Final boss trigger conditions
-- [ ] Campaign save/load cycle
+### Unit Tests (rules)
+- Deterministic RNG and dice helpers
+- Modifier math (darkness, corridor, equipment)
+- Reaction-based initiative logic
+- Trap complications and rogue bonus
+
+### Scenario Tests (deterministic)
+- Spell targeting flows (single, group, AoE)
+- Monster targeting in room vs corridor
+- Flee/withdraw and strike during escape
+- Environment-based treasure table selection
 
 ### Manual Testing Checklist
-- [ ] Verify corridor only allows positions 1-2 to melee
-- [ ] Verify 2H weapons get -1 in narrow corridors
-- [ ] Verify darkvision immunity (dwarf/elf)
-- [ ] Verify save system persists across browser refresh
-- [ ] Verify XP rolls show in UI
-- [ ] Verify 3 clues can reveal secret
+- Seeded runs reproduce outcomes and log order
+- Spell targeting UI works end-to-end
+- Reaction tables drive initiative ordering as expected
+- Retracing steps wandering monster triggers (1-in-6)
+- Data loader validation errors surface in dev
 
 ---
 
 **Document Maintained By:** Claude Code
-**Last Review:** 2026-01-16 (Session Update Complete)
-**Next Review:** After Phase 2 completion (Treasure Weight Limits)
-**Status:** 75% Complete - Phase 2 major features mostly done, Phase 3 underway
+**Last Review:** 2026-01-17 (Roadmap reorganization)
+**Next Review:** After Phase 0 refactors (#2, #6, #5)
+**Status:** Implementation Phase - Refactors and remaining mechanics

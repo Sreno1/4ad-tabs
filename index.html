@@ -8,6 +8,38 @@
   </head>
   <body>
     <div id="root"></div>
+    <svg
+      id="crt-filters"
+      aria-hidden="true"
+      width="0"
+      height="0"
+      style="position: absolute; width: 0; height: 0; overflow: hidden"
+    >
+      <defs>
+        <filter
+          id="crt-barrel-strong"
+          x="-0.3"
+          y="-0.3"
+          width="1.6"
+          height="1.6"
+          filterUnits="objectBoundingBox"
+          color-interpolation-filters="sRGB"
+        >
+          <feImage
+            href="/crt/sphere_wide_1.png"
+            result="barrel-map"
+            preserveAspectRatio="none"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="barrel-map"
+            scale="50"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </defs>
+    </svg>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

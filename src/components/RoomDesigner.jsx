@@ -113,24 +113,16 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
     });
   }, [walls]);
 
-  const onWallToggle = useCallback((x, y, edge, isAdding) => {
+  const onWallToggle = useCallback((x, y, edge) => {
     setWalls(w => {
       const exists = w.findIndex(ww => ww.x === x && ww.y === y && ww.edge === edge);
-      if (isAdding) {
-        if (exists >= 0) return w; // Wall already exists
-        // Remove any door on this edge first
-        const newDoors = doors.filter(d => !(d.x === x && d.y === y && d.edge === edge));
-        setDoors(newDoors);
-        return [...w, { x, y, edge }];
-      } else {
-        // Removing wall
-        if (exists >= 0) {
-          return w.filter((_, i) => i !== exists);
-        }
-        return w;
+      if (exists >= 0) {
+        return w.filter((_, i) => i !== exists);
       }
+      setDoors(d => d.filter(door => !(door.x === x && door.y === y && door.edge === edge)));
+      return [...w, { x, y, edge }];
     });
-  }, [doors]);
+  }, []);
 
   const clearGrid = useCallback(() => { setGrid(blank); setDoors([]); setWalls([]); }, [blank]);
   // Ensure visual styles reset when clearing the designer
@@ -264,6 +256,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                   setDesignerContextMenu({ xPx: e.clientX, yPx: e.clientY, cellX: x, cellY: y });
                 }}
                 onDoorToggle={(x,y,edge)=>onDoorToggle(x,y,edge)}
+                onWallToggle={(x,y,edge)=>onWallToggle(x,y,edge)}
                 partyPos={null}
                 onPartyMove={null}
                 partySelected={false}

@@ -4,22 +4,26 @@ import {
   TRAP_TABLE, TRAP_TYPES,
   PUZZLE_TABLE, PUZZLE_TYPES
 } from '../data/rooms.js';
-import { performSearch, rollWanderingMonster } from "../utils/gameActions/index.js";
+import { performSearch } from "../utils/gameActions/index.js";
 import { addMonster, logMessage } from '../state/actionCreators.js';
 import { TILE_SHAPE_TABLE } from '../data/rooms.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import DungeonHeaderButtons from './DungeonHeaderButtons.jsx';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
-import DungeonVoxelView from './DungeonVoxelView.jsx';
+import DungeonFirstPersonView from './DungeonFirstPersonView.jsx';
 import { buildWallOffPerimeter } from '../utils/wallUtils.js';
 import { normalizeEnvironment } from '../constants/environmentConstants.js';
 import ContextMenu from './ContextMenu.jsx';
 import { getEquipment, hasEquipment } from '../data/equipment.js';
 import RadialMenu from './RadialMenu.jsx';
 
-export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, sidebarCollapsed = false, placementTemplate = null, onCommitPlacement = null, autoPlacedRoom = null, setAutoPlacedRoom = null, onShowRoomDesigner = null, onToggleShowLog = null, showLogMiddle = false }) {
+export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, sidebarCollapsed = false, placementTemplate = null, onCommitPlacement = null, autoPlacedRoom = null, setAutoPlacedRoom = null, mapActions = {}, activeView = 'map', onViewChange = null }) {
   const [showMarkers, setShowMarkers] = useState(true); // Toggle markers visibility
-  const [showVoxelView, setShowVoxelView] = useState(false);
+  const [internalView, setInternalView] = useState('map');
+  const isViewControlled = typeof onViewChange === 'function';
+  const currentView = isViewControlled ? activeView : internalView;
+  const showFirstPersonView = currentView === 'firstPerson';
+  const [firstPersonFacing, setFirstPersonFacing] = useState(0);
   const [roomMarkers, setRoomMarkers] = useState({}); // {cellKey: {type, label, tooltip}}  const [hoveredCell, setHoveredCell] = useState(null); // For showing tooltip
   // Load persisted markers (notes) from localStorage
   React.useEffect(() => {
@@ -175,15 +179,13 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   const closeRadial = useCallback(() => setRadialMenu(null), []);
 
   const markerOptions = [
-  { key: 'clear', label: 'Clear' },
+    { key: 'clear', label: 'Clear' },
     { key: 'monster', label: 'Monster' },
     { key: 'boss', label: 'Boss' },
     { key: 'treasure', label: 'Treasure' },
     { key: 'trap', label: 'Trap' },
     { key: 'special', label: 'Special' },
-    { key: 'cleared', label: 'Cleared' },
-    { key: 'entrance', label: 'Entrance' },
-    { key: 'exit', label: 'Exit' }
+    // Removed: 'cleared', 'entrance', 'exit'
   ];
 
   const handleRadialSelect = useCallback((type) => {
@@ -205,12 +207,16 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   }, [radialMenu, getMarker, addMarker, removeMarker]);
 
   const closeContext = useCallback(() => { setContextMenu(null); setContextSelectedTile(null); }, []);
-  const toggleVoxelView = useCallback(() => {
+  const handleViewChange = useCallback((nextView) => {
     setContextMenu(null);
     setContextSelectedTile(null);
     setRadialMenu(null);
-    setShowVoxelView(prev => !prev);
-  }, []);
+    if (isViewControlled) {
+      onViewChange(nextView);
+    } else {
+      setInternalView(nextView === 'log' ? 'map' : nextView);
+    }
+  }, [isViewControlled, onViewChange]);
 
   // Party pawn handlers
   const movePartyTo = useCallback((x, y) => {
@@ -236,6 +242,24 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     }
     dispatch({ type: 'TOGGLE_DOOR', x, y, edge });
   }, [dispatch, state.currentEnvironment]);
+
+  const handleWallToggle = useCallback((x, y, edge) => {
+    if (!edge) return;
+    const existingWalls = state.walls || [];
+    const hasWall = existingWalls.some(w => w.x === x && w.y === y && w.edge === edge);
+    const nextWalls = hasWall
+      ? existingWalls.filter(w => !(w.x === x && w.y === y && w.edge === edge))
+      : [...existingWalls, { x, y, edge }];
+
+    dispatch({ type: 'SET_WALLS', walls: nextWalls });
+
+    if (!hasWall) {
+      const existingDoors = state.doors || [];
+      if (existingDoors.some(d => d.x === x && d.y === y && d.edge === edge)) {
+        dispatch({ type: 'SET_DOORS', doors: existingDoors.filter(d => !(d.x === x && d.y === y && d.edge === edge)) });
+      }
+    }
+  }, [dispatch, state.walls, state.doors]);
 
   // Calculate optimal cell size based on container dimensions
   React.useEffect(() => {
@@ -351,7 +375,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   // Intercept right-clicks inside the dungeon grid container to cancel the browser menu
   React.useEffect(() => {
     const container = gridContainerRef.current;
-    if (!container || showVoxelView) return;
+    if (!container || showFirstPersonView) return;
 
   const handler = (e) => {
       try {
@@ -422,66 +446,36 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
 
     container.addEventListener('contextmenu', handler);
     return () => container.removeEventListener('contextmenu', handler);
-  }, [cellSize, shouldRotate, state.grid, showVoxelView]);
+  }, [cellSize, shouldRotate, state.grid, showFirstPersonView]);
   return (
-  <section id="dungeon_section" className="space-y-2 h-full flex flex-col">
+    <section id="dungeon_section" className="space-y-2 h-full flex flex-col">
       {/* Dungeon Grid - No extra outline/container, never scrolls */}
       <div className="flex-1 flex flex-col overflow-hidden" data-dungeon-section="true">
-        <div id="dungeon_controls" className="flex items-center justify-end gap-2 p-1">
+        {/* Mobile controls */}
+        <div id="dungeon_controls" className="flex items-center justify-end gap-2 p-1 md:hidden">
           <DungeonHeaderButtons
-            showLogMiddle={showLogMiddle}
-            onToggleShowLog={() => onToggleShowLog && onToggleShowLog()}
-            showVoxelView={showVoxelView}
-            onToggleVoxelView={toggleVoxelView}
-            onShowRoomDesigner={() => onShowRoomDesigner && onShowRoomDesigner()}
-            onGenerateTile={() => typeof externalGenerateTile === 'function' ? externalGenerateTile() : null}
-            onWandering={() => { try { rollWanderingMonster(dispatch, { state }); } catch (e) {} }}
-            onCustomTile={() => {
-              try {
-                const rawD66 = prompt('Enter d66 (e.g. 11, 12, 21, 66):', '11');
-                if (!rawD66) return;
-                const shapeRoll = parseInt(rawD66, 10);
-                if (Number.isNaN(shapeRoll) || !Object.keys(TILE_SHAPE_TABLE).includes(String(shapeRoll))) {
-                  alert('Invalid d66 value');
-                  return;
-                }
-                const raw2d6 = prompt('Enter 2d6 result (2-12):', '8');
-                if (!raw2d6) return;
-                const contentsRoll = parseInt(raw2d6, 10);
-                if (Number.isNaN(contentsRoll) || contentsRoll < 2 || contentsRoll > 12) {
-                  alert('Invalid 2d6 value');
-                  return;
-                }
-                if (typeof externalGenerateTile === 'function') externalGenerateTile({ shapeRoll, contentsRoll });
-              } catch (e) { console.error(e); }
-            }}
-            onCustomMonster={() => {
-              try {
-                const name = prompt('Monster Name?', 'Custom Monster') || 'Custom Monster';
-                const level = parseInt(prompt('Monster Level (1-5)?', '2')) || 2;
-                const isMajor = confirm('Is this a Major Foe (single creature with HP)? Cancel for Minor Foe (group with count).');
-                let monster;
-                if (isMajor) {
-                  const hp = parseInt(prompt('HP?', '6')) || 6;
-                  monster = { id: Date.now(), name, level, hp, maxHp: hp, type: 'custom', isMinorFoe: false };
-                  dispatch(addMonster(monster));
-                  dispatch(logMessage(`⚔️ ${name} L${level} (${hp}HP) Major Foe added`));
-                } else {
-                  const count = parseInt(prompt('How many?', '6')) || 6;
-                  monster = { id: Date.now(), name, level, hp: 1, maxHp: 1, count, initialCount: count, type: 'custom', isMinorFoe: true };
-                  dispatch(addMonster(monster));
-                  dispatch(logMessage(`👥 ${count}x ${name} L${level} Minor Foes added`));
-                }
-              } catch (e) { console.error(e); }
-            }}
-            onClearMap={() => {
-              try { dispatch({ type: 'CLEAR_GRID' }); } catch (e) {}
-              try { if (typeof externalClearTile === 'function') externalClearTile(); } catch (e) {}
-              try { localStorage.removeItem('roomMarkers'); try { window.dispatchEvent(new CustomEvent('roomMarkersUpdated')); } catch (e) {} } catch (e) {}
-            }}
+            onShowRoomDesigner={() => mapActions.onShowRoomDesigner && mapActions.onShowRoomDesigner()}
+            onGenerateTile={() => mapActions.onGenerateTile && mapActions.onGenerateTile()}
+            onWandering={() => mapActions.onWandering && mapActions.onWandering()}
+            onCustomTile={() => mapActions.onCustomTile && mapActions.onCustomTile()}
+            onCustomMonster={() => mapActions.onCustomMonster && mapActions.onCustomMonster()}
+            onClearMap={() => mapActions.onClearMap && mapActions.onClearMap()}
           />
         </div>
-  <div
+        {/* Desktop controls: always show in map view, above the grid */}
+        {!showFirstPersonView && (
+          <div id="dungeon_header_buttons_desktop" className="hidden md:flex items-center gap-2 p-2 pb-0">
+            <DungeonHeaderButtons
+              onShowRoomDesigner={() => mapActions.onShowRoomDesigner && mapActions.onShowRoomDesigner()}
+              onGenerateTile={() => mapActions.onGenerateTile && mapActions.onGenerateTile()}
+              onWandering={() => mapActions.onWandering && mapActions.onWandering()}
+              onCustomTile={() => mapActions.onCustomTile && mapActions.onCustomTile()}
+              onCustomMonster={() => mapActions.onCustomMonster && mapActions.onCustomMonster()}
+              onClearMap={() => mapActions.onClearMap && mapActions.onClearMap()}
+            />
+          </div>
+        )}
+        <div
           id="dungeon_grid"
           ref={gridContainerRef}
           className="flex-1 w-full h-full flex items-center justify-center bg-slate-900 overflow-hidden"
@@ -492,19 +486,25 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
 
           {/* Grid container - only this rotates */}
           <div
-            className={showVoxelView ? 'w-full h-full' : 'inline-block'}
+            className={showFirstPersonView ? 'w-full h-full' : 'inline-block'}
             style={{
-              width: showVoxelView ? '100%' : 'fit-content',
-              height: showVoxelView ? '100%' : 'fit-content',
+              width: showFirstPersonView ? '100%' : 'fit-content',
+              height: showFirstPersonView ? '100%' : 'fit-content',
             }}
           >
-          {showVoxelView ? (
-            <DungeonVoxelView
+          {showFirstPersonView ? (
+            <DungeonFirstPersonView
               grid={state.grid}
               doors={state.doors}
               walls={state.walls || []}
               partyPos={partyPos}
-              voxelSize={Math.max(12, Math.min(32, cellSize))}
+              facing={firstPersonFacing}
+              onFacingChange={setFirstPersonFacing}
+              onPartyMove={movePartyTo}
+              active={showFirstPersonView}
+              hasLightSource={(
+                state.hasLightSource || ((state.party || []).some(h => (h?.hp > 0) && (hasEquipment(h, 'lantern') || (Array.isArray(h?.equipment) && h.equipment.some(k => getEquipment(k)?.lightSource)))))
+              )}
             />
           ) : (
             <>
@@ -524,6 +524,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                 onCellSet={handleCellSet}
                 onCellRightClick={handleCellRightClick}
                 onDoorToggle={handleDoorToggle}
+                onWallToggle={handleWallToggle}
                 partyPos={partyPos}
                 onPartyMove={movePartyTo}
                 partySelected={partySelected}
@@ -618,12 +619,12 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                             const allExist = perimeter.every(pe => existingWalls.some(w => w.x === pe.x && w.y === pe.y && w.edge === pe.edge));
                             if (allExist) {
                               // remove perimeter edges from existing walls
-                              const newWalls = existingWalls.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === w.edge));
+                              const newWalls = existingWalls.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === pe.edge));
                               dispatch({ type: 'SET_WALLS', walls: newWalls });
                             } else {
                               // Remove any conflicting doors on these edges
                               (state.doors || []).forEach(d => {
-                                if (perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === d.edge)) {
+                                if (perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === pe.edge)) {
                                   dispatch({ type: 'TOGGLE_DOOR', x: d.x, y: d.y, edge: d.edge });
                                 }
                               });

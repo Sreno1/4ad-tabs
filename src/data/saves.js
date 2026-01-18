@@ -2,6 +2,8 @@
  * Save System definitions for Four Against Darkness (Phase 4)
  * Based on saves.pdf - survival rolls when taking life-threatening damage
  */
+import { d6 } from "../utils/dice.js";
+import { getDefaultContext } from "../game/context.js";
 
 /**
  * Save thresholds by damage source
@@ -105,8 +107,9 @@ export const isLifeThreatening = (hero, damage) => {
  * @param {number} modifier - Save modifier
  * @returns {object} { roll, total, success, message }
  */
-export const rollSave = (threshold, modifier = 0) => {
-  const roll = Math.floor(Math.random() * 6) + 1;
+export const rollSave = (threshold, modifier = 0, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   const total = roll + modifier;
   const success = total >= threshold;
   

@@ -21,4 +21,9 @@ export function formatRollPrefix(rollLike) {
   return '';
 }
 
-export default { formatRollPrefix };
+export const logRoll = (rollLog, entry) => {
+  if (!rollLog) return;
+  rollLog.push(entry);
+};
+
+export default { formatRollPrefix, logRoll };

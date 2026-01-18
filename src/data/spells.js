@@ -2,6 +2,8 @@
  * Magic System definitions for Four Against Darkness (Phase 4)
  * Spells for Wizards and Elves
  */
+import { d6, roll } from '../utils/dice.js';
+import { getDefaultContext } from '../game/context.js';
 
 // Spell definitions
 export const SPELLS = {
@@ -376,7 +378,8 @@ export const getSpellSlots = (classKey, level) => {
  * @param {array} targets - Target(s) of the spell
  * @returns {object} Spell result
  */
-export const castSpell = (spellKey, caster, context = {}) => {
+export const castSpell = (spellKey, caster, context = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const spell = SPELLS[spellKey];
   if (!spell) return { success: false, message: 'Unknown spell' };
 
@@ -396,14 +399,12 @@ export const castSpell = (spellKey, caster, context = {}) => {
   };
 
   // Helper: roll XdY string or number
-  const roll = (expr) => {
+  const rollExpr = (expr) => {
     if (!expr) return 0;
     if (typeof expr === 'number') return expr;
     if (typeof expr === 'string' && expr.includes('d')) {
       const [dice, sides] = expr.split('d').map(Number);
-      let t = 0;
-      for (let i = 0; i < dice; i++) t += Math.floor(Math.random() * sides) + 1;
-      return t;
+      return roll(dice, sides, 0, rng, rollLog);
     }
     const n = Number(expr);
     return isNaN(n) ? 0 : n;
@@ -430,7 +431,7 @@ export const castSpell = (spellKey, caster, context = {}) => {
     const mr = hasMR ? (target.mr || 5) : (target.mr || 0);
     if (!mr) return { passed: true };
     // caster performs spellcasting roll: d6 + caster.lvl (+ trait/specialist/scroll bonus) vs MR
-    const r = Math.floor(Math.random() * 6) + 1;
+    const r = d6(rng, rollLog);
     const bonus = castingBonus || 0;
     const total = r + (caster?.lvl || 0) + bonus;
     return { passed: total >= mr, roll: r, total, mr, bonus };
@@ -438,7 +439,7 @@ export const castSpell = (spellKey, caster, context = {}) => {
 
   // Helper: perform spellcasting roll vs target Level. Returns {hit: bool, roll, total}
   const spellcastRollVsLevel = (targetLevel) => {
-    const r = Math.floor(Math.random() * 6) + 1;
+    const r = d6(rng, rollLog);
     const bonus = castingBonus || 0;
     const total = r + (caster?.lvl || 0) + bonus;
     return { hit: total >= (targetLevel || 1), roll: r, total, bonus };
@@ -470,7 +471,7 @@ export const castSpell = (spellKey, caster, context = {}) => {
         return result;
       }
     }
-    const dmg = roll(spell.damage);
+    const dmg = rollExpr(spell.damage);
     result.value = dmg;
     result.message += ` Deals ${dmg} damage to target.`;
   }
@@ -478,7 +479,7 @@ export const castSpell = (spellKey, caster, context = {}) => {
   // AoE damage (applies to groups or all monsters)
   if (spell.effect === 'aoe_damage') {
     // For AoE spells, some foes (minor vs major) behave differently (e.g., Fireball)
-    const dmg = roll(spell.damage);
+    const dmg = rollExpr(spell.damage);
     result.value = dmg;
     result.message += ` Deals ${dmg} damage to enemies.`;
   }
@@ -499,7 +500,7 @@ export const castSpell = (spellKey, caster, context = {}) => {
   // Sleep: number of minor foes or single major
   if (spell.effect === 'sleep') {
     // d6 + caster L. Does not work on Unliving, elementals, most dragons or L11+
-    const d6v = Math.floor(Math.random() * 6) + 1;
+    const d6v = d6(rng, rollLog);
     const number = d6v + (caster?.lvl || 0);
     result.value = number;
     result.duration = resolveDuration(1);
@@ -565,7 +566,7 @@ export const castSpell = (spellKey, caster, context = {}) => {
   // Shadow strike / subdual damage
   if (spell.effect === 'subdual_damage') {
     // damage is in 'damage' field as numeric or 'tier' placeholder
-    const base = spell.damage === 'tier' ? (caster?.tier || caster?.lvl || 1) : roll(spell.damage);
+    const base = spell.damage === 'tier' ? (caster?.tier || caster?.lvl || 1) : rollExpr(spell.damage);
     result.value = base;
     result.message += ` Deals ${base} subdual damage on hit.`;
   }

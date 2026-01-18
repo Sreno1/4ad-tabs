@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import LanternAnimation from '../LanternAnimation.jsx';
 import { Tooltip } from '../RulesReference.jsx';
+import DungeonHeaderButtons from '../DungeonHeaderButtons.jsx';
 import { adjustGold, adjustMajorFoes, adjustMinorEncounters, logMessage } from '../../state/actionCreators.js';
 import sfx from '../../utils/sfx.js';
 import { ENVIRONMENTS, normalizeEnvironment } from '../../constants/environmentConstants.js';
@@ -29,12 +30,21 @@ export default function AppHeader({
   hasLightSource,
   partyLightNames = [],
   onShowLantern,
+  activeView = 'map',
+  onViewChange,
+  mapActions = {},
 }) {
   const handleEnvironmentChange = (value) => {
     const envKey = normalizeEnvironment(value);
     dispatch({ type: 'CHANGE_ENVIRONMENT', environment: envKey });
     dispatch(logMessage(`🌍 Environment set to ${ENVIRONMENTS.find(env => env.id === envKey)?.label || 'Dungeon'}.`, 'exploration'));
   };
+
+  const viewOptions = [
+    { key: 'map', label: 'Map', title: 'Dungeon map' },
+    { key: 'log', label: 'Log', title: 'Adventure log' },
+    { key: 'firstPerson', label: 'FP', title: 'First-person view' }
+  ];
 
   return (
     <header id="app_header" className="bg-slate-800 p-1 border-b border-slate-700 flex-shrink-0">
@@ -106,6 +116,27 @@ export default function AppHeader({
             </select>
           </div>
         </div>
+
+        {onViewChange && (
+          <div id="app_header_view_toggle" className="flex items-center gap-1">
+            {viewOptions.map((view) => (
+              <button
+                key={view.key}
+                onClick={() => onViewChange(view.key)}
+                className={`text-xs px-2 py-1 rounded transition-colors border border-slate-700 ${
+                  activeView === view.key
+                    ? 'bg-amber-500 text-slate-900'
+                    : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                }`}
+                title={view.title}
+                aria-pressed={activeView === view.key}
+                type="button"
+              >
+                {view.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Header Actions */}
         <div id="app_header_actions" className="flex items-center gap-1">

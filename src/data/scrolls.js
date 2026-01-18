@@ -5,6 +5,8 @@
  */
 
 import { SPELLS } from './spells.js';
+import { getDefaultContext } from '../game/context.js';
+import { roll } from '../utils/dice.js';
 
 // ========== SCROLL DEFINITIONS ==========
 
@@ -376,14 +378,17 @@ export const ILLUSIONIST_SCROLL_TABLE = [
  * @param {number} max - Maximum value
  * @returns {number} Random value 1 to max
  */
-const rollDice = (max) => Math.floor(Math.random() * max) + 1;
+const rollDice = (max, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  return roll(1, max, 0, rng, rollLog);
+};
 
 /**
  * Generate a random scroll based on type
  * @param {string} type - 'wizard', 'druid', or 'illusionist'
  * @returns {string} Scroll key
  */
-export const generateRandomScroll = (type) => {
+export const generateRandomScroll = (type, ctx) => {
   let table;
   let maxRoll;
 
@@ -400,7 +405,7 @@ export const generateRandomScroll = (type) => {
     return null;
   }
 
-  const roll = rollDice(maxRoll);
+  const roll = rollDice(maxRoll, ctx);
   return table[roll] || null;
 };
 
@@ -409,12 +414,12 @@ export const generateRandomScroll = (type) => {
  * Distribution: 33% wizard, 33% druid, 33% illusionist
  * @returns {string} Scroll key
  */
-export const generateTreasureScroll = () => {
-  const typeRoll = rollDice(6);
+export const generateTreasureScroll = (ctx) => {
+  const typeRoll = rollDice(6, ctx);
 
-  if (typeRoll <= 2) return generateRandomScroll('wizard');
-  if (typeRoll <= 4) return generateRandomScroll('druid');
-  return generateRandomScroll('illusionist');
+  if (typeRoll <= 2) return generateRandomScroll('wizard', ctx);
+  if (typeRoll <= 4) return generateRandomScroll('druid', ctx);
+  return generateRandomScroll('illusionist', ctx);
 };
 
 /**

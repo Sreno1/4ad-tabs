@@ -2,6 +2,7 @@
  * Combat Actions - Attack, defense, saves, fleeing, and initiative
  */
 import { d6, explodingD6 } from "../dice.js";
+import { getDefaultContext } from "../../game/context.js";
 import { formatRollPrefix } from '../rollLog.js';
 import { calculateEquipmentBonuses } from "../../data/equipment.js";
 import {
@@ -34,8 +35,9 @@ const getEffectiveMonsterLevel = (monster) => {
  * @param {number} foeLevel - Target foe level
  * @returns {object} Attack result
  */
-export const calculateAttack = (hero, foeLevel, options = {}) => {
-  const roll = d6();
+export const calculateAttack = (hero, foeLevel, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   let mod = 0;
   let corridorNote = '';
 
@@ -86,8 +88,9 @@ export const calculateAttack = (hero, foeLevel, options = {}) => {
  * @param {object} options - Combat options (dualWielding, blessed, rage, hasLightSource, location, etc.)
  * @returns {object} Attack result
  */
-export const calculateEnhancedAttack = (hero, foeLevel, options = {}) => {
-  const { total, rolls, exploded } = explodingD6();
+export const calculateEnhancedAttack = (hero, foeLevel, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const { total, rolls, exploded } = explodingD6(rng, 0, rollLog);
   let mod = 0;
   const modifiers = [];
 
@@ -288,8 +291,9 @@ export const calculateMinorFoeKills = (attackTotal, foeLevel, foeCount) => {
  * @param {object} options - Combat options (hasLightSource, location, etc.)
  * @returns {object} Attack result
  */
-export const attackMinorFoe = (hero, foe, options = {}) => {
-  const { total, rolls, exploded } = explodingD6();
+export const attackMinorFoe = (hero, foe, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const { total, rolls, exploded } = explodingD6(rng, 0, rollLog);
   let mod = 0;
   const modifiers = [];
 
@@ -446,8 +450,9 @@ export const attackMinorFoe = (hero, foe, options = {}) => {
  * @param {object} options - Additional options (largeEnemy, parry, hasLightSource, etc.)
  * @returns {object} Defense result
  */
-export const calculateDefense = (hero, foeLevel, options = {}) => {
-  const roll = d6();
+export const calculateDefense = (hero, foeLevel, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   let mod = 0;
   const modifiers = [];
 
@@ -572,6 +577,7 @@ export const performSaveRoll = (
   heroIdx,
   damageSource = "default",
   options = {},
+  ctx,
 ) => {
   const threshold = getSaveThreshold(damageSource);
   const { bonus, reasons } = getSaveModifier(hero);
@@ -592,7 +598,7 @@ export const performSaveRoll = (
     allReasons.push("-2 (darkness)");
   }
 
-  const result = rollSave(threshold, totalBonus);
+  const result = rollSave(threshold, totalBonus, ctx);
 
   const modStr = allReasons.length > 0 ? ` (${allReasons.join(", ")})` : "";
 
@@ -640,11 +646,12 @@ export const useBlessingForSave = (
   targetIdx,
   damageSource = "default",
   options = {},
+  ctx,
 ) => {
   dispatch({ type: "USE_BLESS", heroIdx });
   dispatch({ type: "LOG", t: `🙏 Cleric uses Blessing to grant a re-roll!` });
 
-  return performSaveRoll(dispatch, targetHero, targetIdx, damageSource, options);
+  return performSaveRoll(dispatch, targetHero, targetIdx, damageSource, options, ctx);
 };
 
 /**
@@ -662,11 +669,12 @@ export const useLuckForSave = (
   hero,
   damageSource = "default",
   options = {},
+  ctx,
 ) => {
   dispatch({ type: "USE_LUCK", heroIdx });
   dispatch({ type: "LOG", t: `🍀 Halfling uses Luck to re-roll!` });
 
-  return performSaveRoll(dispatch, hero, heroIdx, damageSource, options);
+  return performSaveRoll(dispatch, hero, heroIdx, damageSource, options, ctx);
 };
 
 /**
@@ -677,8 +685,9 @@ export const useLuckForSave = (
  * @param {number} monsterLevel - Monster level to flee from
  * @returns {object} Flee result
  */
-export const attemptFlee = (dispatch, hero, heroIdx, monsterLevel) => {
-  const roll = d6();
+export const attemptFlee = (dispatch, hero, heroIdx, monsterLevel, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const roll = d6(rng, rollLog);
   let mod = 0;
 
   // Rogue and Halfling get bonuses to flee
@@ -714,7 +723,8 @@ export const attemptFlee = (dispatch, hero, heroIdx, monsterLevel) => {
  * @param {boolean} isWithdraw - True if withdrawing (PCs get +1 Defense)
  * @returns {object} Strike results
  */
-export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = false, options = {}) => {
+export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = false, options = {}, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   if (!monsters || monsters.length === 0) return { totalDamage: 0, hitCount: 0 };
 
   dispatch({
@@ -744,7 +754,7 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
       rearTargetsAllocated += 1;
     } else {
       // Determine target (random alive hero)
-      const targetIdx = Math.floor(Math.random() * aliveHeroes.length);
+      const targetIdx = rng.nextInt(aliveHeroes.length);
       target = aliveHeroes[targetIdx];
     }
 
@@ -755,7 +765,7 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
     }
 
   // Roll d6 for monster attack
-  const roll = d6();
+  const roll = d6(rng, rollLog);
     let targetDefense = isWithdraw ? target.lvl + 1 : target.lvl; // +1 Defense when withdrawing
     let defenseMod = isWithdraw ? 1 : 0;
     if (!isWithdraw && options.environment === 'fungal_grottoes') {
@@ -809,7 +819,8 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
  * - If location is 'room': if enough foes to hit all PCs, assign 1 attack each; extra attacks to hated then lowest HP
  * This function applies damage immediately and logs results.
  */
-export const initialWanderingStrikes = (dispatch, state) => {
+export const initialWanderingStrikes = (dispatch, state, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const monsters = state.monsters || [];
   if (!monsters || monsters.length === 0) return;
   const party = state.party || [];
@@ -838,7 +849,7 @@ export const initialWanderingStrikes = (dispatch, state) => {
       dispatch({ type: 'LOG', t: `😴 ${monster.name} is asleep and does not attack.` });
       return false;
     }
-  const roll = d6();
+  const roll = d6(rng, rollLog);
     const defense = hero.lvl; // no withdraw modifier here
     const effectiveLevel = getEffectiveMonsterLevel(monster);
     const hits = (roll + effectiveLevel) > defense;
@@ -877,7 +888,7 @@ export const initialWanderingStrikes = (dispatch, state) => {
     const shuffled = attackers.slice();
     // Simple Fisher-Yates
     for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = rng.nextInt(i + 1);
       const t = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = t;
     }
 
@@ -923,7 +934,8 @@ export const initialWanderingStrikes = (dispatch, state) => {
  * Applies rules for room vs corridor, attacker/PC counts, hatred targeting,
  * and respects wandering ambush meta when present.
  */
-export const performMonsterAttacks = (dispatch, state) => {
+export const performMonsterAttacks = (dispatch, state, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const monsters = state.monsters || [];
   if (!monsters || monsters.length === 0) return;
   const party = state.party || [];
@@ -952,7 +964,7 @@ export const performMonsterAttacks = (dispatch, state) => {
       dispatch({ type: 'LOG', t: `😴 ${monster.name} is asleep and does not attack.` });
       return false;
     }
-  const roll = d6();
+  const roll = d6(rng, rollLog);
     const defense = hero.lvl;
     const effectiveLevel = getEffectiveMonsterLevel(monster);
     const hits = (roll + effectiveLevel) > defense;
@@ -1078,25 +1090,25 @@ export const performMonsterAttacks = (dispatch, state) => {
  * @param {number} monsterLevel - Highest monster level
  * @returns {object} Party flee result
  */
-export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel, options = {}) => {
+export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel, options = {}, ctx) => {
   dispatch({ type: "LOG", t: `🏃 Party attempts to flee!` });
 
   const results = party
     .filter((h) => h.hp > 0)
-    .map((hero, idx) => attemptFlee(dispatch, hero, idx, monsterLevel));
+    .map((hero, idx) => attemptFlee(dispatch, hero, idx, monsterLevel, ctx));
 
   const allEscaped = results.every((r) => r.success);
   const failedCount = results.filter((r) => !r.success).length;
 
   if (allEscaped) {
     // Foes strike once during escape
-    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false, options);
+    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false, options, ctx);
     dispatch({ type: "LOG", t: `✅ Party escapes successfully!` });
     dispatch({ type: "CLEAR_MONSTERS" });
     return { allEscaped, results, failedCount, strikeResult };
   } else {
     // Foes strike once during failed escape attempt
-    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false, options);
+    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false, options, ctx);
     dispatch({
       type: "LOG",
       t: `❌ ${failedCount} hero(es) failed to escape and combat continues!`,
@@ -1115,7 +1127,8 @@ export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel, option
  * @param {array} doors - Door array (check if any door at current location)
  * @returns {object} Withdraw result
  */
-export const attemptWithdraw = (dispatch, party, monsters, doors) => {
+export const attemptWithdraw = (dispatch, party, monsters, doors, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   dispatch({ type: "LOG", t: `🚪 Party attempts to withdraw!` });
 
   // Check if there's at least one door to slam shut
@@ -1128,7 +1141,7 @@ export const attemptWithdraw = (dispatch, party, monsters, doors) => {
   }
 
   // Foes strike once as party retreats (with +1 Defense)
-  const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, true);
+  const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, true, {}, ctx);
 
   // Withdrawal succeeds - clear monsters and leave them in the tile
   dispatch({
@@ -1137,7 +1150,7 @@ export const attemptWithdraw = (dispatch, party, monsters, doors) => {
   });
 
   // Roll for Wandering Monsters (1-in-6)
-  const wanderingRoll = d6();
+  const wanderingRoll = d6(rng, rollLog);
   if (wanderingRoll === 1) {
     dispatch({
       type: "LOG",
@@ -1244,11 +1257,12 @@ export const processMinorFoeAttack = (
   foe,
   foeIdx,
   options = {},
+  ctx,
 ) => {
   // If foe is bound, inform attack routine to apply +2
   if (foe && foe.bound) options.boundTarget = true;
   // Perform the attack
-  const attackResult = attackMinorFoe(hero, foe, options);
+  const attackResult = attackMinorFoe(hero, foe, options, ctx);
 
   dispatch({ type: "LOG", t: attackResult.message });
 
@@ -1279,7 +1293,7 @@ export const processMinorFoeAttack = (
 
       // Check morale if not already checked this encounter
       if (!foe.moraleChecked) {
-        const moraleResult = checkMinorFoeMorale(foe, initialCount, newCount);
+        const moraleResult = checkMinorFoeMorale(foe, initialCount, newCount, ctx);
 
         if (moraleResult.checked) {
           dispatch({ type: "LOG", t: moraleResult.message });
@@ -1323,11 +1337,12 @@ export const processMajorFoeAttack = (
   foe,
   foeIdx,
   options = {},
+  ctx,
 ) => {
   // If foe is bound, inform attack routine to apply +2
   if (foe && foe.bound) options.boundTarget = true;
   // Use existing enhanced attack
-  const attackResult = calculateEnhancedAttack(hero, foe.level, options);
+  const attackResult = calculateEnhancedAttack(hero, foe.level, options, ctx);
 
   dispatch({ type: "LOG", t: attackResult.message });
 

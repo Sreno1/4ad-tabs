@@ -3,6 +3,7 @@
  */
 
 import { generateTreasureScroll } from './scrolls.js';
+import { getDefaultContext } from '../game/context.js';
 
 // Treasure Table (d6)
 export const TREASURE_TABLE = [
@@ -72,27 +73,31 @@ export const POTION_EFFECTS = {
  * @param {object} stats - Item stats
  * @returns {object} Equipment item
  */
-export const createEquipment = (name, slot, stats = {}) => ({
-  id: Date.now() + Math.random(),
-  name,
-  slot,
-  ...stats
-});
+export const createEquipment = (name, slot, stats = {}, ctx) => {
+  const { rng, now } = ctx || getDefaultContext();
+  return {
+    id: now() + rng.nextFloat(),
+    name,
+    slot,
+    ...stats
+  };
+};
 
 /**
  * Generate a random magic item or scroll
  * 50% chance for magic item, 50% chance for scroll
  * @returns {string} Item key
  */
-export const generateMagicItemOrScroll = () => {
-  const roll = Math.floor(Math.random() * 2) + 1; // 1 or 2
+export const generateMagicItemOrScroll = (ctx) => {
+  const { rng } = ctx || getDefaultContext();
+  const roll = rng.nextInt(2) + 1; // 1 or 2
 
   if (roll === 1) {
     // Return a random magic item
     const items = ['amulet', 'talisman', 'potion_strength', 'ring_protection'];
-    return items[Math.floor(Math.random() * items.length)];
+    return items[rng.nextInt(items.length)];
   } else {
     // Return a random scroll
-    return generateTreasureScroll();
+    return generateTreasureScroll(ctx);
   }
 };
