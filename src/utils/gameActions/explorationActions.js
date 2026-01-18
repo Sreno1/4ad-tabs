@@ -13,13 +13,24 @@ import { d6 } from "../dice.js";
  * - 2-4: Nothing found
  * - 5-6: Found something (choice of 4 options)
  *
- * @param {object} options - { isInCorridor: boolean }
+ * @param {object} options - { isInCorridor: boolean, environment: string, party: array }
  * @returns {object} Search result
  */
 export const performSearchRoll = (options = {}) => {
   const roll = d6();
   const modifier = options.isInCorridor ? -1 : 0;
   const total = roll + modifier;
+  const environment = options.environment || 'dungeon';
+  const party = Array.isArray(options.party) ? options.party : [];
+
+  const hasCavernListener = party.some(h => h && h.hp > 0 && [
+    'elf',
+    'ranger',
+    'rogue',
+    'halfling',
+    'shadow'
+  ].includes(h.key));
+  const hasFungalSearchBonus = party.some(h => h && h.hp > 0 && ['mushroomMonk', 'halfling'].includes(h.key));
 
   if (total <= 1) {
     return {
@@ -30,7 +41,45 @@ export const performSearchRoll = (options = {}) => {
     };
   }
 
-  if (total >= 5) {
+  if (environment === 'caverns') {
+    if (total >= 5) {
+      return {
+        type: 'found_something',
+        message: '✨ You found something! Choose what you discovered:',
+        choices: [
+          { key: 'clue', label: '🔍 Clue', description: 'Gather information (need 3 to reveal a secret)' },
+          { key: 'listen', label: '👂 Listen', description: 'Roll the next tile contents before entering' }
+        ],
+        roll,
+        total
+      };
+    }
+    if (total === 4 && hasCavernListener) {
+      return {
+        type: 'found_something',
+        message: '👂 You can Listen for clues beyond the next opening:',
+        choices: [
+          { key: 'listen', label: '👂 Listen', description: 'Roll the next tile contents before entering' }
+        ],
+        roll,
+        total,
+        listenOnly: true
+      };
+    }
+  } else if (environment === 'fungal_grottoes') {
+    if (total >= 5 || (total === 4 && hasFungalSearchBonus)) {
+      return {
+        type: 'found_something',
+        message: '🍄 You found something! Choose what you discovered:',
+        choices: [
+          { key: 'clue', label: '🔍 Clue', description: 'Gather information (need 3 to reveal a secret)' },
+          { key: 'rare_mushroom', label: '🍄 Rare Mushroom', description: 'Roll on the Rare Mushroom table' }
+        ],
+        roll,
+        total
+      };
+    }
+  } else if (total >= 5) {
     return {
       type: 'found_something',
       message: '✨ You found something! Choose what you discovered:',
@@ -194,10 +243,9 @@ export const findSecretDoor = (dispatch) => {
  * @param {string} currentEnvironment - Current environment
  * @returns {object} Passage result with new environment
  */
-export const findSecretPassage = (dispatch, currentEnvironment) => {
+export const findSecretPassage = (dispatch, currentEnvironment, chosenEnvironment = null) => {
   const environments = ['dungeon', 'fungal_grottoes', 'caverns'];
   const otherEnvironments = environments.filter(e => e !== currentEnvironment);
-  const newEnvironment = otherEnvironments[Math.floor(Math.random() * otherEnvironments.length)];
 
   const envNames = {
     dungeon: 'Dungeon',
@@ -205,17 +253,23 @@ export const findSecretPassage = (dispatch, currentEnvironment) => {
     caverns: 'Caverns'
   };
 
-  dispatch({
-    type: 'LOG',
-    t: `🗺️ Secret passage found! Leads to the ${envNames[newEnvironment]}!`
-  });
-
-  // Change the environment
-  dispatch({ type: 'CHANGE_ENVIRONMENT', environment: newEnvironment });
+  if (chosenEnvironment) {
+    const nextEnv = otherEnvironments.includes(chosenEnvironment) ? chosenEnvironment : otherEnvironments[0];
+    dispatch({
+      type: 'LOG',
+      t: `🗺️ Secret passage found! Leads to the ${envNames[nextEnv]}!`
+    });
+    dispatch({ type: 'CHANGE_ENVIRONMENT', environment: nextEnv });
+    return {
+      newEnvironment: nextEnv,
+      message: `Passage to ${envNames[nextEnv]}`
+    };
+  }
 
   return {
-    newEnvironment,
-    message: `Passage to ${envNames[newEnvironment]}`
+    choices: otherEnvironments,
+    envNames,
+    message: 'Choose which environment the passage leads to.'
   };
 };
 

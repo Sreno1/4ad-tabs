@@ -375,7 +375,7 @@ export const MONSTER_TABLE = {
     reactionTable: { 1: 'bloodOffering', 2: 'quest', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
 
   // ===== DUNGEON WEIRD MONSTERS =====
-  wanderingSwordsman: { name: 'Wandering Swordsman', category: 'dungeonWeird', tier: 2, levelMod: 0, count: '1', special: ['surprise'], xp: 3,
+  wanderingSwordsman: { name: 'Wandering Swordsman', category: 'dungeonWeird', tier: 2, levelMod: 0, count: '1', special: null, xp: 3,
     reactionTable: { 1: 'offerFoodAndRest', 2: 'tradeInformation', 3: 'trialOfChampions', 4: 'fight', 5: 'fight', 6: 'fight' } },
   gargoyle: { name: 'Gargoyle', category: 'dungeonWeird', tier: 3, levelMod: 1, count: 'd3', special: ['flying'], xp: 4,
     reactionTable: { 1: 'ignore', 2: 'puzzle', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
@@ -385,7 +385,7 @@ export const MONSTER_TABLE = {
     reactionTable: { 1: 'quest', 2: 'magicChallenge', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
   manticor: { name: 'Manticor', category: 'dungeonWeird', tier: 3, levelMod: 1, count: '1', special: ['flying', 'poison'], xp: 5,
     reactionTable: { 1: 'bribe', 2: 'puzzle', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  mimicChest: { name: 'Mimic Chest', category: 'dungeonWeird', tier: 3, levelMod: 1, count: '1', special: ['surprise'], xp: 4,
+  mimicChest: { name: 'Mimic Chest', category: 'dungeonWeird', tier: 3, levelMod: 1, count: '1', special: null, xp: 4,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
 
   // ===== CAVERNS VERMIN =====
@@ -397,7 +397,7 @@ export const MONSTER_TABLE = {
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
   caveLocusts: { name: 'Cave Locusts', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['swarm'], xp: 1,
     reactionTable: { 1: 'flee', 2: 'flee', 3: 'ignore', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  piercers: { name: 'Piercers', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['surprise'], xp: 1,
+  piercers: { name: 'Piercers', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: null, xp: 1,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
   stirges: { name: 'Stirges', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['flying'], xp: 1,
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
@@ -411,8 +411,10 @@ export const MONSTER_TABLE = {
     reactionTable: { 1: 'bribe', 2: 'fleeIfOutnumbered', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
   darkElves: { name: 'Dark Elves', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: ['spellDisrupt'], xp: 2,
     reactionTable: { 1: 'tradeInformation', 2: 'magicChallenge', 3: 'capture', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  caveGoblins: { name: 'Cave Goblins', category: 'cavernsMinions', tier: 1, levelMod: 0, count: 'd6+2', special: null, xp: 1,
+  caveGoblins: { name: 'Cave Goblins', category: 'cavernsMinions', tier: 1, levelMod: 0, count: 'd6+2', special: null, xp: 1, surpriseChance: 2,
     reactionTable: { 1: 'flee', 2: 'fleeIfOutnumbered', 3: 'bribe', 4: 'fight', 5: 'fight', 6: 'fight' } },
+  caveSkeletons: { name: 'Cave Skeletons', category: 'cavernsMinions', tier: 1, levelMod: 2, count: '2d6', special: ['undead'], xp: 2, surpriseChance: 1,
+    reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
   deepDwarves: { name: 'Deep Dwarves', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
     reactionTable: { 1: 'tradeInformation', 2: 'bribe', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
 
@@ -435,11 +437,15 @@ export const MONSTER_TABLE = {
     reactionTable: { 1: 'ignore', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
   rustMonster: { name: 'Rust Monster', category: 'cavernsWeird', tier: 2, levelMod: 0, count: '1', special: ['metalEater'], xp: 2,
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  gelatinousCube: { name: 'Gelatinous Cube', category: 'cavernsWeird', tier: 4, levelMod: 2, count: '1', special: ['paralysis', 'surprise'], xp: 6,
+  drillworm: { name: 'Drillworm', category: 'cavernsWeird', tier: 4, levelMod: 2, count: '1', special: null, xp: 6, surpriseChance: 3,
+    reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
+  cavernSludge: { name: 'Cavern Sludge', category: 'cavernsWeird', tier: 3, levelMod: 2, count: '1', special: null, xp: 5, surpriseChance: 4,
+    reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
+  gelatinousCube: { name: 'Gelatinous Cube', category: 'cavernsWeird', tier: 4, levelMod: 2, count: '1', special: ['paralysis'], xp: 6,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
   roper: { name: 'Roper', category: 'cavernsWeird', tier: 3, levelMod: 1, count: '1', special: ['paralysis'], xp: 4,
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  cloaker: { name: 'Cloaker', category: 'cavernsWeird', tier: 3, levelMod: 1, count: '1', special: ['surprise'], xp: 4,
+  cloaker: { name: 'Cloaker', category: 'cavernsWeird', tier: 3, levelMod: 1, count: '1', special: null, xp: 4,
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
   hookHorror: { name: 'Hook Horror', category: 'cavernsWeird', tier: 3, levelMod: 1, count: 'd3', special: null, xp: 4,
     reactionTable: { 1: 'fleeIfOutnumbered', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
@@ -491,7 +497,7 @@ export const MONSTER_TABLE = {
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
   violetFungus: { name: 'Violet Fungus', category: 'fungalWeird', tier: 2, levelMod: 0, count: 'd3', special: ['poison'], xp: 2,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  phantomFungus: { name: 'Phantom Fungus', category: 'fungalWeird', tier: 3, levelMod: 1, count: '1', special: ['surprise'], xp: 4,
+  phantomFungus: { name: 'Phantom Fungus', category: 'fungalWeird', tier: 3, levelMod: 1, count: '1', special: null, xp: 4,
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
   sporeWight: { name: 'Spore Wight', category: 'fungalWeird', tier: 3, levelMod: 1, count: '1', special: ['undead', 'sporeCloud'], xp: 4,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
@@ -569,6 +575,7 @@ export const createMonsterFromTable = (key, hcl = 1) => {
     special: specialAbilities.length > 0 ? specialAbilities[0] : null, // Primary ability for display
     abilities: specialAbilities, // All abilities
     xp: template.xp,
+    surpriseChance: template.surpriseChance || 0,
     // Evaluate count expressions (like 'd6', 'd6+2', 'd6-2', 'd3', or numeric strings)
     count: (function() {
       const c = template.count;
@@ -578,11 +585,15 @@ export const createMonsterFromTable = (key, hcl = 1) => {
         // Plain number string
         if (/^\d+$/.test(c)) return parseInt(c, 10);
         // Dice expressions like d6, d3, d6+2, d6-2
-        const m = c.match(/^d(\d+)([+-]\d+)?$/);
+        const m = c.match(/^(\d*)d(\d+)([+-]\d+)?$/);
         if (m) {
-          const sides = parseInt(m[1], 10);
-          const roll = Math.floor(Math.random() * sides) + 1;
-          const adj = m[2] ? parseInt(m[2], 10) : 0;
+          const dice = m[1] ? parseInt(m[1], 10) : 1;
+          const sides = parseInt(m[2], 10);
+          const adj = m[3] ? parseInt(m[3], 10) : 0;
+          let roll = 0;
+          for (let i = 0; i < dice; i++) {
+            roll += Math.floor(Math.random() * sides) + 1;
+          }
           const val = roll + adj;
           return Math.max(1, val);
         }
@@ -598,11 +609,15 @@ export const createMonsterFromTable = (key, hcl = 1) => {
       if (typeof c === 'number') return c;
       if (typeof c === 'string') {
         if (/^\d+$/.test(c)) return parseInt(c, 10);
-        const m = c.match(/^d(\d+)([+-]\d+)?$/);
+        const m = c.match(/^(\d*)d(\d+)([+-]\d+)?$/);
         if (m) {
-          const sides = parseInt(m[1], 10);
-          const roll = Math.floor(Math.random() * sides) + 1;
-          const adj = m[2] ? parseInt(m[2], 10) : 0;
+          const dice = m[1] ? parseInt(m[1], 10) : 1;
+          const sides = parseInt(m[2], 10);
+          const adj = m[3] ? parseInt(m[3], 10) : 0;
+          let roll = 0;
+          for (let i = 0; i < dice; i++) {
+            roll += Math.floor(Math.random() * sides) + 1;
+          }
           const val = roll + adj;
           return Math.max(1, val);
         }

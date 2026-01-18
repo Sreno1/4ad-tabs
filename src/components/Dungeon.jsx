@@ -10,13 +10,16 @@ import { TILE_SHAPE_TABLE } from '../data/rooms.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import DungeonHeaderButtons from './DungeonHeaderButtons.jsx';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
+import DungeonVoxelView from './DungeonVoxelView.jsx';
 import { buildWallOffPerimeter } from '../utils/wallUtils.js';
+import { normalizeEnvironment } from '../constants/environmentConstants.js';
 import ContextMenu from './ContextMenu.jsx';
 import { getEquipment, hasEquipment } from '../data/equipment.js';
 import RadialMenu from './RadialMenu.jsx';
 
 export default function Dungeon({ state, dispatch, tileResult: externalTileResult, generateTile: externalGenerateTile, clearTile: externalClearTile, bossCheckResult: externalBossCheck, roomDetails: externalRoomDetails, sidebarCollapsed = false, placementTemplate = null, onCommitPlacement = null, autoPlacedRoom = null, setAutoPlacedRoom = null, onShowRoomDesigner = null, onToggleShowLog = null, showLogMiddle = false }) {
   const [showMarkers, setShowMarkers] = useState(true); // Toggle markers visibility
+  const [showVoxelView, setShowVoxelView] = useState(false);
   const [roomMarkers, setRoomMarkers] = useState({}); // {cellKey: {type, label, tooltip}}  const [hoveredCell, setHoveredCell] = useState(null); // For showing tooltip
   // Load persisted markers (notes) from localStorage
   React.useEffect(() => {
@@ -202,6 +205,12 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   }, [radialMenu, getMarker, addMarker, removeMarker]);
 
   const closeContext = useCallback(() => { setContextMenu(null); setContextSelectedTile(null); }, []);
+  const toggleVoxelView = useCallback(() => {
+    setContextMenu(null);
+    setContextSelectedTile(null);
+    setRadialMenu(null);
+    setShowVoxelView(prev => !prev);
+  }, []);
 
   // Party pawn handlers
   const movePartyTo = useCallback((x, y) => {
@@ -220,8 +229,13 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   }, []);
 
   const handleDoorToggle = useCallback((x, y, edge) => {
+    const envKey = normalizeEnvironment(state.currentEnvironment);
+    if (envKey === 'caverns' || envKey === 'fungal_grottoes') {
+      dispatch(logMessage(`🚫 Doors cannot be placed in ${envKey === 'caverns' ? 'Caverns' : 'Fungal Grottoes'}.`, 'exploration'));
+      return;
+    }
     dispatch({ type: 'TOGGLE_DOOR', x, y, edge });
-  }, [dispatch]);
+  }, [dispatch, state.currentEnvironment]);
 
   // Calculate optimal cell size based on container dimensions
   React.useEffect(() => {
@@ -337,7 +351,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   // Intercept right-clicks inside the dungeon grid container to cancel the browser menu
   React.useEffect(() => {
     const container = gridContainerRef.current;
-    if (!container) return;
+    if (!container || showVoxelView) return;
 
   const handler = (e) => {
       try {
@@ -408,7 +422,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
 
     container.addEventListener('contextmenu', handler);
     return () => container.removeEventListener('contextmenu', handler);
-  }, [cellSize, shouldRotate, state.grid]);
+  }, [cellSize, shouldRotate, state.grid, showVoxelView]);
   return (
   <section id="dungeon_section" className="space-y-2 h-full flex flex-col">
       {/* Dungeon Grid - No extra outline/container, never scrolls */}
@@ -417,6 +431,8 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
           <DungeonHeaderButtons
             showLogMiddle={showLogMiddle}
             onToggleShowLog={() => onToggleShowLog && onToggleShowLog()}
+            showVoxelView={showVoxelView}
+            onToggleVoxelView={toggleVoxelView}
             onShowRoomDesigner={() => onShowRoomDesigner && onShowRoomDesigner()}
             onGenerateTile={() => typeof externalGenerateTile === 'function' ? externalGenerateTile() : null}
             onWandering={() => { try { rollWanderingMonster(dispatch, { state }); } catch (e) {} }}
@@ -476,173 +492,185 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
 
           {/* Grid container - only this rotates */}
           <div
-            className="inline-block"
+            className={showVoxelView ? 'w-full h-full' : 'inline-block'}
             style={{
-              width: 'fit-content',
-              height: 'fit-content',
+              width: showVoxelView ? '100%' : 'fit-content',
+              height: showVoxelView ? '100%' : 'fit-content',
             }}
           >
-          <DungeonGridCanvas
-            id="dungeon_grid_canvas"
-            grid={state.grid}
-            doors={state.doors}
-            walls={state.walls || []}
-            roomMarkers={roomMarkers}
-            cellStyles={state.cellStyles || {}}
-            showMarkers={showMarkers}
-            cellSize={cellSize}
-            shouldRotate={shouldRotate}
-            contextMenuOpen={!!contextMenu}
-            onContextDismiss={() => { setContextMenu(null); setContextSelectedTile(null); }}
-            onCellClick={handleCellClick}
-            onCellSet={handleCellSet}
-            onCellRightClick={handleCellRightClick}
-            onDoorToggle={handleDoorToggle}
-            partyPos={partyPos}
-            onPartyMove={movePartyTo}
-            partySelected={partySelected}
-            onPartySelect={selectParty}
-            partyHasLight={(state.hasLightSource) || ((state.party || []).some(h => (h?.hp > 0) && (hasEquipment(h, 'lantern') || (Array.isArray(h?.equipment) && h.equipment.some(k => getEquipment(k)?.lightSource)))))}
-            partyMembers={state.party}
-            placementTemplate={placementTemplate}
-            autoPlacedRoom={autoPlacedRoom}
-            setAutoPlacedRoom={setAutoPlacedRoom}
-            onCommitPlacement={onCommitPlacement}
-            selectedTile={contextSelectedTile}
-            onEditComplete={() => {
-              try {
-                const data = {
-                  adventureId: state?.adventure?.adventureId || null,
-                  roomEvents: [],
-                  tileResult: (externalTileResult) ? externalTileResult : null,
-                  roomDetails: (externalRoomDetails) ? externalRoomDetails : null,
-                  bossCheckResult: effectiveBossCheck || null,
-                  autoPlacedRoom: autoPlacedRoom || null
-                };
-                if ((data.roomEvents && data.roomEvents.length > 0) || data.tileResult || data.roomDetails || data.autoPlacedRoom) {
-                  localStorage.setItem('lastTileData', JSON.stringify(data));
-                } else {
-                  localStorage.removeItem('lastTileData');
-                }
-              } catch (e) { /* ignore */ }
-            }}
-          />
-          {contextMenu && (
-            <ContextMenu
-              x={contextMenu.xPx}
-              y={contextMenu.yPx}
-              onClose={closeContext}
-              items={[
-                { key: 'marker', label: 'Place marker', submenu: markerOptions.map(m => ({
-                  key: m.key,
-                  label: m.label || (m.key === 'clear' ? 'Clear' : (m.key.charAt(0).toUpperCase() + m.key.slice(1))),
-                  onClick: () => {
-                    const existing = getMarker(contextMenu.cellX, contextMenu.cellY);
-                    if (m.key === 'clear') {
-                      if (existing) removeMarker(contextMenu.cellX, contextMenu.cellY);
-                    } else if (!existing) {
-                      addMarker(contextMenu.cellX, contextMenu.cellY, m.key, m.key.charAt(0).toUpperCase() + m.key.slice(1), `${m.key} marker`);
-                    } else if (existing && existing.type === m.key) {
-                      removeMarker(contextMenu.cellX, contextMenu.cellY);
+          {showVoxelView ? (
+            <DungeonVoxelView
+              grid={state.grid}
+              doors={state.doors}
+              walls={state.walls || []}
+              partyPos={partyPos}
+              voxelSize={Math.max(12, Math.min(32, cellSize))}
+            />
+          ) : (
+            <>
+              <DungeonGridCanvas
+                id="dungeon_grid_canvas"
+                grid={state.grid}
+                doors={state.doors}
+                walls={state.walls || []}
+                roomMarkers={roomMarkers}
+                cellStyles={state.cellStyles || {}}
+                showMarkers={showMarkers}
+                cellSize={cellSize}
+                shouldRotate={shouldRotate}
+                contextMenuOpen={!!contextMenu}
+                onContextDismiss={() => { setContextMenu(null); setContextSelectedTile(null); }}
+                onCellClick={handleCellClick}
+                onCellSet={handleCellSet}
+                onCellRightClick={handleCellRightClick}
+                onDoorToggle={handleDoorToggle}
+                partyPos={partyPos}
+                onPartyMove={movePartyTo}
+                partySelected={partySelected}
+                onPartySelect={selectParty}
+                partyHasLight={(state.hasLightSource) || ((state.party || []).some(h => (h?.hp > 0) && (hasEquipment(h, 'lantern') || (Array.isArray(h?.equipment) && h.equipment.some(k => getEquipment(k)?.lightSource)))))}
+                partyMembers={state.party}
+                placementTemplate={placementTemplate}
+                autoPlacedRoom={autoPlacedRoom}
+                setAutoPlacedRoom={setAutoPlacedRoom}
+                onCommitPlacement={onCommitPlacement}
+                selectedTile={contextSelectedTile}
+                onEditComplete={() => {
+                  try {
+                    const data = {
+                      adventureId: state?.adventure?.adventureId || null,
+                      roomEvents: [],
+                      tileResult: (externalTileResult) ? externalTileResult : null,
+                      roomDetails: (externalRoomDetails) ? externalRoomDetails : null,
+                      bossCheckResult: effectiveBossCheck || null,
+                      autoPlacedRoom: autoPlacedRoom || null
+                    };
+                    if ((data.roomEvents && data.roomEvents.length > 0) || data.tileResult || data.roomDetails || data.autoPlacedRoom) {
+                      localStorage.setItem('lastTileData', JSON.stringify(data));
                     } else {
-                      addMarker(contextMenu.cellX, contextMenu.cellY, m.key, m.key.charAt(0).toUpperCase() + m.key.slice(1), `${m.key} marker`);
+                      localStorage.removeItem('lastTileData');
                     }
-                  }
-                })), },
-                { key: 'door', label: 'Door...', submenu: [
-                  { key: 'N', label: 'North', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'N' }) },
-                  { key: 'S', label: 'South', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'S' }) },
-                  { key: 'E', label: 'East', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'E' }) },
-                  { key: 'W', label: 'West', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'W' }) }
-                ] },
-                // If a door was clicked, offer Lock/Unlock toggle
-                ...(contextMenu && typeof contextMenu.doorIdx === 'number' && contextMenu.doorIdx >= 0 ? [{ key: 'lock', label: (state.doors[contextMenu.doorIdx]?.locked ? 'Unlock door' : 'Lock door'), onClick: () => {
-                    try {
-                      const di = contextMenu.doorIdx;
-                      // Toggle locked flag on the door
-                      const newDoors = (state.doors || []).map((d, i) => i === di ? { ...d, locked: !d.locked } : d);
-                      dispatch({ type: 'SET_DOORS', doors: newDoors });
-                    } catch (e) {}
-                  } }] : []),
-                ...(contextMenu && typeof contextMenu.doorIdx === 'number' && contextMenu.doorIdx >= 0 ? [{ key: 'type', label: 'Door Type...', submenu: [
-                  { key: 'normal', label: 'Normal', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'normal' }) },
-                  { key: 'magically_sealed', label: 'Magically sealed', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'magically_sealed' }) },
-                  { key: 'iron', label: 'Iron door', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'iron' }) },
-                  { key: 'illusionary', label: 'Illusionary', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'illusionary' }) },
-                  { key: 'trapped', label: 'Trap', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'trapped' }) }
-                ] }] : []),
-                { key: 'wall', label: 'Wall off room', onClick: () => {
-                    try {
-                      const gridEl = state.grid;
-                      const cols = gridEl[0]?.length || 0;
-                      const rows = gridEl.length;
-                      const sx = contextMenu.cellX; const sy = contextMenu.cellY;
-                      if (!(sy >= 0 && sy < rows && sx >= 0 && sx < cols)) return;
-                      if (gridEl[sy][sx] !== 1) return;
-                      const styles = state.cellStyles || {};
-                      const { region, perimeter } = buildWallOffPerimeter(gridEl, styles, sx, sy, { allowFallback: true });
-                      try {
-                        const existingWalls = state.walls || [];
-
-                        // debug info to help diagnose missing walls
-                        try {
-                          console.debug('wall-off: regionSize=', region.size, 'perimeterCount=', perimeter.length, 'sample=', perimeter.slice(0,6));
-                        } catch (e) {}
-
-                        const allExist = perimeter.every(pe => existingWalls.some(w => w.x === pe.x && w.y === pe.y && w.edge === pe.edge));
-                        if (allExist) {
-                          // remove perimeter edges from existing walls
-                          const newWalls = existingWalls.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === w.edge));
-                          dispatch({ type: 'SET_WALLS', walls: newWalls });
+                  } catch (e) { /* ignore */ }
+                }}
+              />
+              {contextMenu && (
+                <ContextMenu
+                  x={contextMenu.xPx}
+                  y={contextMenu.yPx}
+                  onClose={closeContext}
+                  items={[
+                    { key: 'marker', label: 'Place marker', submenu: markerOptions.map(m => ({
+                      key: m.key,
+                      label: m.label || (m.key === 'clear' ? 'Clear' : (m.key.charAt(0).toUpperCase() + m.key.slice(1))),
+                      onClick: () => {
+                        const existing = getMarker(contextMenu.cellX, contextMenu.cellY);
+                        if (m.key === 'clear') {
+                          if (existing) removeMarker(contextMenu.cellX, contextMenu.cellY);
+                        } else if (!existing) {
+                          addMarker(contextMenu.cellX, contextMenu.cellY, m.key, m.key.charAt(0).toUpperCase() + m.key.slice(1), `${m.key} marker`);
+                        } else if (existing && existing.type === m.key) {
+                          removeMarker(contextMenu.cellX, contextMenu.cellY);
                         } else {
-                          // Remove any conflicting doors on these edges
-                          (state.doors || []).forEach(d => {
-                            if (perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === d.edge)) {
-                              dispatch({ type: 'TOGGLE_DOOR', x: d.x, y: d.y, edge: d.edge });
-                            }
-                          });
-
-                          // Merge perimeter edges into existing walls without duplicating
-                          const union = [...existingWalls];
-                          perimeter.forEach(pe => {
-                            if (!union.some(u => u.x === pe.x && u.y === pe.y && u.edge === pe.edge)) union.push(pe);
-                          });
-                          dispatch({ type: 'SET_WALLS', walls: union });
+                          addMarker(contextMenu.cellX, contextMenu.cellY, m.key, m.key.charAt(0).toUpperCase() + m.key.slice(1), `${m.key} marker`);
                         }
-                        } catch (err) { console.error('wall-off error', err); }
-                    } catch (e) { /* ignore */ }
-                } },
-                { key: 'note', label: 'Add Note', onClick: () => {
-                    const txt = window.prompt('Enter note for this tile:');
-                    if (txt && txt.trim()) {
-                      // If a marker already exists on this tile, preserve its type/label
-                      // and merge the note into its tooltip instead of replacing the marker.
-                      const existing = getMarker(contextMenu.cellX, contextMenu.cellY);
-                      if (existing) {
-                        const mergedTooltip = existing.tooltip && existing.tooltip.length > 0
-                          ? `${existing.tooltip} — Note: ${txt.trim()}`
-                          : txt.trim();
-                        addMarker(contextMenu.cellX, contextMenu.cellY, existing.type, existing.label, mergedTooltip);
-                      } else {
-                        // add as a note marker
-                        addMarker(contextMenu.cellX, contextMenu.cellY, 'note', 'Note', txt.trim());
+                      }
+                    })), },
+                    { key: 'door', label: 'Door...', submenu: [
+                      { key: 'N', label: 'North', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'N' }) },
+                      { key: 'S', label: 'South', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'S' }) },
+                      { key: 'E', label: 'East', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'E' }) },
+                      { key: 'W', label: 'West', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'W' }) }
+                    ] },
+                    // If a door was clicked, offer Lock/Unlock toggle
+                    ...(contextMenu && typeof contextMenu.doorIdx === 'number' && contextMenu.doorIdx >= 0 ? [{ key: 'lock', label: (state.doors[contextMenu.doorIdx]?.locked ? 'Unlock door' : 'Lock door'), onClick: () => {
+                        try {
+                          const di = contextMenu.doorIdx;
+                          // Toggle locked flag on the door
+                          const newDoors = (state.doors || []).map((d, i) => i === di ? { ...d, locked: !d.locked } : d);
+                          dispatch({ type: 'SET_DOORS', doors: newDoors });
+                        } catch (e) {}
+                      } }] : []),
+                    ...(contextMenu && typeof contextMenu.doorIdx === 'number' && contextMenu.doorIdx >= 0 ? [{ key: 'type', label: 'Door Type...', submenu: [
+                      { key: 'normal', label: 'Normal', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'normal' }) },
+                      { key: 'magically_sealed', label: 'Magically sealed', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'magically_sealed' }) },
+                      { key: 'iron', label: 'Iron door', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'iron' }) },
+                      { key: 'illusionary', label: 'Illusionary', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'illusionary' }) },
+                      { key: 'trapped', label: 'Trap', onClick: () => dispatch({ type: 'SET_DOOR_TYPE', doorIdx: contextMenu.doorIdx, doorType: 'trapped' }) }
+                    ] }] : []),
+                    { key: 'wall', label: 'Wall off room', onClick: () => {
+                        try {
+                          const gridEl = state.grid;
+                          const cols = gridEl[0]?.length || 0;
+                          const rows = gridEl.length;
+                          const sx = contextMenu.cellX; const sy = contextMenu.cellY;
+                          if (!(sy >= 0 && sy < rows && sx >= 0 && sx < cols)) return;
+                          if (gridEl[sy][sx] !== 1) return;
+                          const styles = state.cellStyles || {};
+                          const { region, perimeter } = buildWallOffPerimeter(gridEl, styles, sx, sy, { allowFallback: true });
+                          try {
+                            const existingWalls = state.walls || [];
+
+                            // debug info to help diagnose missing walls
+                            try {
+                              console.debug('wall-off: regionSize=', region.size, 'perimeterCount=', perimeter.length, 'sample=', perimeter.slice(0,6));
+                            } catch (e) {}
+
+                            const allExist = perimeter.every(pe => existingWalls.some(w => w.x === pe.x && w.y === pe.y && w.edge === pe.edge));
+                            if (allExist) {
+                              // remove perimeter edges from existing walls
+                              const newWalls = existingWalls.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === w.edge));
+                              dispatch({ type: 'SET_WALLS', walls: newWalls });
+                            } else {
+                              // Remove any conflicting doors on these edges
+                              (state.doors || []).forEach(d => {
+                                if (perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === d.edge)) {
+                                  dispatch({ type: 'TOGGLE_DOOR', x: d.x, y: d.y, edge: d.edge });
+                                }
+                              });
+
+                              // Merge perimeter edges into existing walls without duplicating
+                              const union = [...existingWalls];
+                              perimeter.forEach(pe => {
+                                if (!union.some(u => u.x === pe.x && u.y === pe.y && u.edge === pe.edge)) union.push(pe);
+                              });
+                              dispatch({ type: 'SET_WALLS', walls: union });
+                            }
+                            } catch (err) { console.error('wall-off error', err); }
+                        } catch (e) { /* ignore */ }
+                    } },
+                    { key: 'note', label: 'Add Note', onClick: () => {
+                        const txt = window.prompt('Enter note for this tile:');
+                        if (txt && txt.trim()) {
+                          // If a marker already exists on this tile, preserve its type/label
+                          // and merge the note into its tooltip instead of replacing the marker.
+                          const existing = getMarker(contextMenu.cellX, contextMenu.cellY);
+                          if (existing) {
+                            const mergedTooltip = existing.tooltip && existing.tooltip.length > 0
+                              ? `${existing.tooltip} — Note: ${txt.trim()}`
+                              : txt.trim();
+                            addMarker(contextMenu.cellX, contextMenu.cellY, existing.type, existing.label, mergedTooltip);
+                          } else {
+                            // add as a note marker
+                            addMarker(contextMenu.cellX, contextMenu.cellY, 'note', 'Note', txt.trim());
+                          }
+                        }
                       }
                     }
-                  }
-                }
-              ]}
-            />
-          )}
-          {radialMenu && (
-            <div id="dungeon_radial_menu">
-              <RadialMenu
-                x={radialMenu.xPx}
-                y={radialMenu.yPx}
-                items={markerOptions}
-                onSelect={handleRadialSelect}
-                onClose={closeRadial}
-              />
-            </div>
+                  ]}
+                />
+              )}
+              {radialMenu && (
+                <div id="dungeon_radial_menu">
+                  <RadialMenu
+                    x={radialMenu.xPx}
+                    y={radialMenu.yPx}
+                    items={markerOptions}
+                    onSelect={handleRadialSelect}
+                    onClose={closeRadial}
+                  />
+                </div>
+              )}
+            </>
           )}
           </div>
         </div>

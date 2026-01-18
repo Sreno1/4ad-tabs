@@ -6,10 +6,11 @@ import { formatRollPrefix } from '../rollLog.js';
 import {
   DOOR_TYPE_TABLE,
   DOOR_TYPES,
-  TRAP_TABLE,
+  TRAP_TABLES,
   TRAP_TYPES,
-  SPECIAL_FEATURE_TABLE,
-  SPECIAL_ROOMS,
+  SPECIAL_FEATURE_TABLES,
+  SPECIAL_FEATURES_BY_ENV,
+  WATER_POOL_TABLE,
   PUZZLE_TABLE,
   PUZZLE_TYPES,
   CORRIDOR_DIRECTION_TABLE,
@@ -19,6 +20,7 @@ import {
   getTrapDisarmBonus,
   checkDoorAccess,
 } from '../../data/rooms.js';
+import { normalizeEnvironment } from '../../constants/environmentConstants.js';
 import { rollWanderingMonster, spawnMajorFoe } from './monsterActions.js';
 import { rollTreasure } from './treasureActions.js';
 
@@ -80,9 +82,11 @@ export const attemptOpenDoor = (dispatch, hero, doorType) => {
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Trap info
  */
-export const rollTrap = (dispatch) => {
+export const rollTrap = (dispatch, options = {}) => {
+  const envKey = normalizeEnvironment(options.environment);
+  const table = TRAP_TABLES[envKey] || TRAP_TABLES.dungeon;
   const roll = d6();
-  const typeKey = TRAP_TABLE[roll];
+  const typeKey = table[roll];
   const trap = TRAP_TYPES[typeKey];
 
   dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}⚠️ Trap detected: ${trap.name}!` });
@@ -97,10 +101,12 @@ export const rollTrap = (dispatch) => {
  * @param {string} trapType - Trap type key (if known)
  * @returns {object} Detection result
  */
-export const attemptDetectTrap = (dispatch, hero, trapType = null) => {
+export const attemptDetectTrap = (dispatch, hero, trapType = null, options = {}) => {
   // If trap type unknown, roll it
   const roll = d6();
-  const actualTrapType = trapType || TRAP_TABLE[d6()];
+  const envKey = normalizeEnvironment(options.environment);
+  const table = TRAP_TABLES[envKey] || TRAP_TABLES.dungeon;
+  const actualTrapType = trapType || table[d6()];
   const trap = TRAP_TYPES[actualTrapType];
 
   const { bonus, dc } = getTrapDetectionBonus(hero, actualTrapType);
@@ -123,7 +129,7 @@ export const attemptDetectTrap = (dispatch, hero, trapType = null) => {
  * @param {string} trapType - Trap type key
  * @returns {object} Disarm result
  */
-export const attemptDisarmTrap = (dispatch, hero, trapType) => {
+export const attemptDisarmTrap = (dispatch, hero, trapType, options = {}) => {
   const trap = TRAP_TYPES[trapType];
   if (!trap) return { success: false, message: 'Unknown trap type' };
 
@@ -161,7 +167,7 @@ export const attemptDisarmTrap = (dispatch, hero, trapType) => {
  * @param {string} trapType - Trap type key
  * @returns {object} Trap effect result
  */
-export const triggerTrap = (dispatch, hero, trapType) => {
+export const triggerTrap = (dispatch, hero, trapType, options = {}) => {
   const trap = TRAP_TYPES[trapType];
   if (!trap) return { damage: 0 };
 
@@ -186,12 +192,18 @@ export const triggerTrap = (dispatch, hero, trapType) => {
   } else if (effect === 'wandering') {
     dispatch({ type: 'LOG', t: `🔔 The alarm attracts wandering monsters!` });
     // Alarm-based wandering monsters ambush the party (target rear)
-    rollWanderingMonster(dispatch, { ambush: true });
+    rollWanderingMonster(dispatch, { ambush: true, state: options.state, environment: options.environment });
   } else if (effect === 'teleport') {
     dispatch({
       type: 'LOG',
       t: `✨ ${hero.name} is teleported back to the entrance!`,
     });
+  } else if (effect === 'sleep_spores') {
+    dispatch({ type: 'LOG', t: `😴 Sleep spores fill the area. Resolve sleep saves per the rules.` });
+  } else if (effect === 'snare') {
+    dispatch({ type: 'LOG', t: `🧵 A fungal snare steals an item. Resolve loss per the rules.` });
+  } else if (effect === 'mind_control') {
+    dispatch({ type: 'LOG', t: `🧠 Cordyceps attempts to control a hero. Resolve mind control per the rules.` });
   }
 
   return { damage, effect, trap };
@@ -202,13 +214,23 @@ export const triggerTrap = (dispatch, hero, trapType) => {
  * @param {function} dispatch - Reducer dispatch function
  * @returns {object} Special room info
  */
-export const rollSpecialRoom = (dispatch) => {
+export const rollSpecialRoom = (dispatch, options = {}) => {
+  const envKey = normalizeEnvironment(options.environment);
+  const table = SPECIAL_FEATURE_TABLES[envKey] || SPECIAL_FEATURE_TABLES.dungeon;
+  const rooms = SPECIAL_FEATURES_BY_ENV[envKey] || SPECIAL_FEATURES_BY_ENV.dungeon;
   const roll = d6();
-  const typeKey = SPECIAL_FEATURE_TABLE[roll];
-  const room = SPECIAL_ROOMS[typeKey];
+  const typeKey = table[roll];
+  const room = rooms[typeKey];
 
-  dispatch({ type: 'LOG', t: `✨ Special Feature: ${room.name}` });
-  dispatch({ type: 'LOG', t: `📜 ${room.description}` });
+  if (room) {
+    dispatch({ type: 'LOG', t: `✨ Special Feature: ${room.name}` });
+    dispatch({ type: 'LOG', t: `📜 ${room.description}` });
+    if (room.effect === 'water_pool') {
+      const poolRoll = d6();
+      const poolResult = WATER_POOL_TABLE[poolRoll];
+      dispatch({ type: 'LOG', t: `💧 Water Pool (${poolRoll}): ${poolResult}` });
+    }
+  }
 
   return { roll, typeKey, ...room };
 };
@@ -299,7 +321,7 @@ export const interactFountain = (dispatch, hero) => {
  * @param {object} hero - Hero searching
  * @returns {object} Statue result
  */
-export const interactStatue = (dispatch, hero) => {
+export const interactStatue = (dispatch, hero, options = {}) => {
   const roll = d6();
 
   let result;
@@ -319,7 +341,7 @@ export const interactStatue = (dispatch, hero) => {
       type: 'LOG',
       t: `💎 ${hero.name} finds treasure hidden in the statue!`,
     });
-    rollTreasure(dispatch);
+    rollTreasure(dispatch, { environment: options.environment });
   }
 
   return { roll, result };

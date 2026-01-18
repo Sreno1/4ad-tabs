@@ -26,6 +26,8 @@ import {
   toggleDualWield,
   attemptPartyFlee,
   attemptWithdraw,
+  determineInitiative,
+  rollSurprise,
   awardXP,
   checkLevelUp,
   processMonsterRoundStart,
@@ -89,10 +91,29 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       setAttackedThisRound({});
   // Clear any wandering encounter metadata that might force ambush/monster-first
   try { dispatch({ type: 'CLEAR_WANDERING_ENCOUNTER' }); } catch (e) {}
-      addToCombatLog('🔔 New encounter started — choose initiative.');
+      let surpriseApplied = false;
+      const wanderingMeta = state?.combatMeta?.wanderingEncounter;
+      if (!wanderingMeta) {
+        const surpriseMonster = (state.monsters || []).find(m => m && m.surpriseChance);
+        if (surpriseMonster && surpriseMonster.surpriseChance > 0) {
+          const surpriseResult = rollSurprise(surpriseMonster);
+          if (surpriseResult.message) {
+            addToCombatLog(surpriseResult.message);
+          }
+          if (surpriseResult.surprised) {
+            const init = determineInitiative({ isSurprise: true });
+            setCombatInitiative(init);
+            addToCombatLog(init.reason);
+            surpriseApplied = true;
+          }
+        }
+      }
+      if (!surpriseApplied) {
+        addToCombatLog('🔔 New encounter started — choose initiative.');
+      }
     }
     prevMonsterCountRef.current = now;
-  }, [state.monsters, addToCombatLog]);
+  }, [state.monsters, state.combatMeta, dispatch, addToCombatLog]);
 
   // If at any time there are monsters but no initiative chosen, ensure the InitiativePhase is shown
   useEffect(() => {
@@ -957,6 +978,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
             clearCombatLog={clearCombatLog}
             setCombatInitiative={setCombatInitiative}
             setTargetMonsterIdx={setTargetMonsterIdx}
+            environment={state.currentEnvironment}
           />
         </div>
       )}

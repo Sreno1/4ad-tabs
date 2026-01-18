@@ -311,10 +311,10 @@ export function SecretDoorModal({ secretDoor, onClose }) {
   );
 }
 
-export function SecretPassageModal({ passage, onClose }) {
+export function SecretPassageModal({ passage, onClose, onChooseEnvironment }) {
   if (!passage) return null;
 
-  const envNames = {
+  const envNames = passage.envNames || {
     dungeon: 'Dungeon',
     fungal_grottoes: 'Fungal Grottoes',
     caverns: 'Caverns'
@@ -338,19 +338,33 @@ export function SecretPassageModal({ passage, onClose }) {
 
         <div id="secret_passage_modal_content" className="bg-purple-900 border border-purple-500 rounded p-4 mb-4">
           <div className="text-purple-100 font-bold mb-2">
-            Passage to {envNames[passage.newEnvironment]}
+            {passage.newEnvironment ? `Passage to ${envNames[passage.newEnvironment]}` : 'Choose a destination'}
           </div>
           <div className="text-purple-200 text-sm">
-            You've discovered a hidden passage leading to a different environment! The dungeon architecture changes...
+            You've discovered a hidden passage leading to a different environment.
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-full bg-purple-700 hover:bg-purple-600 text-white py-2 rounded font-bold"
-        >
-          Enter {envNames[passage.newEnvironment]}
-        </button>
+        {passage.choices && passage.choices.length > 0 ? (
+          <div className="space-y-2">
+            {passage.choices.map((choice) => (
+              <button
+                key={choice}
+                onClick={() => onChooseEnvironment && onChooseEnvironment(choice)}
+                className="w-full bg-purple-700 hover:bg-purple-600 text-white py-2 rounded font-bold"
+              >
+                Enter {envNames[choice]}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <button
+            onClick={onClose}
+            className="w-full bg-purple-700 hover:bg-purple-600 text-white py-2 rounded font-bold"
+          >
+            Enter {envNames[passage.newEnvironment]}
+          </button>
+        )}
       </div>
     </div>
   );

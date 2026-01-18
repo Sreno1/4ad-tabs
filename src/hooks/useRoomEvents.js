@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { d66, d6, r2d6 } from '../utils/dice.js';
-import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE, SPECIAL_FEATURE_TABLE, SPECIAL_ROOMS, checkForBoss } from '../data/rooms.js';
-import { spawnMonster, rollTreasure, spawnMajorFoe } from "../utils/gameActions/index.js";
+import {
+  TILE_SHAPE_TABLE,
+  TILE_CONTENTS_TABLE,
+  SPECIAL_FEATURE_TABLES,
+  SPECIAL_FEATURES_BY_ENV,
+  SPECIAL_EVENTS_TABLES,
+  WATER_POOL_TABLE,
+  checkForBoss
+} from '../data/rooms.js';
+import { spawnMonster, rollTreasure, spawnMajorFoe, rollWanderingMonster, rollTrap } from "../utils/gameActions/index.js";
 import { previewTreasureRoll } from '../utils/gameActions/treasureActions.js';
 import { getTrait } from '../data/traits.js';
 import { createMonsterFromTable, createMonster, MONSTER_TABLE } from '../data/monsters.js';
@@ -12,6 +20,7 @@ import { logMessage } from '../state/actionCreators.js';
 import roomLibrary from '../utils/roomLibrary.js';
 import sfx from '../utils/sfx.js';
 import { SET_COMBAT_LOCATION } from '../state/actions.js';
+import { ENVIRONMENT_LABELS, ENVIRONMENT_MONSTER_CATEGORIES, ENVIRONMENT_DRAGONS, normalizeEnvironment } from '../constants/environmentConstants.js';
 
 export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview) {
   // Attempt to restore last tile data from localStorage so refresh keeps you in the same room
@@ -31,6 +40,9 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
   const [roomDetails, setRoomDetails] = useState(() => (saved && saved.roomDetails) ? saved.roomDetails : null);
   const [bossCheckResult, setBossCheckResult] = useState(() => (saved && saved.bossCheckResult) ? saved.bossCheckResult : null);
   const [autoPlacedRoom, setAutoPlacedRoom] = useState(() => (saved && saved.autoPlacedRoom) ? saved.autoPlacedRoom : null);
+  const environmentKey = normalizeEnvironment(state.currentEnvironment);
+  const environmentLabel = ENVIRONMENT_LABELS[environmentKey] || 'Dungeon';
+  const environmentCategories = ENVIRONMENT_MONSTER_CATEGORIES[environmentKey] || ENVIRONMENT_MONSTER_CATEGORIES.dungeon;
 
   // Helper to roll a count spec like 'd6', 'd6+2', 'd6-2', or 'd3'
   const rollCountFromSpec = (spec) => {
@@ -75,8 +87,10 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
         break;
 
       case 'vermin': {
-        // Choose a specific vermin from MONSTER_TABLE with category 'dungeonVermin'
-        const candidates = Object.entries(MONSTER_TABLE).filter(([, t]) => t.category === 'dungeonVermin').map(([k]) => k);
+        // Choose a specific vermin from MONSTER_TABLE with category based on environment
+        const candidates = Object.entries(MONSTER_TABLE)
+          .filter(([, t]) => t.category === environmentCategories.vermin)
+          .map(([k]) => k);
         const key = candidates[Math.floor(Math.random() * candidates.length)];
         const template = MONSTER_TABLE[key];
         // Create monster object from the MONSTER_TABLE entry and dispatch
@@ -107,8 +121,8 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
           const total = saveRoll + dwarf.lvl;
           dispatch(logMsgAction(`${formatRollPrefix(saveRoll)}🕵️ ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
           if (total >= 6) {
-            const preview = previewTreasureRoll();
-      dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+          const preview = previewTreasureRoll(environmentKey);
+      dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.label || preview.type}`));
       // Notify UI via callback if provided so we can show a modal preview
       try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
           } else {
@@ -121,8 +135,10 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       }
 
       case 'minions': {
-        // Choose a specific minion from MONSTER_TABLE with category 'dungeonMinions'
-        const candidates = Object.entries(MONSTER_TABLE).filter(([, t]) => t.category === 'dungeonMinions').map(([k]) => k);
+        // Choose a specific minion from MONSTER_TABLE with category based on environment
+        const candidates = Object.entries(MONSTER_TABLE)
+          .filter(([, t]) => t.category === environmentCategories.minions)
+          .map(([k]) => k);
         const key = candidates[Math.floor(Math.random() * candidates.length)];
         const template = MONSTER_TABLE[key];
     const monster = createMonsterFromTable(key, state.hcl);
@@ -149,8 +165,8 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
           const total = saveRoll + dwarf.lvl;
           dispatch(logMsgAction(`${formatRollPrefix(saveRoll)}🕵️ ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
           if (total >= 6) {
-            const preview = previewTreasureRoll();
-      dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+            const preview = previewTreasureRoll(environmentKey);
+      dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.label || preview.type}`));
       try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
           } else {
             dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
@@ -162,32 +178,92 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       }
 
       case 'treasure':
-  rollTreasure(dispatch);
+  rollTreasure(dispatch, { environment: environmentKey });
   try { sfx.play('treasure', { volume: 0.9 }); } catch (e) {}
         newEvents.push({ type: EVENT_TYPES.TREASURE, data: { gold: state.gold }, timestamp: Date.now() });
         setActionMode(ACTION_MODES.TREASURE);
         break;
 
-      case 'special': {
-        const specialRoll = d6();
-        const specialKey = SPECIAL_FEATURE_TABLE[specialRoll];
-        const special = SPECIAL_ROOMS[specialKey];
-        const details = { type: 'special', specialKey, special, specialRoll };
-        setRoomDetails(details);
-        newEvents.push({ type: EVENT_TYPES.SPECIAL, data: details, timestamp: Date.now() });
-  dispatch(logMessage(`Special Feature! ${special.name}`, 'exploration'));
-        dispatch(logMessage(`📜 ${special.description}`, 'exploration'));
+      case 'special_event': {
+        const table = SPECIAL_EVENTS_TABLES[environmentKey] || SPECIAL_EVENTS_TABLES.dungeon;
+        const eventRoll = d6();
+        const event = table[eventRoll];
+        const details = { type: 'special_event', event, eventRoll, environment: environmentKey };
+        newEvents.push({ type: EVENT_TYPES.SPECIAL_EVENT, data: details, timestamp: Date.now() });
+        if (event) {
+          dispatch(logMessage(`✨ Special Event (${environmentLabel}): ${event.name}`, 'exploration'));
+          dispatch(logMessage(`📜 ${event.description}`, 'exploration'));
+        }
+        if (event && event.effect === 'wandering') {
+          rollWanderingMonster(dispatch, { state, environment: environmentKey });
+        }
+        if (event && event.effect === 'trap') {
+          rollTrap(dispatch, { environment: environmentKey });
+        }
         setActionMode(ACTION_MODES.SPECIAL);
         break;
       }
 
-      case 'weird_monster':
-        dispatch(logMessage(`👾 Weird Monster! Roll on the Weird Monster table.`, 'exploration'));
-        const weirdDetails = { type: 'weird_monster' };
-        setRoomDetails(weirdDetails);
-        newEvents.push({ type: EVENT_TYPES.WEIRD, data: weirdDetails, timestamp: Date.now() });
-        setActionMode(ACTION_MODES.WEIRD);
+      case 'special_feature': {
+        const featureTable = SPECIAL_FEATURE_TABLES[environmentKey] || SPECIAL_FEATURE_TABLES.dungeon;
+        const featureSet = SPECIAL_FEATURES_BY_ENV[environmentKey] || SPECIAL_FEATURES_BY_ENV.dungeon;
+        const featureRoll = d6();
+        const featureKey = featureTable[featureRoll];
+        const special = featureSet[featureKey];
+        const details = { type: 'special_feature', specialKey: featureKey, special, specialRoll: featureRoll };
+        setRoomDetails(details);
+        newEvents.push({ type: EVENT_TYPES.SPECIAL, data: details, timestamp: Date.now() });
+        if (special) {
+          dispatch(logMessage(`✨ Special Feature (${environmentLabel}): ${special.name}`, 'exploration'));
+          dispatch(logMessage(`📜 ${special.description}`, 'exploration'));
+          if (special.effect === 'water_pool') {
+            const poolRoll = d6();
+            const poolResult = WATER_POOL_TABLE[poolRoll];
+            dispatch(logMessage(`💧 Water Pool (${poolRoll}): ${poolResult}`, 'exploration'));
+          }
+        }
+        setActionMode(ACTION_MODES.SPECIAL);
         break;
+      }
+
+      case 'weird_monster': {
+        const candidates = Object.entries(MONSTER_TABLE)
+          .filter(([, t]) => t.category === environmentCategories.weird)
+          .map(([k]) => k);
+        const key = candidates[Math.floor(Math.random() * candidates.length)];
+        const monster = createMonsterFromTable(key, state.hcl);
+        if (monster) {
+          if (typeof monster.count === 'string') {
+            const numeric = rollCountFromSpec(monster.count);
+            monster.count = numeric;
+            monster.initialCount = numeric;
+            monster.isMinorFoe = true;
+          }
+          dispatch({ type: 'ADD_MONSTER', m: monster });
+          if (monster.isMinorFoe && monster.count) {
+            dispatch(logMsgAction(`${monster.count} ${monster.name} L${monster.level} appear!`));
+          } else {
+            dispatch(logMsgAction(`${monster.name} L${monster.level} (${monster.hp}HP) appears!`));
+          }
+        }
+        dispatch(logMessage(`👾 Weird Monster (${environmentLabel})!`, 'exploration'));
+        newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'weird', monster }, timestamp: Date.now() });
+        setActionMode(ACTION_MODES.COMBAT);
+        break;
+      }
+
+      case 'dragon': {
+        const dragonKey = ENVIRONMENT_DRAGONS[environmentKey] || ENVIRONMENT_DRAGONS.dungeon;
+        const monster = createMonsterFromTable(dragonKey, state.hcl);
+        if (monster) {
+          dispatch({ type: 'ADD_MONSTER', m: monster });
+          dispatch(logMsgAction(`${monster.name} L${monster.level} (${monster.hp}HP) appears!`));
+        }
+        dispatch(logMessage(`🐉 Dragon's Lair (${environmentLabel})!`, 'exploration'));
+        newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'dragon', monster }, timestamp: Date.now() });
+        setActionMode(ACTION_MODES.COMBAT);
+        break;
+      }
 
       case 'minor_boss':
         spawnMonster(dispatch, 'boss', 3);
@@ -202,8 +278,8 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
           const total = saveRoll + dwarf.lvl;
             dispatch(logMsgAction(`${formatRollPrefix(saveRoll)}🕵️ ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
           if (total >= 6) {
-            const preview = previewTreasureRoll();
-      dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+            const preview = previewTreasureRoll(environmentKey);
+        dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.label || preview.type}`));
       try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
           } else {
             dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
@@ -232,8 +308,8 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
             const total = saveRoll + dwarf.lvl;
             dispatch(logMsgAction(`${formatRollPrefix(saveRoll)}🕵️ ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
             if (total >= 6) {
-              const preview = previewTreasureRoll();
-        dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+              const preview = previewTreasureRoll(environmentKey);
+        dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.label || preview.type}`));
         try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
             } else {
               dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));
@@ -252,8 +328,8 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
             const total = saveRoll + dwarf.lvl;
             dispatch(logMsgAction(`🧭 ${dwarf.name} (Gold Sense) rolls Save ${saveRoll}+${dwarf.lvl}=${total} vs L6`));
             if (total >= 6) {
-              const preview = previewTreasureRoll();
-        dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.type === 'gold' ? `${preview.amount} gold` : preview.type}`));
+              const preview = previewTreasureRoll(environmentKey);
+        dispatch(logMsgAction(`🔎 ${dwarf.name} smells treasure! Preview: ${preview.label || preview.type}`));
         try { if (typeof onGoldSensePreview === 'function') onGoldSensePreview({ dwarf, saveRoll, total, preview }); } catch (e) {}
             } else {
               dispatch(logMsgAction(`❌ ${dwarf.name} fails to sense treasure.`));

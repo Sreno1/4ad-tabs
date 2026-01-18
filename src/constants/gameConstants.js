@@ -27,6 +27,7 @@ export const EVENT_TYPES = {
   TREASURE: 'treasure',
   TRAP: 'trap',
   SPECIAL: 'special',
+  SPECIAL_EVENT: 'special_event',
   MONSTER: 'monster',
   BOSS_CHECK: 'boss_check',
   WEIRD: 'weird',

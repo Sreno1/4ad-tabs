@@ -5,11 +5,13 @@ import { d6 } from '../dice.js';
 import { formatRollPrefix } from '../rollLog.js';
 import {
   createMonster,
-  WANDERING_TABLE,
+  createMonsterFromTable,
+  MONSTER_TABLE,
   rollReaction,
   applyMonsterAbility,
   canLevelUp
 } from '../../data/monsters.js';
+import { ENVIRONMENT_LABELS, ENVIRONMENT_MONSTER_CATEGORIES, normalizeEnvironment } from '../../constants/environmentConstants.js';
 
 /**
  * Spawn a monster and dispatch it to state
@@ -66,6 +68,14 @@ export const spawnMajorFoe = (dispatch, hcl, isBoss = false) => {
   }
 };
 
+const getRandomMonsterKeyByCategory = (category) => {
+  const candidates = Object.entries(MONSTER_TABLE)
+    .filter(([, t]) => t.category === category)
+    .map(([k]) => k);
+  if (!candidates.length) return null;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+};
+
 /**
  * Roll on wandering monster table and spawn result
  * @param {function} dispatch - Reducer dispatch function
@@ -73,11 +83,29 @@ export const spawnMajorFoe = (dispatch, hcl, isBoss = false) => {
  */
 export const rollWanderingMonster = (dispatch, opts = {}) => {
   const roll = d6();
-  const monsterType = WANDERING_TABLE[roll];
+  const envKey = normalizeEnvironment(opts.environment || opts.state?.currentEnvironment);
+  const categories = ENVIRONMENT_MONSTER_CATEGORIES[envKey] || ENVIRONMENT_MONSTER_CATEGORIES.dungeon;
 
-  if (roll >= 1 && roll <= 5) {
-    // Pass through ambush/targeting options to spawned monsters
-    spawnMonster(dispatch, monsterType, roll, opts);
+  let monsterKey = null;
+  if (roll <= 3) monsterKey = getRandomMonsterKeyByCategory(categories.vermin);
+  else if (roll === 4) monsterKey = getRandomMonsterKeyByCategory(categories.minions);
+  else if (roll === 5) monsterKey = getRandomMonsterKeyByCategory(categories.weird);
+  else monsterKey = getRandomMonsterKeyByCategory(categories.boss);
+
+  let spawnedMonster = null;
+  if (monsterKey) {
+    const hcl = opts.state?.hcl || 1;
+    spawnedMonster = createMonsterFromTable(monsterKey, hcl);
+    if (spawnedMonster) {
+      if (spawnedMonster.count !== undefined) spawnedMonster.isMinorFoe = true;
+      if (opts.ambush) spawnedMonster.ambush = true;
+      dispatch({ type: 'ADD_MONSTER', m: spawnedMonster });
+      if (spawnedMonster.isMinorFoe && spawnedMonster.count) {
+        dispatch({ type: 'LOG', t: `${spawnedMonster.count} ${spawnedMonster.name} L${spawnedMonster.level} appear!` });
+      } else {
+        dispatch({ type: 'LOG', t: `${spawnedMonster.name} L${spawnedMonster.level} (${spawnedMonster.hp}HP) appears!` });
+      }
+    }
   }
 
   // If caller requested wandering-encounter meta, dispatch it for the UI/reducer
@@ -105,10 +133,11 @@ export const rollWanderingMonster = (dispatch, opts = {}) => {
     }
   }
 
-  const displayNames = ['', 'Goblin (L1)', 'Orc (L2)', 'Troll (L3)', 'Ogre (L4)', 'Dragon (L5)', 'Special'];
-  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}Wandering Monster: ${displayNames[roll]}` });
+  const envLabel = ENVIRONMENT_LABELS[envKey] || 'Dungeon';
+  const monsterName = spawnedMonster ? spawnedMonster.name : 'Unknown';
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}Wandering Monster (${envLabel}): ${monsterName}` });
 
-  return { roll, type: monsterType };
+  return { roll, type: monsterKey };
 };
 
 /**

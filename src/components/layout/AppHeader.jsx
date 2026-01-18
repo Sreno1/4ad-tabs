@@ -10,8 +10,9 @@ import {
 } from "lucide-react";
 import LanternAnimation from '../LanternAnimation.jsx';
 import { Tooltip } from '../RulesReference.jsx';
-import { adjustGold, adjustMajorFoes, adjustMinorEncounters } from '../../state/actionCreators.js';
+import { adjustGold, adjustMajorFoes, adjustMinorEncounters, logMessage } from '../../state/actionCreators.js';
 import sfx from '../../utils/sfx.js';
+import { ENVIRONMENTS, normalizeEnvironment } from '../../constants/environmentConstants.js';
 
 export default function AppHeader({
   state,
@@ -29,6 +30,12 @@ export default function AppHeader({
   partyLightNames = [],
   onShowLantern,
 }) {
+  const handleEnvironmentChange = (value) => {
+    const envKey = normalizeEnvironment(value);
+    dispatch({ type: 'CHANGE_ENVIRONMENT', environment: envKey });
+    dispatch(logMessage(`🌍 Environment set to ${ENVIRONMENTS.find(env => env.id === envKey)?.label || 'Dungeon'}.`, 'exploration'));
+  };
+
   return (
     <header id="app_header" className="bg-slate-800 p-1 border-b border-slate-700 flex-shrink-0">
       <div className="flex items-center justify-between gap-2">
@@ -83,6 +90,20 @@ export default function AppHeader({
               <button aria-label="Decrease major foes" onClick={() => dispatch(adjustMajorFoes(-1))} className="px-1 text-slate-300">−</button>
               <button aria-label="Increase major foes" onClick={() => dispatch(adjustMajorFoes(1))} className="px-1 text-red-400 font-bold">+</button>
             </div>
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
+            <span className="text-slate-400 text-xs">Env</span>
+            <select
+              id="header_environment_select"
+              value={state.currentEnvironment || 'dungeon'}
+              onChange={(e) => handleEnvironmentChange(e.target.value)}
+              className="bg-slate-700 hover:bg-slate-600 text-xs rounded px-1 py-0.5"
+            >
+              {ENVIRONMENTS.map((env) => (
+                <option key={env.id} value={env.id}>{env.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 

@@ -56,6 +56,14 @@ const EventCard = memo(function EventCard({ event, index }) {
         </div>
       );
 
+    case EVENT_TYPES.SPECIAL_EVENT:
+      return (
+        <div key={index} className="bg-purple-900/30 rounded p-2 text-xs border-l-2 border-purple-400">
+          <div className="text-purple-400 font-bold">✨ {event.data.event?.name || 'Special Event'}</div>
+          <div className="text-slate-300">{event.data.event?.description}</div>
+        </div>
+      );
+
     case EVENT_TYPES.MONSTER: {
       // Build suffix text from monster payload when available: " - xLy type"
       let suffix = '';

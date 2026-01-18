@@ -332,7 +332,8 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 onClick={() => {
                   const foeLevelRaw = window.prompt('Enter foe level to Stealth against (e.g., 3):', '1');
                   const foeLevel = parseInt(foeLevelRaw, 10) || 1;
-                  performStealthSave(dispatch, hero, foeLevel, { environment: 'dungeon', applyTraits: true });
+                  const envKey = state.currentEnvironment || 'dungeon';
+                  performStealthSave(dispatch, hero, foeLevel, { environment: envKey, applyTraits: true });
                 }}
                 title="Stealth Save"
                 className="ml-1 bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 px-2 py-0.5 rounded"

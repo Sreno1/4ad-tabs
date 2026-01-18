@@ -57,13 +57,19 @@ export const TILE_CONTENTS_TABLE = {
   2: { type: 'treasure', corridorDescription: 'Treasure!', roomDescription: 'Treasure!' },
   3: { type: 'treasure', corridorDescription: 'Treasure protected by a trap. Roll on traps table, then treasure.', roomDescription: 'Treasure protected by a trap. Roll on traps table, then treasure.' },
   4: {
-    type: 'special',
+    type: 'special_event',
     corridorDescription: 'Empty',
-    roomDescription: 'Special Events (roll on Special Features table)',
+    roomDescription: 'Special Events (roll on the Special Events table)',
     corridorType: 'empty',
-    roomType: 'special'
+    roomType: 'special_event'
   },
-  5: { type: 'special', corridorDescription: 'Empty and may be searched. Then roll on special events in dungeons.', roomDescription: 'Empty and may be searched. Then roll on special events in dungeons.' },
+  5: {
+    type: 'special_feature',
+    corridorDescription: 'Empty and may be searched',
+    roomDescription: 'Empty and may be searched. Then roll on the Special Feature table',
+    corridorType: 'empty',
+    roomType: 'special_feature'
+  },
   6: { type: 'vermin', corridorDescription: 'Roll on Vermin Table', roomDescription: 'Roll on Vermin Table' },
   7: { type: 'minions', corridorDescription: 'Roll on Minion Table', roomDescription: 'Roll on Minion Table' },
   8: {
@@ -251,10 +257,103 @@ export const TRAP_TYPES = {
     detectDC: 4,
     disarmDC: 3,
     description: 'Alert! Triggers a wandering monster'
+  },
+  // Caverns traps
+  stalactite: {
+    name: 'Falling Stalactite',
+    damage: 1,
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'A stalactite falls from above.'
+  },
+  rockslide: {
+    name: 'Rockslide',
+    damage: 1,
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'Loose stones cascade across the tunnel.'
+  },
+  hidden_pit: {
+    name: 'Hidden Pit',
+    damage: 1,
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'A concealed pit opens underfoot.'
+  },
+  swinging_log: {
+    name: 'Swinging Log',
+    damage: 2,
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'A heavy log swings down from the ceiling.'
+  },
+  toxic_spores: {
+    name: 'Toxic Spores',
+    damage: 0,
+    effect: 'poison',
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'A patch of mushrooms releases toxic spores.'
+  },
+  rolling_boulder: {
+    name: 'Rolling Boulder',
+    damage: 2,
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'A massive boulder rolls through the passage.'
+  },
+  // Fungal grotto traps
+  sleep_spores: {
+    name: 'Sleep Spores',
+    damage: 0,
+    effect: 'sleep_spores',
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'Spores threaten to put the party to sleep.'
+  },
+  spore_cloud: {
+    name: 'Spore Cloud',
+    damage: 1,
+    effect: 'poison',
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'A toxic spore cloud erupts.'
+  },
+  slime_patch: {
+    name: 'Slime Patch',
+    damage: 0,
+    effect: 'wandering',
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'Slippery slime risks a wandering encounter.'
+  },
+  mycelium_snare: {
+    name: 'Mycelium Snare',
+    damage: 0,
+    effect: 'snare',
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'Fungal fibers snatch gear from a hero.'
+  },
+  shrieking_mushroom: {
+    name: 'Shrieking Mushroom',
+    damage: 0,
+    effect: 'wandering',
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'A shriek risks drawing wandering monsters.'
+  },
+  cordyceps: {
+    name: 'Cordyceps Trap',
+    damage: 0,
+    effect: 'mind_control',
+    detectDC: 4,
+    disarmDC: 4,
+    description: 'A parasitic fungus attempts to control a hero.'
   }
 };
 
-export const TRAP_TABLE = {
+export const DUNGEON_TRAP_TABLE = {
   1: 'pit',
   2: 'dart',
   3: 'dart',
@@ -262,6 +361,32 @@ export const TRAP_TABLE = {
   5: 'poison',
   6: 'alarm'
 };
+
+export const CAVERNS_TRAP_TABLE = {
+  1: 'stalactite',
+  2: 'rockslide',
+  3: 'hidden_pit',
+  4: 'swinging_log',
+  5: 'toxic_spores',
+  6: 'rolling_boulder'
+};
+
+export const FUNGAL_TRAP_TABLE = {
+  1: 'sleep_spores',
+  2: 'spore_cloud',
+  3: 'slime_patch',
+  4: 'mycelium_snare',
+  5: 'shrieking_mushroom',
+  6: 'cordyceps'
+};
+
+export const TRAP_TABLES = {
+  dungeon: DUNGEON_TRAP_TABLE,
+  caverns: CAVERNS_TRAP_TABLE,
+  fungal_grottoes: FUNGAL_TRAP_TABLE
+};
+
+export const TRAP_TABLE = DUNGEON_TRAP_TABLE;
 
 // ========== SPECIAL FEATURES ==========
 
@@ -304,6 +429,107 @@ export const SPECIAL_FEATURE_TABLE = {
   4: 'altar',
   5: 'library',
   6: 'armory'
+};
+
+// Caverns special features (per exploration rules)
+export const CAVERN_SPECIAL_FEATURES = {
+  stalactites: {
+    name: 'Stalactites',
+    description: 'Explosive two-handed attacks may drop stalactites on PCs or foes.'
+  },
+  stalagmites: {
+    name: 'Stalagmites',
+    description: 'Stalagmites hinder movement; PCs cannot explode attacks here.'
+  },
+  boulders: {
+    name: 'Boulders',
+    description: 'PCs get +1 Defense vs ranged attacks and -1 to ranged attacks.'
+  },
+  echo: {
+    name: 'Echo',
+    description: 'Stealth saves at -1; wandering monsters are more likely here.'
+  },
+  water_pools: {
+    name: 'Water Pools',
+    description: 'Roll on the Water Pool table for effects.'
+  }
+};
+
+export const CAVERN_SPECIAL_FEATURE_TABLE = {
+  1: 'stalactites',
+  2: 'stalagmites',
+  3: 'boulders',
+  4: 'echo',
+  5: 'water_pools',
+  6: 'water_pools'
+};
+
+export const FUNGAL_SPECIAL_FEATURES = {
+  secret_passage: {
+    name: 'Secret Passage',
+    description: 'A hidden passage leads to a different environment.',
+    effect: 'secret_passage'
+  }
+};
+
+export const FUNGAL_SPECIAL_FEATURE_TABLE = {
+  1: 'secret_passage',
+  2: 'secret_passage',
+  3: 'secret_passage',
+  4: 'secret_passage',
+  5: 'secret_passage',
+  6: 'secret_passage'
+};
+
+export const SPECIAL_FEATURE_TABLES = {
+  dungeon: SPECIAL_FEATURE_TABLE,
+  caverns: CAVERN_SPECIAL_FEATURE_TABLE,
+  fungal_grottoes: FUNGAL_SPECIAL_FEATURE_TABLE
+};
+
+export const SPECIAL_FEATURES_BY_ENV = {
+  dungeon: SPECIAL_FEATURES,
+  caverns: CAVERN_SPECIAL_FEATURES,
+  fungal_grottoes: FUNGAL_SPECIAL_FEATURES
+};
+
+export const WATER_POOL_TABLE = {
+  1: 'Contaminated water: -1 to Saves until healed.',
+  2: 'No effect.',
+  3: 'No effect.',
+  4: 'No effect.',
+  5: 'Refreshing water: heal 1 Life (once per adventure).',
+  6: 'Refreshing water: heal 1 Life (once per adventure).'
+};
+
+export const SPECIAL_EVENTS_TABLES = {
+  dungeon: [
+    null,
+    { key: 'ghost', name: 'Ghost', description: 'Ghost passes through the party; fear or madness save.' },
+    { key: 'wandering', name: 'Wandering Monsters', description: 'Wandering Monsters attack! Roll on appropriate monster table.', effect: 'wandering' },
+    { key: 'lady', name: 'Lady in White', description: 'A Lady in White offers a quest.' },
+    { key: 'trap', name: 'Trap', description: 'Roll on the Trap table.', effect: 'trap' },
+    { key: 'healer', name: 'Wandering Healer', description: 'Heal for 10gp per Life (once per adventure).' },
+    { key: 'alchemist', name: 'Wandering Alchemist', description: 'Buy potions or poison (once per adventure). If repeated, roll trap.' }
+  ],
+  caverns: [
+    null,
+    { key: 'goblin_scout', name: 'Cave Goblin Scout', description: 'Pay 10gp to avoid surprise and gain +1 Saves until leaving caverns.' },
+    { key: 'cavemen', name: 'Cavemen Explorers', description: 'Give 2 Food rations or fight d6 cavemen.' },
+    { key: 'morlock_spy', name: 'Morlock Spy', description: 'Pay 5gp to avoid surprise by morlocks until leaving caverns.' },
+    { key: 'trap', name: 'Trap', description: 'Roll on the Caverns Trap table.', effect: 'trap' },
+    { key: 'dwarf_gem', name: 'Dwarven Find', description: 'If a dwarf is present, find a gem worth d6x10gp (risk wandering).' },
+    { key: 'dwarf_miner', name: 'Dwarf Miner', description: 'Trade gems; reveals the contents of the next tile.' }
+  ],
+  fungal_grottoes: [
+    null,
+    { key: 'halfling_scout', name: 'Halfling Scout', description: 'Pay 10gp to avoid surprise and gain +1 Saves until leaving grottoes.' },
+    { key: 'cavemen_mushrooms', name: 'Hungry Cavemen', description: 'Give 4 Food rations or 1 rare mushroom, or fight.' },
+    { key: 'spore_cloud', name: 'Spore Cloud', description: 'All living PCs save vs HCL poison or lose 2 Life.' },
+    { key: 'trap', name: 'Trap', description: 'Roll on the Fungal Grottoes Trap table, then Rare Item table.', effect: 'trap' },
+    { key: 'mushroom_monk', name: 'Mushroom Monk Warning', description: 'If a mushroom monk is present, ignore the next trap or wandering encounter.' },
+    { key: 'merchant', name: 'Merchant', description: 'Buy items at +20% price; sell gems or rare mushrooms at full value.' }
+  ]
 };
 
 // ========== CORRIDOR/PASSAGE ==========

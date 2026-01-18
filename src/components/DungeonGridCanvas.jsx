@@ -191,6 +191,18 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         wallEdges.push(w);
       });
     }
+    const emptyGlyphSize = Math.max(10, Math.floor(cellSize * 0.9));
+    const dotGlyphSize = Math.max(6, Math.floor(cellSize * 0.45));
+    const drawFillDot = (cx, cy) => {
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = `normal ${dotGlyphSize}px "DungeonMode", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('\u2219', cx, cy);
+      ctx.restore();
+    };
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
     // compute convenient per-cell values
@@ -199,17 +211,24 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     const cell = (grid[y] && grid[y][x]) || 0;
     const isHovered = hoveredCell?.x === x && hoveredCell?.y === y;
 
-  // Cell base/background (lighter than before to increase contrast with black fills)
-  ctx.fillStyle = '#0b2b56'; // lighter navy-blue for improved contrast
+  // Cell base/background (unused space texture)
+  ctx.fillStyle = '#000000';
   ctx.fillRect(px, py, cellSize, cellSize);
-  // If logical cell is a room (1), draw fills according to cellStyles
+  ctx.fillStyle = '#1f1f1f';
+  ctx.font = `normal ${emptyGlyphSize}px "DungeonMode", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('\u2592', px + cellSize / 2, py + cellSize / 2);
+    // If logical cell is a room (1), draw fills according to cellStyles
   if (cell === 1) {
           const key = `${x},${y}`;
           const style = (cellStyles && cellStyles[key]) || 'full';
           const fillColor = isHovered ? '#111111' : '#000000';
+          let fullRoomFill = false;
           ctx.fillStyle = fillColor;
           if (style === 'full') {
             ctx.fillRect(px, py, cellSize, cellSize);
+            fullRoomFill = true;
           } else if (style === 'diag1') {
             // triangle top-left -> bottom-right
             ctx.beginPath();
@@ -289,10 +308,15 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
             ctx.restore();
           } else {
             ctx.fillRect(px, py, cellSize, cellSize);
+            fullRoomFill = true;
+          }
+          if (fullRoomFill) {
+            drawFillDot(px + cellSize / 2, py + cellSize / 2);
           }
         } else if (cell === 2) {
           ctx.fillStyle = '#1d4ed8'; // corridor blue
           ctx.fillRect(px, py, cellSize, cellSize);
+          drawFillDot(px + cellSize / 2, py + cellSize / 2);
         }
 
         // Hover highlight - draw only a faint outline so cycling visuals remain visible
@@ -306,9 +330,11 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         }
 
         // Cell border
-        ctx.strokeStyle = '#334155'; // slate-700
-        ctx.lineWidth = 1;
-        ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
+        if (cell === 0) {
+          ctx.strokeStyle = '#334155'; // slate-700
+          ctx.lineWidth = 1;
+          ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
+        }
 
         // Highlight selected tile (editing)
         if (selectedTile && selectedTile.x === x && selectedTile.y === y) {
@@ -1124,24 +1150,12 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   ctx.restore();
           }
 
-      // Draw outer ring
-      ctx.beginPath();
-      ctx.fillStyle = partySelected ? '#fbbf24' : '#f59e0b';
-      ctx.arc(screenCx, screenCy, radius + 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Inner pawn body
-      ctx.beginPath();
-      ctx.fillStyle = '#0f172a';
-      ctx.arc(screenCx, screenCy, radius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Letter P (drawn upright)
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = `bold ${Math.max(8, Math.floor(cellSize * 0.45))}px sans-serif`;
+      // DungeonMode pawn glyph (drawn upright)
+      ctx.fillStyle = partyHasLight ? '#000000' : (partySelected ? '#fbbf24' : '#f8fafc');
+      ctx.font = `normal ${Math.max(10, Math.floor(cellSize * 0.8))}px "DungeonMode", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('P', screenCx, screenCy + 1);
+      ctx.fillText('@', screenCx, screenCy + 1);
     }
 
   }, [grid, doors, walls, roomMarkers, showMarkers, cellSize, hoveredCell, hoveredDoor, showDoorMode, rows, cols, width, height, partyPos, partySelected, shouldRotate, canvasWidth, partyHasLight, transformedPlacementTemplate, placementTemplate, autoPlacedRoom, cellStyles, scale, pan.x, pan.y]);

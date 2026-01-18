@@ -54,13 +54,13 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
 
   // ========== Trap Mechanics ==========
   const handleRollTrap = () => {
-    const result = rollTrap(dispatch);
+    const result = rollTrap(dispatch, { environment: state.currentEnvironment });
     setCurrentTrap({ ...result, detected: false, disarmed: false });
   };
 
   const handleDetectTrap = () => {
     if (!activeHero) return;
-    const result = attemptDetectTrap(dispatch, activeHero, currentTrap?.typeKey);
+    const result = attemptDetectTrap(dispatch, activeHero, currentTrap?.typeKey, { environment: state.currentEnvironment });
     setCurrentTrap(prev => prev ? { ...prev, detected: result.detected, trapInfo: result } : {
       typeKey: result.trapType,
       ...result.trap,
@@ -71,7 +71,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
 
   const handleDisarmTrap = () => {
     if (!currentTrap || !activeHero) return;
-    const result = attemptDisarmTrap(dispatch, activeHero, currentTrap.typeKey);
+    const result = attemptDisarmTrap(dispatch, activeHero, currentTrap.typeKey, { environment: state.currentEnvironment });
     if (result.success) {
       setCurrentTrap({ ...currentTrap, disarmed: true });
     } else if (result.triggered) {
@@ -82,13 +82,13 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
   const handleTriggerTrap = () => {
     if (!currentTrap || !activeHero) return;
     const heroWithIndex = { ...activeHero, index: selectedHero };
-    triggerTrap(dispatch, heroWithIndex, currentTrap.typeKey);
+    triggerTrap(dispatch, heroWithIndex, currentTrap.typeKey, { state, environment: state.currentEnvironment });
     setCurrentTrap({ ...currentTrap, triggered: true });
   };
 
   // ========== Special Rooms ==========
   const handleRollSpecial = () => {
-    const result = rollSpecialRoom(dispatch);
+    const result = rollSpecialRoom(dispatch, { environment: state.currentEnvironment });
     setCurrentSpecial({ ...result, interacted: false });
   };
 
@@ -121,7 +121,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
         }
         break;
       case 'statue':
-        result = interactStatue(dispatch, heroWithIndex);
+        result = interactStatue(dispatch, heroWithIndex, { environment: state.currentEnvironment });
         if (result.triggered) {
           handleRollTrap();
         }

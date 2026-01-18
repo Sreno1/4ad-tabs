@@ -68,6 +68,7 @@ export {
   rollTreasure,
   performSearch,
   previewTreasureRoll,
+  rollRareMushroomTable,
 } from './treasureActions.js';
 
 // Spell Actions - Spellcasting and spell slot management

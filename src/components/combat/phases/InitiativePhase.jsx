@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { determineInitiative, rollSurprise, rollMonsterReaction } from "../../../utils/gameActions/index.js";
+import { determineInitiative, rollMonsterReaction } from "../../../utils/gameActions/index.js";
 import Tooltip from '../../Tooltip.jsx';
 import { DEFAULT_REACTION_TABLE, REACTION_TYPES } from '../../../data/monsters.js';
 
@@ -21,30 +21,10 @@ const InitiativePhase = memo(function InitiativePhase({
 }) {
   if (monsters.length === 0) return null;
 
-  // Local state for surprise X-in-6 input
-  const [surpriseX, setSurpriseX] = React.useState('');
-
   const handlePartyAttacks = () => {
     const init = determineInitiative({ partyAttacksFirst: true });
     setCombatInitiative(init);
     addToCombatLog(`${init.reason}`);
-  };
-
-  const handleCheckSurprise = () => {
-    // Parse the user-provided X value (1-6). If invalid, fall back to monster's surpriseChance.
-    let x = parseInt(surpriseX, 10);
-    if (Number.isNaN(x) || x < 1 || x > 6) {
-      x = null;
-    }
-
-    const surpriseResult = rollSurprise(monsters[0], x);
-    if (surpriseResult.surprised) {
-      addToCombatLog(surpriseResult.message);
-      const init = determineInitiative({ isSurprise: true });
-      setCombatInitiative(init);
-    } else {
-      addToCombatLog(surpriseResult.message || 'No surprise - roll reaction for initiative.');
-    }
   };
 
   const handleByReaction = () => {
@@ -92,25 +72,6 @@ const InitiativePhase = memo(function InitiativePhase({
             >
               Attack
             </button>
-            <button
-              onClick={handleCheckSurprise}
-              className="bg-yellow-600 hover:bg-yellow-500 px-2 py-0.5 rounded text-xs"
-            >
-              Surprise
-            </button>
-            <div className="flex items-center gap-1">
-              <label className="text-xs text-slate-300">X-in-6</label>
-              <input
-                type="number"
-                min="1"
-                max="6"
-                value={surpriseX}
-                onChange={e => setSurpriseX(e.target.value)}
-                className="w-12 bg-slate-700 text-xs px-1 py-0.5 rounded"
-                placeholder="2"
-                aria-label="Surprise X-in-6"
-              />
-            </div>
             <Tooltip text={(() => {
               // Prefer a focused monster: hostile first, else first monster
               let m = monsters.find(m => m.reaction && m.reaction.hostile) || monsters[0];

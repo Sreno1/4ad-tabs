@@ -343,7 +343,6 @@ This document provides a complete audit of the Four Against Darkness companion a
 <a name="not-implemented"></a>
 ## 3. ❌ NOT IMPLEMENTED FEATURES
 
-- FIX WALL OFF ROOM FUNCTIONALITY - BROKEN IN GENERAL BUT ESPECIALLY FOR ROUNDED AND DIAGONAL TILES.
 - ADD CURVED AND ENTRANCE ROOMS (1-6, 25, 34, 36)
 - add xp roll button to each party card
 - when placing a recognized tile from the library that was generated, the walls need to be two different colors for the two tile types, corridor and room.

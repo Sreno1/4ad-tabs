@@ -714,7 +714,7 @@ export const attemptFlee = (dispatch, hero, heroIdx, monsterLevel) => {
  * @param {boolean} isWithdraw - True if withdrawing (PCs get +1 Defense)
  * @returns {object} Strike results
  */
-export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = false) => {
+export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = false, options = {}) => {
   if (!monsters || monsters.length === 0) return { totalDamage: 0, hitCount: 0 };
 
   dispatch({
@@ -756,8 +756,15 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
 
   // Roll d6 for monster attack
   const roll = d6();
-    const targetDefense = isWithdraw ? target.lvl + 1 : target.lvl; // +1 Defense when withdrawing
-    const defenseMod = isWithdraw ? 1 : 0;
+    let targetDefense = isWithdraw ? target.lvl + 1 : target.lvl; // +1 Defense when withdrawing
+    let defenseMod = isWithdraw ? 1 : 0;
+    if (!isWithdraw && options.environment === 'fungal_grottoes') {
+      const exempt = ['ranger', 'rogue', 'acrobat', 'halfling', 'mushroomMonk'];
+      if (!exempt.includes(target.key)) {
+        targetDefense -= 1;
+        defenseMod -= 1;
+      }
+    }
 
     // Monster hits if roll + effective monster level > target defense
     const effectiveLevel = getEffectiveMonsterLevel(monster);
@@ -788,7 +795,7 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
     } else {
       dispatch({
         type: "LOG",
-        t: `${formatRollPrefix(roll)}✅ ${target.name} avoids ${monster.name}'s attack! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense}${defenseMod > 0 ? '+1' : ''})`,
+        t: `${formatRollPrefix(roll)}✅ ${target.name} avoids ${monster.name}'s attack! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense}${defenseMod === 1 ? '+1' : defenseMod === -1 ? '-1' : ''})`,
       });
     }
   });
@@ -1071,7 +1078,7 @@ export const performMonsterAttacks = (dispatch, state) => {
  * @param {number} monsterLevel - Highest monster level
  * @returns {object} Party flee result
  */
-export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel) => {
+export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel, options = {}) => {
   dispatch({ type: "LOG", t: `🏃 Party attempts to flee!` });
 
   const results = party
@@ -1083,13 +1090,13 @@ export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel) => {
 
   if (allEscaped) {
     // Foes strike once during escape
-    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false);
+    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false, options);
     dispatch({ type: "LOG", t: `✅ Party escapes successfully!` });
     dispatch({ type: "CLEAR_MONSTERS" });
     return { allEscaped, results, failedCount, strikeResult };
   } else {
     // Foes strike once during failed escape attempt
-    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false);
+    const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false, options);
     dispatch({
       type: "LOG",
       t: `❌ ${failedCount} hero(es) failed to escape and combat continues!`,

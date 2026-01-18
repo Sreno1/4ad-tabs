@@ -1,7 +1,7 @@
 const MARKER_STYLES = {
   monster: { char: '♠', color: '#ef4444' },
   boss: { char: '☠', color: '#a855f7' },
-  treasure: { char: '★', color: '#eab308' },
+  treasure: { char: '\u29C7', color: '#eab308' },
   trap: { char: '†', color: '#f97316' },
   special: { char: '♦', color: '#3b82f6' },
   cleared: { char: '⊙', color: '#22c55e' },

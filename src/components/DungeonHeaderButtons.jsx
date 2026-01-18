@@ -1,9 +1,10 @@
 import React from 'react';
-import { rollWanderingMonster } from '../utils/gameActions/index.js';
 
 export default function DungeonHeaderButtons({
   showLogMiddle,
   onToggleShowLog,
+  showVoxelView,
+  onToggleVoxelView,
   onShowRoomDesigner,
   onGenerateTile,
   onWandering,
@@ -21,6 +22,16 @@ export default function DungeonHeaderButtons({
       >
         {showLogMiddle ? 'Map' : 'Log'}
       </button>
+      {onToggleVoxelView && (
+        <button
+          id="dungeon_toggle_voxel_button"
+          onClick={onToggleVoxelView}
+          className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded"
+          title={showVoxelView ? 'Show 2D dungeon map' : 'Show 3D voxel view'}
+        >
+          {showVoxelView ? '2D' : '3D'}
+        </button>
+      )}
       <button
         id="dungeon_room_designer_button"
         onClick={onShowRoomDesigner}

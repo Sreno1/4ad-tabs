@@ -4,10 +4,10 @@ import { setAbility, addMonster, logMessage, clearMonsters } from '../state/acti
 import { Dices } from "lucide-react";
 import { d6 } from "../utils/dice.js";
 import { formatRollPrefix } from '../utils/rollLog.js';
-import { rollTreasure, performCastSpell, rollWanderingMonster, attemptPartyFlee, attemptWithdraw } from "../utils/gameActions/index.js";
+import { rollTreasure, performCastSpell, rollWanderingMonster, attemptPartyFlee, attemptWithdraw, rollRareMushroomTable } from "../utils/gameActions/index.js";
 import { SPELLS, getAvailableSpells } from "../data/spells.js";
 import { createMonsterFromTable, MONSTER_CATEGORIES, getAllMonsters } from '../data/monsters.js';
-import { TILE_SHAPE_TABLE } from '../data/rooms.js';
+import { TILE_SHAPE_TABLE, TILE_CONTENTS_TABLE } from '../data/rooms.js';
 import { COMBAT_PHASES, ACTION_MODES } from "../constants/gameConstants.js";
 import { EVENT_TYPES } from "../constants/gameConstants.js";
 import EventCard from "./actionPane/EventCard.jsx";
@@ -291,9 +291,24 @@ export default function ActionPane({
                 <div className="bg-purple-900/30 rounded p-3">
                   <div className="text-purple-400 font-bold">{roomDetails.special.name}</div>
                   <div className="text-slate-300 text-sm mt-1">{roomDetails.special.description}</div>
-                  {roomDetails.special.effect && (
-                    <button onClick={() => setShowDungeonFeatures(true)} className="mt-2 w-full bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded text-sm">✨ Interact with Feature</button>
-                  )}
+                  {roomDetails.special.effect === 'secret_passage' ? (
+                    <button
+                      onClick={() => {
+                        const result = findSecretPassage(dispatch, state.currentEnvironment || 'dungeon');
+                        setSecretPassageResult(result);
+                      }}
+                      className="mt-2 w-full bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded text-sm"
+                    >
+                      🗺️ Choose Destination
+                    </button>
+                  ) : roomDetails.special.effect ? (
+                    <button
+                      onClick={() => setShowDungeonFeatures(true)}
+                      className="mt-2 w-full bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded text-sm"
+                    >
+                      ✨ Interact with Feature
+                    </button>
+                  ) : null}
                 </div>
               )}
 
@@ -319,7 +334,11 @@ export default function ActionPane({
                   onClick={() => {
                     // Perform search roll - corridor status from tileResult if available
                     const isInCorridor = tileResult?.isCorridor || corridor;
-                    const result = performSearchRoll({ isInCorridor });
+                    const result = performSearchRoll({
+                      isInCorridor,
+                      environment: state.currentEnvironment || 'dungeon',
+                      party: state.party
+                    });
                     try { sfx.play('miss', { volume: 0.7 }); } catch (e) {}
                     setSearchResult(result);
                     // Mark this tile as searched locally so the Search button is hidden
@@ -381,7 +400,9 @@ export default function ActionPane({
                   onClick={() => {
                     const monsters = selectMonsters(state);
                     const highest = Math.max(...monsters.map(m => m.level), 1);
-                    const result = attemptPartyFlee(dispatch, state.party, monsters, highest);
+                    const result = attemptPartyFlee(dispatch, state.party, monsters, highest, {
+                      environment: state.currentEnvironment || 'dungeon'
+                    });
                     try {
                       const failedCount = result?.failedCount || 0;
                       if (failedCount > 0) {
@@ -432,6 +453,13 @@ export default function ActionPane({
             } else if (choice === 'secret_passage') {
               const result = findSecretPassage(dispatch, state.currentEnvironment || 'dungeon');
               setSecretPassageResult(result);
+            } else if (choice === 'listen') {
+              const roll = d6() + d6();
+              const contents = TILE_CONTENTS_TABLE[roll];
+              const description = contents?.roomDescription || contents?.corridorDescription || contents?.description || 'Unknown';
+              dispatch(logMessage(`👂 Listen: 2d6=${roll} → ${description}`, 'exploration'));
+            } else if (choice === 'rare_mushroom') {
+              rollRareMushroomTable(dispatch);
             }
             setSearchResult(null);
           }}
@@ -461,11 +489,13 @@ export default function ActionPane({
               if (rogueIdx >= 0) {
                 const rogue = state.party[rogueIdx];
                 // Use a generic trap type for hidden treasure traps (dart trap)
-                const result = attemptDisarmTrap(dispatch, rogue, 'dart');
+                const result = attemptDisarmTrap(dispatch, rogue, 'dart', {
+                  environment: state.currentEnvironment || 'dungeon'
+                });
 
                 if (!result.success) {
                   // Trap triggered - deal damage to the rogue
-                  const trapResult = triggerTrap(dispatch, rogue, 'dart');
+                  const trapResult = triggerTrap(dispatch, rogue, 'dart', { state, environment: state.currentEnvironment });
                   if (trapResult.damage > 0) {
                     dispatch({ type: 'DAMAGE', idx: rogueIdx, n: trapResult.damage });
                   }
@@ -476,7 +506,7 @@ export default function ActionPane({
                 const aliveParty = state.party.filter(h => h.hp > 0);
                 if (aliveParty.length > 0) {
                   const targetIdx = state.party.findIndex(h => h.id === aliveParty[Math.floor(Math.random() * aliveParty.length)].id);
-                  const trapResult = triggerTrap(dispatch, state.party[targetIdx], 'dart');
+                  const trapResult = triggerTrap(dispatch, state.party[targetIdx], 'dart', { state, environment: state.currentEnvironment });
                   if (trapResult.damage > 0) {
                     dispatch({ type: 'DAMAGE', idx: targetIdx, n: trapResult.damage });
                   }
@@ -487,7 +517,7 @@ export default function ActionPane({
               const aliveParty = state.party.filter(h => h.hp > 0);
               if (aliveParty.length > 0) {
                 const targetIdx = state.party.findIndex(h => h.id === aliveParty[Math.floor(Math.random() * aliveParty.length)].id);
-                const trapResult = triggerTrap(dispatch, state.party[targetIdx], 'dart');
+                const trapResult = triggerTrap(dispatch, state.party[targetIdx], 'dart', { state, environment: state.currentEnvironment });
                 if (trapResult.damage > 0) {
                   dispatch({ type: 'DAMAGE', idx: targetIdx, n: trapResult.damage });
                 }
@@ -562,6 +592,10 @@ export default function ActionPane({
       {secretPassageResult && (
         <SecretPassageModal
           passage={secretPassageResult}
+          onChooseEnvironment={(choice) => {
+            findSecretPassage(dispatch, state.currentEnvironment || 'dungeon', choice);
+            setSecretPassageResult(null);
+          }}
           onClose={() => setSecretPassageResult(null)}
         />
       )}

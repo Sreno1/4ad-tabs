@@ -11,7 +11,8 @@ const VictoryPhase = memo(function VictoryPhase({
   dispatch,
   clearCombatLog,
   setCombatInitiative,
-  setTargetMonsterIdx
+  setTargetMonsterIdx,
+  environment = 'dungeon'
 }) {
   const [xpResults, setXpResults] = useState([]);
   const [xpAwarded, setXpAwarded] = useState(false);
@@ -30,7 +31,8 @@ const VictoryPhase = memo(function VictoryPhase({
 
     rollTreasure(dispatch, {
       multiplier: maxMultiplier,
-      minGold
+      minGold,
+      environment
     });
   };
 
