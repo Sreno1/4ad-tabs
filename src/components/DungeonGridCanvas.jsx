@@ -181,6 +181,16 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     }
     // Collect wall edges to draw after the cell loop so they are rendered on top
     const wallEdges = [];
+    if (walls && walls.length > 0) {
+      const seen = new Set();
+      walls.forEach(w => {
+        if (!w || typeof w.x !== 'number' || typeof w.y !== 'number' || !w.edge) return;
+        const key = `${w.x},${w.y},${w.edge}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        wallEdges.push(w);
+      });
+    }
     for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
     // compute convenient per-cell values
@@ -295,14 +305,6 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           ctx.restore();
         }
 
-        // Collect wall edges for later drawing (avoid being overdrawn by subsequent cells)
-        if (walls && walls.length > 0) {
-          if (walls.some(w => w.x === x && w.y === y && w.edge === 'N')) wallEdges.push({ x, y, edge: 'N' });
-          if (walls.some(w => w.x === x && w.y === y && w.edge === 'S')) wallEdges.push({ x, y, edge: 'S' });
-          if (walls.some(w => w.x === x && w.y === y && w.edge === 'E')) wallEdges.push({ x, y, edge: 'E' });
-          if (walls.some(w => w.x === x && w.y === y && w.edge === 'W')) wallEdges.push({ x, y, edge: 'W' });
-        }
-
         // Cell border
         ctx.strokeStyle = '#334155'; // slate-700
         ctx.lineWidth = 1;
@@ -386,6 +388,10 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       wallEdges.forEach(w => {
         const px = w.x * cellSize;
         const py = w.y * cellSize;
+        const edge = w.edge;
+        const isCardinal = edge === 'N' || edge === 'S' || edge === 'E' || edge === 'W';
+        const isDiag = typeof edge === 'string' && edge.startsWith('diag');
+        const isRound = typeof edge === 'string' && edge.startsWith('round');
         // Decide color by wall source tag (if present) so designer-placed walls
         // keep the template's room/corridor color. Fallback to inspecting the
         // cell value at the wall's origin, then the neighbor across the edge.
@@ -398,11 +404,11 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           } else {
             const originVal = (grid[w.y] && grid[w.y][w.x]) || 0;
             let lookup = originVal;
-            if (!lookup) {
-              if (w.edge === 'N') lookup = (grid[w.y - 1] && grid[w.y - 1][w.x]) || 0;
-              else if (w.edge === 'S') lookup = (grid[w.y + 1] && grid[w.y + 1][w.x]) || 0;
-              else if (w.edge === 'E') lookup = (grid[w.y] && grid[w.y][w.x + 1]) || 0;
-              else if (w.edge === 'W') lookup = (grid[w.y] && grid[w.y][w.x - 1]) || 0;
+            if (!lookup && isCardinal) {
+              if (edge === 'N') lookup = (grid[w.y - 1] && grid[w.y - 1][w.x]) || 0;
+              else if (edge === 'S') lookup = (grid[w.y + 1] && grid[w.y + 1][w.x]) || 0;
+              else if (edge === 'E') lookup = (grid[w.y] && grid[w.y][w.x + 1]) || 0;
+              else if (edge === 'W') lookup = (grid[w.y] && grid[w.y][w.x - 1]) || 0;
             }
             if (lookup === 1) edgeColor = '#B45309';
             else if (lookup === 2) edgeColor = '#1D4ED8';
@@ -411,44 +417,88 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           edgeColor = '#ffffff';
         }
 
-        // Compute coverage from origin and neighbor and draw only on covered segments
-        const keyA = `${w.x},${w.y}`;
-        const styleA = (cellStyles && cellStyles[keyA]) || ((grid[w.y] && grid[w.y][w.x]) === 1 ? 'full' : null);
+        if (isCardinal) {
+          // Compute coverage from the origin (or fallback to neighbor) and draw only on covered segments
+          const keyA = `${w.x},${w.y}`;
+          const styleA = (cellStyles && cellStyles[keyA]) || ((grid[w.y] && grid[w.y][w.x]) === 1 ? 'full' : null);
 
-        let nx = w.x, ny = w.y, opposite = null;
-        if (w.edge === 'N') { ny = w.y - 1; opposite = 'S'; }
-        else if (w.edge === 'S') { ny = w.y + 1; opposite = 'N'; }
-        else if (w.edge === 'E') { nx = w.x + 1; opposite = 'W'; }
-        else if (w.edge === 'W') { nx = w.x - 1; opposite = 'E'; }
+          let nx = w.x, ny = w.y, opposite = null;
+          if (edge === 'N') { ny = w.y - 1; opposite = 'S'; }
+          else if (edge === 'S') { ny = w.y + 1; opposite = 'N'; }
+          else if (edge === 'E') { nx = w.x + 1; opposite = 'W'; }
+          else if (edge === 'W') { nx = w.x - 1; opposite = 'E'; }
 
-        const keyB = `${nx},${ny}`;
-        const styleB = (cellStyles && cellStyles[keyB]) || ((grid[ny] && grid[ny][nx]) === 1 ? 'full' : null);
+          const keyB = `${nx},${ny}`;
+          const styleB = (cellStyles && cellStyles[keyB]) || ((grid[ny] && grid[ny][nx]) === 1 ? 'full' : null);
 
-        const covA = getEdgeCoverage(styleA, w.edge);
-        const covB = getEdgeCoverage(styleB, opposite);
+          const covA = getEdgeCoverage(styleA, edge);
+          const covB = getEdgeCoverage(styleB, opposite);
+          const cov = covA[1] > covA[0] ? covA : covB;
+          const start = cov[0];
+          const end = cov[1];
+          if (end <= start) return; // nothing to draw
 
-        const start = Math.min(covA[0], covB[0]);
-        const end = Math.max(covA[1], covB[1]);
-        if (end <= start) return; // nothing to draw
-
-        ctx.fillStyle = edgeColor;
-        if (w.edge === 'N') {
-          const sx = px + start * cellSize;
-          const wlen = (end - start) * cellSize;
-          ctx.fillRect(sx, py - Math.floor(wt/2), wlen, wt);
-        } else if (w.edge === 'S') {
-          const sx = px + start * cellSize;
-          const wlen = (end - start) * cellSize;
-          ctx.fillRect(sx, py + cellSize - Math.floor(wt/2), wlen, wt);
-        } else if (w.edge === 'E') {
-          const sy = py + start * cellSize;
-          const hlen = (end - start) * cellSize;
-          ctx.fillRect(px + cellSize - Math.floor(wt/2), sy, wt, hlen);
-        } else if (w.edge === 'W') {
-          const sy = py + start * cellSize;
-          const hlen = (end - start) * cellSize;
-          ctx.fillRect(px - Math.floor(wt/2), sy, wt, hlen);
+          ctx.fillStyle = edgeColor;
+          if (edge === 'N') {
+            const sx = px + start * cellSize;
+            const wlen = (end - start) * cellSize;
+            ctx.fillRect(sx, py - Math.floor(wt/2), wlen, wt);
+          } else if (edge === 'S') {
+            const sx = px + start * cellSize;
+            const wlen = (end - start) * cellSize;
+            ctx.fillRect(sx, py + cellSize - Math.floor(wt/2), wlen, wt);
+          } else if (edge === 'E') {
+            const sy = py + start * cellSize;
+            const hlen = (end - start) * cellSize;
+            ctx.fillRect(px + cellSize - Math.floor(wt/2), sy, wt, hlen);
+          } else if (edge === 'W') {
+            const sy = py + start * cellSize;
+            const hlen = (end - start) * cellSize;
+            ctx.fillRect(px - Math.floor(wt/2), sy, wt, hlen);
+          }
+          return;
         }
+
+        ctx.save();
+        ctx.strokeStyle = edgeColor;
+        ctx.lineWidth = wt;
+        ctx.lineCap = 'round';
+        if (isDiag) {
+          ctx.beginPath();
+          if (edge === 'diag1' || edge === 'diag2') {
+            ctx.moveTo(px + cellSize, py);
+            ctx.lineTo(px, py + cellSize);
+          } else if (edge === 'diag3' || edge === 'diag4') {
+            ctx.moveTo(px, py);
+            ctx.lineTo(px + cellSize, py + cellSize);
+          } else {
+            ctx.restore();
+            return;
+          }
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
+
+        if (isRound) {
+          ctx.beginPath();
+          if (edge === 'round1') {
+            ctx.arc(px, py, cellSize, 0, Math.PI / 2);
+          } else if (edge === 'round2') {
+            ctx.arc(px + cellSize, py + cellSize, cellSize, Math.PI, Math.PI * 1.5);
+          } else if (edge === 'round3') {
+            ctx.arc(px + cellSize, py, cellSize, Math.PI / 2, Math.PI);
+          } else if (edge === 'round4') {
+            ctx.arc(px, py + cellSize, cellSize, Math.PI * 1.5, Math.PI * 2);
+          } else {
+            ctx.restore();
+            return;
+          }
+          ctx.stroke();
+          ctx.restore();
+          return;
+        }
+        ctx.restore();
       });
     }
 
@@ -517,6 +567,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     if (activeTemplate && hoveredCell) {
       const tpl = activeTemplate.grid || activeTemplate;
       const tplDoors = activeTemplate.doors || [];
+      const tplWalls = activeTemplate.walls || [];
       // Center template at hoveredCell
       const startX = hoveredCell.x - Math.floor(tpl[0].length / 2);
       const startY = hoveredCell.y - Math.floor(tpl.length / 2);
@@ -557,6 +608,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       // borders empty space. Inner edges are subtle and won't compete with doors.
       const tplInnerEdges = { horiz: [], vert: [] };
       const tplWallEdges = [];
+      const useTemplateWalls = tplWalls.length > 0;
       for (let ry = 0; ry < tpl.length; ry++) {
         for (let rx = 0; rx < tpl[ry].length; rx++) {
           const val = tpl[ry][rx];
@@ -576,11 +628,20 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
           if (southExists) tplInnerEdges.horiz.push({ x: gx, y: gy });
 
           // If neighbor does NOT exist, it's a wall edge bordering empty space
-          if (!northExists) tplWallEdges.push({ x: gx, y: gy, edge: 'N' });
-          if (!southExists) tplWallEdges.push({ x: gx, y: gy, edge: 'S' });
-          if (!eastExists) tplWallEdges.push({ x: gx, y: gy, edge: 'E' });
-          if (!westExists) tplWallEdges.push({ x: gx, y: gy, edge: 'W' });
+          if (!useTemplateWalls) {
+            if (!northExists) tplWallEdges.push({ x: gx, y: gy, edge: 'N' });
+            if (!southExists) tplWallEdges.push({ x: gx, y: gy, edge: 'S' });
+            if (!eastExists) tplWallEdges.push({ x: gx, y: gy, edge: 'E' });
+            if (!westExists) tplWallEdges.push({ x: gx, y: gy, edge: 'W' });
+          }
         }
+      }
+      if (useTemplateWalls) {
+        tplWalls.forEach(w => {
+          const wx = startX + (w.x || 0);
+          const wy = startY + (w.y || 0);
+          tplWallEdges.push({ x: wx, y: wy, edge: w.edge, srcTag: w.srcTag });
+        });
       }
 
       // Draw inner edges first (subtle lines)
@@ -640,10 +701,46 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         tplWallEdges.forEach(w => {
           const px = w.x * cellSize;
           const py = w.y * cellSize;
-          if (w.edge === 'N') ctx.fillRect(px, py - Math.floor(wt/2), cellSize, wt);
-          else if (w.edge === 'S') ctx.fillRect(px, py + cellSize - Math.floor(wt/2), cellSize, wt);
-          else if (w.edge === 'E') ctx.fillRect(px + cellSize - Math.floor(wt/2), py, wt, cellSize);
-          else if (w.edge === 'W') ctx.fillRect(px - Math.floor(wt/2), py, wt, cellSize);
+          const edge = w.edge;
+          const isDiag = typeof edge === 'string' && edge.startsWith('diag');
+          const isRound = typeof edge === 'string' && edge.startsWith('round');
+          if (edge === 'N') ctx.fillRect(px, py - Math.floor(wt/2), cellSize, wt);
+          else if (edge === 'S') ctx.fillRect(px, py + cellSize - Math.floor(wt/2), cellSize, wt);
+          else if (edge === 'E') ctx.fillRect(px + cellSize - Math.floor(wt/2), py, wt, cellSize);
+          else if (edge === 'W') ctx.fillRect(px - Math.floor(wt/2), py, wt, cellSize);
+          else if (isDiag) {
+            ctx.save();
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.lineWidth = wt;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            if (edge === 'diag1' || edge === 'diag2') {
+              ctx.moveTo(px + cellSize, py);
+              ctx.lineTo(px, py + cellSize);
+            } else {
+              ctx.moveTo(px, py);
+              ctx.lineTo(px + cellSize, py + cellSize);
+            }
+            ctx.stroke();
+            ctx.restore();
+          } else if (isRound) {
+            ctx.save();
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.lineWidth = wt;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            if (edge === 'round1') {
+              ctx.arc(px, py, cellSize, 0, Math.PI / 2);
+            } else if (edge === 'round2') {
+              ctx.arc(px + cellSize, py + cellSize, cellSize, Math.PI, Math.PI * 1.5);
+            } else if (edge === 'round3') {
+              ctx.arc(px + cellSize, py, cellSize, Math.PI / 2, Math.PI);
+            } else if (edge === 'round4') {
+              ctx.arc(px, py + cellSize, cellSize, Math.PI * 1.5, Math.PI * 2);
+            }
+            ctx.stroke();
+            ctx.restore();
+          }
         });
       }
 
@@ -1511,7 +1608,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     const grid = tpl.grid ? tpl.grid.map(r => r.slice()) : (Array.isArray(tpl) ? tpl.map(r => r.slice()) : null);
     const doors = (tpl.doors || []).map(d => ({ ...d }));
     const walls = (tpl.walls || []).map(w => ({ ...w }));
-    return { grid, doors, walls };
+    const cellStyles = { ...(tpl.cellStyles || {}) };
+    return { grid, doors, walls, cellStyles };
   }, []);
 
   const rotateCWOnce = useCallback((tpl) => {
@@ -1525,12 +1623,36 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
         ng[r][c] = g[H - 1 - c][r];
       }
     }
-    const edgeMap = { N: 'E', E: 'S', S: 'W', W: 'N' };
-  // Map original (x,y) -> rotated coordinates: x' = H-1 - y, y' = x
-  const ndoors = (tpl.doors || []).map(d => ({ x: (H - 1) - d.y, y: d.x, edge: edgeMap[d.edge] || d.edge }));
-  const nwalls = (tpl.walls || []).map(w => ({ x: (H - 1) - w.y, y: w.x, edge: edgeMap[w.edge] || w.edge }));
-  // Preserve other metadata (id/name) if present
-  return { ...(tpl || {}), grid: ng, doors: ndoors, walls: nwalls };
+    const edgeMap = {
+      N: 'E',
+      E: 'S',
+      S: 'W',
+      W: 'N',
+      diag1: 'diag3',
+      diag3: 'diag2',
+      diag2: 'diag4',
+      diag4: 'diag1',
+      round1: 'round3',
+      round3: 'round2',
+      round2: 'round4',
+      round4: 'round1',
+    };
+    const rotateStyle = (style) => edgeMap[style] || style;
+    const styleMap = {};
+    Object.keys(tpl.cellStyles || {}).forEach(key => {
+      const parts = key.split(',').map(Number);
+      if (parts.length !== 2) return;
+      const ox = parts[0];
+      const oy = parts[1];
+      const nx = (H - 1) - oy;
+      const ny = ox;
+      styleMap[`${nx},${ny}`] = rotateStyle((tpl.cellStyles || {})[key]);
+    });
+    // Map original (x,y) -> rotated coordinates: x' = H-1 - y, y' = x
+    const ndoors = (tpl.doors || []).map(d => ({ x: (H - 1) - d.y, y: d.x, edge: edgeMap[d.edge] || d.edge }));
+    const nwalls = (tpl.walls || []).map(w => ({ x: (H - 1) - w.y, y: w.x, edge: edgeMap[w.edge] || w.edge }));
+    // Preserve other metadata (id/name) if present
+  return { ...(tpl || {}), grid: ng, doors: ndoors, walls: nwalls, cellStyles: styleMap };
   }, []);
 
   const rotateCCW = useCallback((tpl) => {
@@ -1548,9 +1670,33 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     const H = g.length;
     const W = g[0]?.length || 0;
     const ng = g.map(row => row.slice().reverse());
-    const ndoors = (tpl.doors || []).map(d => ({ x: (W - 1) - d.x, y: d.y, edge: d.edge === 'E' ? 'W' : d.edge === 'W' ? 'E' : d.edge }));
-    const nwalls = (tpl.walls || []).map(w => ({ x: (W - 1) - w.x, y: w.y, edge: w.edge === 'E' ? 'W' : w.edge === 'W' ? 'E' : w.edge }));
-    return { ...(tpl || {}), grid: ng, doors: ndoors, walls: nwalls };
+    const mirrorEdge = (edge) => {
+      if (edge === 'E') return 'W';
+      if (edge === 'W') return 'E';
+      if (edge === 'diag1') return 'diag3';
+      if (edge === 'diag3') return 'diag1';
+      if (edge === 'diag2') return 'diag4';
+      if (edge === 'diag4') return 'diag2';
+      if (edge === 'round1') return 'round3';
+      if (edge === 'round3') return 'round1';
+      if (edge === 'round2') return 'round4';
+      if (edge === 'round4') return 'round2';
+      return edge;
+    };
+    const styleMap = {};
+    Object.keys(tpl.cellStyles || {}).forEach(key => {
+      const parts = key.split(',').map(Number);
+      if (parts.length !== 2) return;
+      const ox = parts[0];
+      const oy = parts[1];
+      const nx = (W - 1) - ox;
+      const ny = oy;
+      const style = (tpl.cellStyles || {})[key];
+      styleMap[`${nx},${ny}`] = mirrorEdge(style);
+    });
+    const ndoors = (tpl.doors || []).map(d => ({ x: (W - 1) - d.x, y: d.y, edge: mirrorEdge(d.edge) }));
+    const nwalls = (tpl.walls || []).map(w => ({ x: (W - 1) - w.x, y: w.y, edge: mirrorEdge(w.edge) }));
+    return { ...(tpl || {}), grid: ng, doors: ndoors, walls: nwalls, cellStyles: styleMap };
   }, []);
 
   // Ensure the canvas redraws immediately when the transformed template changes

@@ -10,7 +10,7 @@ import { TILE_SHAPE_TABLE } from '../data/rooms.js';
 import { Tooltip, TOOLTIPS } from './RulesReference.jsx';
 import DungeonHeaderButtons from './DungeonHeaderButtons.jsx';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
-import { cellHasEdgeFromStyle } from '../utils/tileStyles.js';
+import { buildWallOffPerimeter } from '../utils/wallUtils.js';
 import ContextMenu from './ContextMenu.jsx';
 import { getEquipment, hasEquipment } from '../data/equipment.js';
 import RadialMenu from './RadialMenu.jsx';
@@ -579,76 +579,10 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                       const sx = contextMenu.cellX; const sy = contextMenu.cellY;
                       if (!(sy >= 0 && sy < rows && sx >= 0 && sx < cols)) return;
                       if (gridEl[sy][sx] !== 1) return;
-                      const toVisit = [{x: sx, y: sy}];
-                      const region = new Set();
-                      const key = (a,b) => `${a},${b}`;
-                      while (toVisit.length) {
-                        const c = toVisit.pop();
-                        const k = key(c.x, c.y);
-                        if (region.has(k)) continue;
-                        if (!(c.y >= 0 && c.y < rows && c.x >= 0 && c.x < cols)) continue;
-                        if (gridEl[c.y][c.x] !== 1) continue;
-                        region.add(k);
-                        toVisit.push({x: c.x+1, y: c.y}); toVisit.push({x: c.x-1, y: c.y}); toVisit.push({x: c.x, y: c.y+1}); toVisit.push({x: c.x, y: c.y-1});
-                      }
-                      const perimeter = [];
-                      // Consider visual styles when deciding if an adjacent edge is filled.
-                      // Only add a perimeter edge if the current cell has visible coverage
-                      // on that edge and the neighbor does not.
                       const styles = state.cellStyles || {};
-                      const edgeOpp = (e) => (e === 'N' ? 'S' : e === 'S' ? 'N' : e === 'E' ? 'W' : 'E');
-                      const cellHasEdge = (cx, cy, edge) => {
-                        if (!(cy >= 0 && cy < rows && cx >= 0 && cx < cols)) return false;
-                        const key = `${cx},${cy}`;
-                        let style = styles[key];
-                        if (!style) {
-                          style = (gridEl[cy] && gridEl[cy][cx]) === 1 ? 'full' : null;
-                        }
-                        return cellHasEdgeFromStyle(style, edge);
-                      };
-
-                      region.forEach(k => {
-                        const [rx, ry] = k.split(',').map(Number);
-                        const neighbors = [
-                          {edge: 'N', nx: rx, ny: ry-1},
-                          {edge: 'S', nx: rx, ny: ry+1},
-                          {edge: 'E', nx: rx+1, ny: ry},
-                          {edge: 'W', nx: rx-1, ny: ry}
-                        ];
-                        neighbors.forEach(n => {
-                          // If neighbor is outside or not a room, always treat as perimeter
-                          if (!(n.ny >= 0 && n.ny < rows && n.nx >= 0 && n.nx < cols) || gridEl[n.ny][n.nx] !== 1) {
-                            perimeter.push({ x: rx, y: ry, edge: n.edge });
-                            return;
-                          }
-                          // Otherwise, use visual-coverage test to decide if this edge should be walled
-                          const currentHas = cellHasEdge(rx, ry, n.edge);
-                          const neighborHas = cellHasEdge(n.nx, n.ny, edgeOpp(n.edge));
-                          if (currentHas && !neighborHas) {
-                            perimeter.push({ x: rx, y: ry, edge: n.edge });
-                          }
-                        });
-                      });
+                      const { region, perimeter } = buildWallOffPerimeter(gridEl, styles, sx, sy, { allowFallback: true });
                       try {
                         const existingWalls = state.walls || [];
-                        // If visual perimeter produced nothing, fall back to the legacy behavior
-                        // (neighbor cell not a room) so the user can still wall the region.
-                        if (perimeter.length === 0) {
-                          region.forEach(k2 => {
-                            const [rx2, ry2] = k2.split(',').map(Number);
-                            const neighbors2 = [
-                              {edge: 'N', nx: rx2, ny: ry2-1},
-                              {edge: 'S', nx: rx2, ny: ry2+1},
-                              {edge: 'E', nx: rx2+1, ny: ry2},
-                              {edge: 'W', nx: rx2-1, ny: ry2}
-                            ];
-                            neighbors2.forEach(n2 => {
-                              if (!(n2.ny >= 0 && n2.ny < rows && n2.nx >= 0 && n2.nx < cols) || gridEl[n2.ny][n2.nx] !== 1) {
-                                perimeter.push({ x: rx2, y: ry2, edge: n2.edge });
-                              }
-                            });
-                          });
-                        }
 
                         // debug info to help diagnose missing walls
                         try {

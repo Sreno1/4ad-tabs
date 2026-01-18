@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 
 // Components
 import Party from "./components/Party.jsx";
@@ -18,6 +18,7 @@ import EntranceRollModal from "./components/EntranceRollModal.jsx";
 import Equipment from "./components/Equipment.jsx";
 import Abilities from "./components/Abilities.jsx";
 import ActionPane from "./components/ActionPane.jsx";
+import { buildWallOffPerimeters } from "./utils/wallUtils.js";
 import FloatingDice from "./components/FloatingDice.jsx";
 import RoomDesigner from "./components/RoomDesigner.jsx";
 import GoldSenseModal from "./components/GoldSenseModal.jsx";
@@ -87,6 +88,16 @@ export default function App() {
   const [leftPanelContracted, setLeftPanelContracted] = useState(false);
   // Do not auto-contract the left panel when the log expands.
   // Contracting is controlled only by the user's explicit close action.
+
+  const normalizePlacementTemplate = useCallback((tpl) => {
+    if (!tpl) return null;
+    const grid = tpl.grid ? tpl.grid.map(r => r.slice()) : (Array.isArray(tpl) ? tpl.map(r => r.slice()) : []);
+    const doors = (tpl.doors || []).map(d => ({ ...d }));
+    const walls = (tpl.walls || []).map(w => ({ ...w }));
+    const cellStyles = { ...(tpl.cellStyles || {}) };
+    return { ...(tpl || {}), grid, doors, walls, cellStyles };
+  }, []);
+
   React.useEffect(() => {
     setLeftPanelContracted(false);
   }, []);
@@ -482,123 +493,134 @@ export default function App() {
                     autoPlacedRoom={roomEvents.autoPlacedRoom}
                     setAutoPlacedRoom={roomEvents.setAutoPlacedRoom}
                     onCommitPlacement={(startX, startY, tpl) => {
-                      // tpl may be {grid, doors}
-                      try { const sfx = require('./utils/sfx.js').default; sfx.play('hurt2', { volume: 0.9 }); } catch (e) {}
-                      const templateGrid = tpl.grid || tpl;
-                      const templateDoors = tpl.doors || [];
-                      const tplStyles = tpl.cellStyles || {};
-                      templateGrid.forEach((row, ry) => {
-                        row.forEach((val, rx) => {
-                          if (val && val !== 0) {
-                            const x = startX + rx;
-                            const y = startY + ry;
-                            if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
-                              const styleKey = `${rx},${ry}`;
-                              const style = tplStyles[styleKey];
-                              if (style) dispatch({ type: 'SET_CELL', x, y, value: val, style });
-                              else if (val === 1) dispatch({ type: 'SET_CELL', x, y, value: val, style: 'full' });
-                              else dispatch({ type: 'SET_CELL', x, y, value: val });
+                      const lastTile = roomEvents.tileResult || null;
+                      try {
+                        // tpl may be {grid, doors}
+                        try { const sfx = require('./utils/sfx.js').default; sfx.play('hurt2', { volume: 0.9 }); } catch (e) {}
+                        const templateGrid = tpl.grid || tpl;
+                        const templateDoors = tpl.doors || [];
+                        const tplStyles = tpl.cellStyles || {};
+                        templateGrid.forEach((row, ry) => {
+                          row.forEach((val, rx) => {
+                            if (val && val !== 0) {
+                              const x = startX + rx;
+                              const y = startY + ry;
+                              if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
+                                const styleKey = `${rx},${ry}`;
+                                const style = tplStyles[styleKey];
+                                if (style) dispatch({ type: 'SET_CELL', x, y, value: val, style });
+                                else if (val === 1) dispatch({ type: 'SET_CELL', x, y, value: val, style: 'full' });
+                                else dispatch({ type: 'SET_CELL', x, y, value: val });
+                              }
+                            }
+                          });
+                        });
+                        templateDoors.forEach(d => {
+                          const x = startX + (d.x || 0);
+                          const y = startY + (d.y || 0);
+                          if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
+                            dispatch({ type: 'TOGGLE_DOOR', x, y, edge: d.edge });
+                          }
+                        });
+                        // Merge walls from template (if any)
+                        const templateWalls = tpl.walls || [];
+                        const computedWalls = buildWallOffPerimeters(templateGrid, tplStyles, { allowFallback: true });
+                        const mergedTemplateWalls = [...templateWalls];
+                        computedWalls.forEach(w => {
+                          if (!mergedTemplateWalls.some(m => m.x === w.x && m.y === w.y && m.edge === w.edge)) {
+                            mergedTemplateWalls.push(w);
+                          }
+                        });
+                        if (mergedTemplateWalls.length > 0) {
+                          const existingWalls = state.walls || [];
+                          const union = [...existingWalls];
+                          // Determine template tag (prefer saved tag from library match; fall back to tileResult)
+                          const templateTag = (roomEvents.autoPlacedRoom && roomEvents.autoPlacedRoom.tag)
+                            ? roomEvents.autoPlacedRoom.tag
+                            : (lastTile && lastTile.isCorridor ? 'Corridor' : 'Room');
+                          mergedTemplateWalls.forEach(w => {
+                            const wx = startX + (w.x || 0);
+                            const wy = startY + (w.y || 0);
+                            if (wy >= 0 && wy < state.grid.length && wx >= 0 && wx < (state.grid[0]?.length||0)) {
+                              if (!union.some(u => u.x === wx && u.y === wy && u.edge === w.edge)) union.push({ x: wx, y: wy, edge: w.edge, srcTag: templateTag });
+                            }
+                          });
+                          dispatch({ type: 'SET_WALLS', walls: union });
+                        }
+                        // If this placement originated from an auto-placed library room and
+                        // we have a recorded 2d6 contents roll for the last generated tile,
+                        // persist a marker/note in localStorage so the placed tile shows
+                        // the 2d6 result on hover. Emit an event so the Dungeon component
+                        // can reload markers immediately.
+                        try {
+                          const autoPlaced = roomEvents.autoPlacedRoom;
+                          if (autoPlaced && lastTile && typeof lastTile.contentsRoll === 'number') {
+                            const tplGrid = templateGrid;
+                            const tplH = tplGrid.length;
+                            const tplW = (tplGrid[0] || []).length || 0;
+                            const centerRX = Math.floor(tplW / 2);
+                            const centerRY = Math.floor(tplH / 2);
+                            const markX = startX + centerRX;
+                            const markY = startY + centerRY;
+                            if (markY >= 0 && markY < state.grid.length && markX >= 0 && markX < (state.grid[0]?.length||0)) {
+                              const key = `${markX},${markY}`;
+                              // Build tooltip from the exact log lines produced during tile generation
+                              let tooltipText = `2d6=${lastTile.contentsRoll}`;
+                              try {
+                                // Determine a cutoff timestamp from recent roomEvents so we only capture
+                                // log entries produced during the last generation (D66/CONTENTS events).
+                                const evts = roomEvents.roomEvents || [];
+                                let cutoff = null;
+                                if (evts && evts.length > 0) {
+                                  // Use the earliest timestamp among the last few relevant events
+                                  const tsList = evts.filter(e => ['D66_ROLL', 'CONTENTS_ROLL', 'LIBRARY_MATCH'].includes(e.type)).map(e => e.timestamp).filter(Boolean);
+                                  if (tsList.length > 0) cutoff = Math.min(...tsList);
+                                }
+                                // If we have a cutoff, collect all log entries with timestamp >= cutoff
+                                const lines = [];
+                                try {
+                                  if (cutoff) {
+                                    (state.log || []).forEach(l => {
+                                      try {
+                                        const lt = l.timestamp ? (typeof l.timestamp === 'string' ? (new Date(l.timestamp)).getTime() : l.timestamp) : null;
+                                        if (lt && lt >= cutoff) lines.push(l.message);
+                                      } catch (e) {}
+                                    });
+                                  }
+                                } catch (e) {}
+                                // Fallback: if no lines collected, include the most recent 3 log entries
+                                if (lines.length === 0) {
+                                  const recent = (state.log || []).slice(0, 3).map(l => l.message).reverse();
+                                  tooltipText = recent.join(' \n ');
+                                } else {
+                                  tooltipText = lines.join(' \n ');
+                                }
+                              } catch (e) { /* ignore */ }
+                              // Append whether this tile was a Room or Corridor for quick glance
+                              try {
+                                const typeLabel = lastTile.isCorridor ? 'Corridor' : 'Room';
+                                tooltipText = `${tooltipText} (${typeLabel})`;
+                              } catch (e) { /* ignore */ }
+                              try {
+                                const raw = localStorage.getItem('roomMarkers');
+                                const parsed = raw ? JSON.parse(raw) : {};
+                                const existing = parsed[key];
+                                if (existing) {
+                                  parsed[key] = { type: existing.type, label: existing.label, tooltip: existing.tooltip && existing.tooltip.length > 0 ? `${existing.tooltip} — ${tooltipText}` : tooltipText };
+                                } else {
+                                  parsed[key] = { type: 'note', label: 'Note', tooltip: tooltipText };
+                                }
+                                localStorage.setItem('roomMarkers', JSON.stringify(parsed));
+                                // let Dungeon component know to reload markers
+                                try { window.dispatchEvent(new CustomEvent('roomMarkersUpdated')); } catch (e) {}
+                              } catch (e) { /* ignore storage errors */ }
                             }
                           }
-                        });
-                      });
-                      templateDoors.forEach(d => {
-                        const x = startX + (d.x || 0);
-                        const y = startY + (d.y || 0);
-                        if (y >= 0 && y < state.grid.length && x >= 0 && x < (state.grid[0]?.length||0)) {
-                          dispatch({ type: 'TOGGLE_DOOR', x, y, edge: d.edge });
-                        }
-                      });
-                      // Merge walls from template (if any)
-                      const templateWalls = tpl.walls || [];
-                      if (templateWalls.length > 0) {
-                        const existingWalls = state.walls || [];
-                        const union = [...existingWalls];
-                        // Determine template tag (prefer saved tag from library match; fall back to lastTile.isCorridor)
-                        const templateTag = (roomEvents.autoPlacedRoom && roomEvents.autoPlacedRoom.tag) ? roomEvents.autoPlacedRoom.tag : (lastTile && lastTile.isCorridor ? 'Corridor' : 'Room');
-                        templateWalls.forEach(w => {
-                          const wx = startX + (w.x || 0);
-                          const wy = startY + (w.y || 0);
-                          if (wy >= 0 && wy < state.grid.length && wx >= 0 && wx < (state.grid[0]?.length||0)) {
-                            if (!union.some(u => u.x === wx && u.y === wy && u.edge === w.edge)) union.push({ x: wx, y: wy, edge: w.edge, srcTag: templateTag });
-                          }
-                        });
-                        dispatch({ type: 'SET_WALLS', walls: union });
+                        } catch (e) { /* ignore */ }
+                      } catch (e) { /* ignore */ } finally {
+                        setPlacementTemplate(null);
+                        roomEvents.setAutoPlacedRoom(null);
                       }
-                      // If this placement originated from an auto-placed library room and
-                      // we have a recorded 2d6 contents roll for the last generated tile,
-                      // persist a marker/note in localStorage so the placed tile shows
-                      // the 2d6 result on hover. Emit an event so the Dungeon component
-                      // can reload markers immediately.
-                      try {
-                        const autoPlaced = roomEvents.autoPlacedRoom;
-                        const lastTile = roomEvents.tileResult;
-                        if (autoPlaced && lastTile && typeof lastTile.contentsRoll === 'number') {
-                          const tplGrid = templateGrid;
-                          const tplH = tplGrid.length;
-                          const tplW = (tplGrid[0] || []).length || 0;
-                          const centerRX = Math.floor(tplW / 2);
-                          const centerRY = Math.floor(tplH / 2);
-                          const markX = startX + centerRX;
-                          const markY = startY + centerRY;
-                          if (markY >= 0 && markY < state.grid.length && markX >= 0 && markX < (state.grid[0]?.length||0)) {
-                            const key = `${markX},${markY}`;
-                            // Build tooltip from the exact log lines produced during tile generation
-                            let tooltipText = `2d6=${lastTile.contentsRoll}`;
-                            try {
-                              // Determine a cutoff timestamp from recent roomEvents so we only capture
-                              // log entries produced during the last generation (D66/CONTENTS events).
-                              const evts = roomEvents.roomEvents || [];
-                              let cutoff = null;
-                              if (evts && evts.length > 0) {
-                                // Use the earliest timestamp among the last few relevant events
-                                const tsList = evts.filter(e => ['D66_ROLL', 'CONTENTS_ROLL', 'LIBRARY_MATCH'].includes(e.type)).map(e => e.timestamp).filter(Boolean);
-                                if (tsList.length > 0) cutoff = Math.min(...tsList);
-                              }
-                              // If we have a cutoff, collect all log entries with timestamp >= cutoff
-                              const lines = [];
-                              try {
-                                if (cutoff) {
-                                  (state.log || []).forEach(l => {
-                                    try {
-                                      const lt = l.timestamp ? (typeof l.timestamp === 'string' ? (new Date(l.timestamp)).getTime() : l.timestamp) : null;
-                                      if (lt && lt >= cutoff) lines.push(l.message);
-                                    } catch (e) {}
-                                  });
-                                }
-                              } catch (e) {}
-                              // Fallback: if no lines collected, include the most recent 3 log entries
-                              if (lines.length === 0) {
-                                const recent = (state.log || []).slice(0, 3).map(l => l.message).reverse();
-                                tooltipText = recent.join(' \n ');
-                              } else {
-                                tooltipText = lines.join(' \n ');
-                              }
-                            } catch (e) { /* ignore */ }
-                            // Append whether this tile was a Room or Corridor for quick glance
-                            try {
-                              const typeLabel = lastTile.isCorridor ? 'Corridor' : 'Room';
-                              tooltipText = `${tooltipText} (${typeLabel})`;
-                            } catch (e) { /* ignore */ }
-                            try {
-                              const raw = localStorage.getItem('roomMarkers');
-                              const parsed = raw ? JSON.parse(raw) : {};
-                              const existing = parsed[key];
-                              if (existing) {
-                                parsed[key] = { type: existing.type, label: existing.label, tooltip: existing.tooltip && existing.tooltip.length > 0 ? `${existing.tooltip} — ${tooltipText}` : tooltipText };
-                              } else {
-                                parsed[key] = { type: 'note', label: 'Note', tooltip: tooltipText };
-                              }
-                              localStorage.setItem('roomMarkers', JSON.stringify(parsed));
-                              // let Dungeon component know to reload markers
-                              try { window.dispatchEvent(new CustomEvent('roomMarkersUpdated')); } catch (e) {}
-                            } catch (e) { /* ignore storage errors */ }
-                          }
-                        }
-                      } catch (e) { /* ignore */ }
-
-                      setPlacementTemplate(null);
-                      roomEvents.setAutoPlacedRoom(null);
                     }}
                     sidebarCollapsed={!leftPanelOpen}
                     onToggleShowLog={() => {
@@ -731,7 +753,7 @@ export default function App() {
           onClose={() => setShowRoomDesigner(false)}
           onPlaceTemplate={(tpl) => {
             // Enter placement mode: let user click a map cell to place the template
-            setPlacementTemplate(tpl);
+            setPlacementTemplate(normalizePlacementTemplate(tpl));
             setShowRoomDesigner(false);
           }}
         />

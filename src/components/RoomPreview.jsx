@@ -73,10 +73,39 @@ export default function RoomPreview({ grid, doors, walls = [], cellSize = 20 }) 
         {walls.map((w, i) => {
           const px = w.x * cellSize + 2;
           const py = w.y * cellSize + 2;
-          if (w.edge === 'N') return <div key={i} style={{ position: 'absolute', left: px, top: py - 1, width: cellSize, height: 2, background: '#ffffff' }} />;
-          if (w.edge === 'S') return <div key={i} style={{ position: 'absolute', left: px, top: py + cellSize - 1, width: cellSize, height: 2, background: '#ffffff' }} />;
-          if (w.edge === 'E') return <div key={i} style={{ position: 'absolute', left: px + cellSize - 1, top: py, width: 2, height: cellSize, background: '#ffffff' }} />;
-          if (w.edge === 'W') return <div key={i} style={{ position: 'absolute', left: px - 1, top: py, width: 2, height: cellSize, background: '#ffffff' }} />;
+          const edge = w.edge;
+          if (edge === 'N') return <div key={i} style={{ position: 'absolute', left: px, top: py - 1, width: cellSize, height: 2, background: '#ffffff' }} />;
+          if (edge === 'S') return <div key={i} style={{ position: 'absolute', left: px, top: py + cellSize - 1, width: cellSize, height: 2, background: '#ffffff' }} />;
+          if (edge === 'E') return <div key={i} style={{ position: 'absolute', left: px + cellSize - 1, top: py, width: 2, height: cellSize, background: '#ffffff' }} />;
+          if (edge === 'W') return <div key={i} style={{ position: 'absolute', left: px - 1, top: py, width: 2, height: cellSize, background: '#ffffff' }} />;
+          if (typeof edge === 'string' && edge.startsWith('diag')) {
+            const isDown = edge === 'diag1' || edge === 'diag2';
+            return (
+              <svg key={i} style={{ position: 'absolute', left: px, top: py, width: cellSize, height: cellSize }} viewBox={`0 0 ${cellSize} ${cellSize}`}>
+                <line
+                  x1={isDown ? cellSize : 0}
+                  y1={0}
+                  x2={isDown ? 0 : cellSize}
+                  y2={cellSize}
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                />
+              </svg>
+            );
+          }
+          if (typeof edge === 'string' && edge.startsWith('round')) {
+            let d = '';
+            if (edge === 'round1') d = `M ${cellSize} 0 A ${cellSize} ${cellSize} 0 0 1 0 ${cellSize}`;
+            else if (edge === 'round2') d = `M 0 ${cellSize} A ${cellSize} ${cellSize} 0 0 1 ${cellSize} 0`;
+            else if (edge === 'round3') d = `M ${cellSize} ${cellSize} A ${cellSize} ${cellSize} 0 0 1 0 0`;
+            else if (edge === 'round4') d = `M 0 0 A ${cellSize} ${cellSize} 0 0 1 ${cellSize} ${cellSize}`;
+            if (!d) return null;
+            return (
+              <svg key={i} style={{ position: 'absolute', left: px, top: py, width: cellSize, height: cellSize }} viewBox={`0 0 ${cellSize} ${cellSize}`}>
+                <path d={d} stroke="#ffffff" strokeWidth="2" fill="none" />
+              </svg>
+            );
+          }
           return null;
         })}
       </div>

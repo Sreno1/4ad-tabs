@@ -2,7 +2,8 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import sfx from '../utils/sfx.js';
 import { X, Download, Upload, Save, PlusSquare, Trash2 } from 'lucide-react';
 import DungeonGridCanvas from './DungeonGridCanvas.jsx';
-import { cellHasEdgeFromStyle, nextStyle } from '../utils/tileStyles.js';
+import { nextStyle } from '../utils/tileStyles.js';
+import { buildWallOffPerimeter } from '../utils/wallUtils.js';
 import ContextMenu from './ContextMenu.jsx';
 import RoomPreview from './RoomPreview.jsx';
 import roomLibrary from '../utils/roomLibrary.js';
@@ -141,10 +142,11 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
       grid,
       doors,
       walls,
+      cellStyles: designerCellStyles,
       d66Number: d66Number ? parseInt(d66Number) : null
     });
     setLibrary(roomLibrary.loadAll());
-  }, [grid, doors, walls, name, d66Number]);
+  }, [grid, doors, walls, designerCellStyles, name, d66Number]);
 
   const deleteFromLibrary = useCallback((id) => {
     roomLibrary.remove(id);
@@ -191,7 +193,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
           parsed.forEach(item => {
             try {
               if (item && item.grid && Array.isArray(item.grid)) {
-                roomLibrary.save({ name: item.name || '', grid: item.grid, doors: item.doors || [], walls: item.walls || [], d66Number: item.d66Number != null ? item.d66Number : null });
+                roomLibrary.save({ name: item.name || '', grid: item.grid, doors: item.doors || [], walls: item.walls || [], cellStyles: item.cellStyles || {}, d66Number: item.d66Number != null ? item.d66Number : null });
               }
             } catch (err) {}
           });
@@ -200,6 +202,8 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
           // Single template import (backwards compatible)
           setGrid(parsed.grid);
           setDoors(parsed.doors || []);
+          setWalls(parsed.walls || []);
+          setDesignerCellStyles(parsed.cellStyles || {});
           setName(parsed.name || '');
         }
       } catch (err) {
@@ -275,50 +279,8 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                         const { cellX: sx, cellY: sy } = designerContextMenu;
                         if (!(sy >= 0 && sy < grid.length && sx >= 0 && sx < (grid[0]?.length || 0))) return;
                         if (grid[sy][sx] !== 1) return;
-                        // Flood-fill region
-                        const cols = grid[0]?.length || 0;
-                        const rows = grid.length;
-                        const toVisit = [{x: sx, y: sy}];
-                        const region = new Set();
-                        const key = (a,b)=>`${a},${b}`;
-                        while (toVisit.length) {
-                          const c = toVisit.pop();
-                          const k = key(c.x, c.y);
-                          if (region.has(k)) continue;
-                          if (!(c.y >= 0 && c.y < rows && c.x >= 0 && c.x < cols)) continue;
-                          if (grid[c.y][c.x] !== 1) continue;
-                          region.add(k);
-                          toVisit.push({x: c.x+1, y: c.y}); toVisit.push({x: c.x-1, y: c.y}); toVisit.push({x: c.x, y: c.y+1}); toVisit.push({x: c.x, y: c.y-1});
-                        }
-                        const styles = {};
-                        const edgeOpp = (e) => (e === 'N' ? 'S' : e === 'S' ? 'N' : e === 'E' ? 'W' : 'E');
-                        const cellHasEdge = (cx, cy, edge) => {
-                          if (!(cy >= 0 && cy < rows && cx >= 0 && cx < cols)) return false;
-                          const key = `${cx},${cy}`;
-                          let style = styles[key];
-                          if (!style) style = (grid[cy] && grid[cy][cx]) === 1 ? 'full' : null;
-                          return cellHasEdgeFromStyle(style, edge);
-                        };
-
-                        const perimeter = [];
-                        region.forEach(k => {
-                          const [rx, ry] = k.split(',').map(Number);
-                          const neighbors = [
-                            {edge: 'N', nx: rx, ny: ry-1},
-                            {edge: 'S', nx: rx, ny: ry+1},
-                            {edge: 'E', nx: rx+1, ny: ry},
-                            {edge: 'W', nx: rx-1, ny: ry}
-                          ];
-                          neighbors.forEach(n => {
-                            if (!(n.ny >= 0 && n.ny < rows && n.nx >= 0 && n.nx < cols) || grid[n.ny][n.nx] !== 1) {
-                              perimeter.push({ x: rx, y: ry, edge: n.edge });
-                              return;
-                            }
-                            const currentHas = cellHasEdge(rx, ry, n.edge);
-                            const neighborHas = cellHasEdge(n.nx, n.ny, edgeOpp(n.edge));
-                            if (currentHas && !neighborHas) perimeter.push({ x: rx, y: ry, edge: n.edge });
-                          });
-                        });
+                        const styles = designerCellStyles || {};
+                        const { region, perimeter } = buildWallOffPerimeter(grid, styles, sx, sy, { allowFallback: true });
                         if (perimeter.length === 0) return;
                         try { console.debug('designer wall-off: regionSize=', region.size, 'perimeterCount=', perimeter.length, 'sample=', perimeter.slice(0,6)); } catch (e) {}
                         const allExist = perimeter.every(pe => walls.some(w => w.x === pe.x && w.y === pe.y && w.edge === pe.edge));
@@ -395,7 +357,7 @@ export default function RoomDesigner({ initialTemplate = null, onClose, onPlaceT
                         <div className="text-xs text-slate-400">{new Date(item.createdAt).toLocaleString()}</div>
                       </div>
                       <div className="flex items-center gap-1 flex-wrap">
-                        <button onClick={()=>{ setGrid(item.grid); setDoors(item.doors || []); setD66Number(item.d66Number || ''); }} className="px-2 py-0.5 bg-slate-600 hover:bg-slate-500 rounded text-xs">Edit</button>
+                        <button onClick={()=>{ setGrid(item.grid); setDoors(item.doors || []); setWalls(item.walls || []); setDesignerCellStyles(item.cellStyles || {}); setName(item.name || ''); setD66Number(item.d66Number || ''); }} className="px-2 py-0.5 bg-slate-600 hover:bg-slate-500 rounded text-xs">Edit</button>
                         <button onClick={()=>{ try { sfx.play('select2', { volume: 0.8 }); } catch(e){}; onPlaceTemplate(item); }} className="px-2 py-0.5 bg-amber-600 hover:bg-amber-500 rounded text-xs">Place</button>
                         <button onClick={()=>exportTemplate(item)} className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 rounded text-xs">Export</button>
                         <button onClick={()=>deleteFromLibrary(item.id)} className="px-2 py-0.5 bg-red-700 hover:bg-red-600 rounded text-xs"><Trash2 size={12}/></button>

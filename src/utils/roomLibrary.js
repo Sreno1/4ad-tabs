@@ -48,6 +48,9 @@ function loadAll() {
       if (!copy.tag) {
         copy.tag = inferTag(copy.grid, copy.d66Number);
       }
+      if (!copy.cellStyles || typeof copy.cellStyles !== 'object') {
+        copy.cellStyles = {};
+      }
       return copy;
     });
   } catch (e) {
@@ -64,6 +67,7 @@ function save(item) {
     grid: item.grid,
     doors: item.doors || [],
     walls: item.walls || [],
+    cellStyles: item.cellStyles || {},
     d66Number: d66num,
     tag: inferTag(item.grid, d66num),
     createdAt: new Date().toISOString(),

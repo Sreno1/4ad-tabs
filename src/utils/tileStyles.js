@@ -42,18 +42,16 @@ export function getEdgeCoverage(style, edge) {
       if (edge === 'S' || edge === 'W') return [0, 1];
       return [0, 0];
     case 'round1': // top-left quarter-circle
-      if (edge === 'N' || edge === 'W') return [0, 0.5];
+      if (edge === 'N' || edge === 'W') return [0, 1];
       return [0, 0];
     case 'round2': // bottom-right
-      if (edge === 'S' || edge === 'E') return [0.5, 1];
+      if (edge === 'S' || edge === 'E') return [0, 1];
       return [0, 0];
     case 'round3': // top-right
-      if (edge === 'N') return [0.5, 1];
-      if (edge === 'E') return [0, 0.5];
+      if (edge === 'N' || edge === 'E') return [0, 1];
       return [0, 0];
     case 'round4': // bottom-left
-      if (edge === 'S') return [0, 0.5];
-      if (edge === 'W') return [0.5, 1];
+      if (edge === 'S' || edge === 'W') return [0, 1];
       return [0, 0];
     default:
       return [0, 0];
