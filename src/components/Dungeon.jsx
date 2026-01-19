@@ -582,7 +582,6 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                       { key: 'E', label: 'East', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'E' }) },
                       { key: 'W', label: 'West', onClick: () => dispatch({ type: 'TOGGLE_DOOR', x: contextMenu.cellX, y: contextMenu.cellY, edge: 'W' }) }
                     ] },
-                    // If a door was clicked, offer Lock/Unlock toggle
                     ...(contextMenu && typeof contextMenu.doorIdx === 'number' && contextMenu.doorIdx >= 0 ? [{ key: 'lock', label: (state.doors[contextMenu.doorIdx]?.locked ? 'Unlock door' : 'Lock door'), onClick: () => {
                         try {
                           const di = contextMenu.doorIdx;
@@ -624,7 +623,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
                             } else {
                               // Remove any conflicting doors on these edges
                               (state.doors || []).forEach(d => {
-                                if (perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === pe.edge)) {
+                                if (perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === d.edge)) {
                                   dispatch({ type: 'TOGGLE_DOOR', x: d.x, y: d.y, edge: d.edge });
                                 }
                               });

@@ -297,7 +297,7 @@ Optional architecture work:
 ### Priority 0: Refactor Foundations (sequence locked)
 1. Deterministic Rules and RNG Injection (#2) [[ARCH_REFACTOR_02_DETERMINISTIC_RULES_DETAIL]]
 2. Core Rules Test Harness (#6) [[ARCH_REFACTOR_06_TEST_HARNESS_DETAIL]]
-3. COMBAT_ACTIONS_REFACTOR_PLAN.md
+3. [[COMBAT_ACTIONS_REFACTOR_PLAN]]
 4. Data Schema and Validation (#5) [[ARCH_REFACTOR_05_DATA_SCHEMA_VALIDATION_DETAIL]]
 5. DGC_REFACTOR_PLAN.md
 

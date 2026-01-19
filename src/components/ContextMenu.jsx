@@ -4,6 +4,18 @@ export default function ContextMenu({ x, y, items = [], onClose }) {
   const [openKey, setOpenKey] = useState(null);
   if (!items || items.length === 0) return null;
 
+  React.useEffect(() => {
+    const handle = (e) => {
+      if (typeof onClose === 'function') onClose();
+    };
+    document.addEventListener('mousedown', handle);
+    document.addEventListener('contextmenu', handle);
+    return () => {
+      document.removeEventListener('mousedown', handle);
+      document.removeEventListener('contextmenu', handle);
+    };
+  }, [onClose]);
+
   return (
     <div className="fixed z-50" style={{ left: x, top: y }} onClick={(e) => e.stopPropagation()}>
       <div className="bg-slate-800 border border-slate-700 rounded shadow-lg text-sm text-slate-200" role="menu">

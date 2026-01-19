@@ -674,7 +674,7 @@ export default function App() {
                       </div>
                     ) : (
                       <div className="central-pane-map flex flex-col min-h-0 min-w-0 w-full h-full">
-                        <div className="central-pane-map-scroll flex-1 overflow-y-auto p-2 crt-screen min-h-0 min-w-0 w-full h-full">
+                        <div className="central-pane-map-scroll flex-1 crt-screen min-h-0 min-w-0 w-full h-full" style={{ position: 'relative' }}>
                           <Dungeon
                             state={state}
                             dispatch={dispatch}
@@ -867,8 +867,8 @@ export default function App() {
             </div>
 
             {/* Log Bar - span left + middle columns only */}
-            <div style={{ gridColumn: '1 / 3', gridRow: '2 / 3' }} data-crt-frame="true">
-              <div data-crt-barrel="true" className="h-full flex flex-col crt-screen">
+            <div style={{ gridColumn: '1 / 3', gridRow: '2 / 3' }}>
+              <div className="h-full flex flex-col">
                 <LogBar
                   state={state}
                   dispatch={dispatch}
