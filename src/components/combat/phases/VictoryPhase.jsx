@@ -125,7 +125,7 @@ const VictoryPhase = memo(function VictoryPhase({
                     <div key={rollIdx} className="text-xs text-slate-300 flex justify-between">
                       <span>{roll.heroName}</span>
                       <span>
-                        🎲 {roll.roll} → <span className="text-green-400 font-bold">{roll.earnedXP} XP</span>
+                         {roll.roll} → <span className="text-green-400 font-bold">{roll.earnedXP} XP</span>
                       </span>
                     </div>
                   ))}

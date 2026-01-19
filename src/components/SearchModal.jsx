@@ -17,7 +17,7 @@ export function SearchModal({ searchResult, onChoice, onClose, state, dispatch }
         {/* Header */}
         <div id="search_modal_header" className="flex justify-between items-start mb-4">
           <div>
-            <h2 id="search_modal_title" className="text-xl font-bold text-amber-400">🔍 Search Results</h2>
+            <h2 id="search_modal_title" className="text-xl font-bold text-amber-400"> Search Results</h2>
             <div id="search_modal_roll" className="text-sm text-slate-400 mt-1">
               Roll: {roll} {total !== roll && `(${total} total)`}
             </div>
@@ -39,7 +39,7 @@ export function SearchModal({ searchResult, onChoice, onClose, state, dispatch }
         {/* Wandering Monsters */}
         {type === 'wandering_monsters' && (
           <div id="search_modal_wandering" className="bg-red-900 border border-red-500 rounded p-4 mb-4">
-            <div id="search_modal_wandering_title" className="text-red-200 font-bold mb-2">⚠️ Wandering Monsters Attack!</div>
+            <div id="search_modal_wandering_title" className="text-red-200 font-bold mb-2">️ Wandering Monsters Attack!</div>
             <div id="search_modal_wandering_description" className="text-red-100 text-sm mb-3">
               Your search made noise and attracted monsters. Roll on the Wandering Monsters table!
             </div>
@@ -136,7 +136,7 @@ export function HiddenTreasureModal({ treasure, complication, onResolve, onClose
       <div id="treasure_modal" className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-yellow-400">
         {/* Header */}
         <div id="treasure_modal_header" className="flex justify-between items-start mb-4">
-          <h2 id="treasure_modal_title" className="text-xl font-bold text-yellow-400">💰 Hidden Treasure!</h2>
+          <h2 id="treasure_modal_title" className="text-xl font-bold text-yellow-400"> Hidden Treasure!</h2>
           <button
             id="treasure_modal_close_button"
             onClick={onClose}
@@ -166,9 +166,9 @@ export function HiddenTreasureModal({ treasure, complication, onResolve, onClose
             'bg-purple-900 border-purple-500'
           }`}>
             <div className="font-bold mb-2">
-              {complication.type === 'alarm' && '🔔 Alarm!'}
-              {complication.type === 'trap' && '⚠️ Trapped!'}
-              {complication.type === 'ghost' && '👻 Ghost Guardian!'}
+              {complication.type === 'alarm' && ' Alarm!'}
+              {complication.type === 'trap' && '️ Trapped!'}
+              {complication.type === 'ghost' && ' Ghost Guardian!'}
             </div>
             <div className="text-sm mb-3 opacity-90">
               {complication.message}
@@ -260,7 +260,7 @@ export function SecretDoorModal({ secretDoor, onClose }) {
       <div id="secret_door_modal" className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-blue-400">
         <div id="secret_door_modal_header" className="flex justify-between items-start mb-4">
           <h2 id="secret_door_modal_title" className="text-xl font-bold text-blue-400">
-            🚪 Secret Door Discovered!
+             Secret Door Discovered!
           </h2>
           <button
             id="secret_door_modal_close_button"
@@ -279,7 +279,7 @@ export function SecretDoorModal({ secretDoor, onClose }) {
           {secretDoor.isShortcut ? (
             <>
               <div className="text-green-200 font-bold mb-2">
-                ✨ Safe Shortcut Out!
+                 Safe Shortcut Out!
               </div>
               <div className="text-green-100 text-sm">
                 This secret door leads directly out of the dungeon! You can exit safely without rolling for wandering monsters.
@@ -288,7 +288,7 @@ export function SecretDoorModal({ secretDoor, onClose }) {
           ) : (
             <>
               <div className="text-blue-200 font-bold mb-2">
-                🗺️ Leads to New Tile
+                ️ Leads to New Tile
               </div>
               <div className="text-blue-100 text-sm mb-2">
                 This secret door connects to an unexplored tile. Any treasure found behind it is DOUBLED!
@@ -325,7 +325,7 @@ export function SecretPassageModal({ passage, onClose, onChooseEnvironment }) {
       <div id="secret_passage_modal" className="bg-slate-800 rounded-lg p-6 max-w-lg w-full mx-4 border-2 border-purple-400">
         <div id="secret_passage_modal_header" className="flex justify-between items-start mb-4">
           <h2 id="secret_passage_modal_title" className="text-xl font-bold text-purple-400">
-            🗺️ Secret Passage!
+            ️ Secret Passage!
           </h2>
           <button
             id="secret_passage_modal_close_button"

@@ -93,7 +93,7 @@ export const rollTrap = (dispatch, options = {}, ctx) => {
   const typeKey = table[roll];
   const trap = TRAP_TYPES[typeKey];
 
-  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}⚠️ Trap detected: ${trap.name}!` });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}️ Trap detected: ${trap.name}!` });
 
   return { roll, typeKey, ...trap };
 };
@@ -119,7 +119,7 @@ export const attemptDetectTrap = (dispatch, hero, trapType = null, options = {},
   const detected = total >= dc;
 
   const message = detected
-    ? `🔍 ${hero.name} detects a ${trap.name}! (${roll}+${bonus}=${total} vs DC${dc})`
+    ? ` ${hero.name} detects a ${trap.name}! (${roll}+${bonus}=${total} vs DC${dc})`
     : `${hero.name} searches but finds nothing suspicious. (${roll}+${bonus}=${total} vs DC${dc})`;
 
   dispatch({ type: 'LOG', t: message });
@@ -147,13 +147,13 @@ export const attemptDisarmTrap = (dispatch, hero, trapType, options = {}, ctx) =
   if (success) {
     dispatch({
       type: 'LOG',
-      t: `🔧 ${hero.name} disarms the ${trap.name}! (${roll}+${bonus}=${total} vs DC${dc})`,
+      t: ` ${hero.name} disarms the ${trap.name}! (${roll}+${bonus}=${total} vs DC${dc})`,
     });
     return { success: true, roll, total, dc, message: `Trap disarmed!` };
   } else {
     dispatch({
       type: 'LOG',
-      t: `💥 ${hero.name} fails to disarm and triggers the ${trap.name}! (${roll}+${bonus}=${total} vs DC${dc})`,
+      t: ` ${hero.name} fails to disarm and triggers the ${trap.name}! (${roll}+${bonus}=${total} vs DC${dc})`,
     });
     return {
       success: false,
@@ -188,28 +188,28 @@ export const triggerTrap = (dispatch, hero, trapType, options = {}, ctx) => {
     });
     dispatch({
       type: 'LOG',
-      t: `💀 ${hero.name} takes ${damage} damage from ${trap.name}!`,
+      t: ` ${hero.name} takes ${damage} damage from ${trap.name}!`,
     });
   }
 
   // Handle special effects
   if (effect === 'poison') {
-    dispatch({ type: 'LOG', t: `☠️ ${hero.name} is poisoned!` });
+    dispatch({ type: 'LOG', t: `️ ${hero.name} is poisoned!` });
   } else if (effect === 'wandering') {
-    dispatch({ type: 'LOG', t: `🔔 The alarm attracts wandering monsters!` });
+    dispatch({ type: 'LOG', t: ` The alarm attracts wandering monsters!` });
     // Alarm-based wandering monsters ambush the party (target rear)
     rollWanderingMonster(dispatch, { ambush: true, state: options.state, environment: options.environment }, ctx);
   } else if (effect === 'teleport') {
     dispatch({
       type: 'LOG',
-      t: `✨ ${hero.name} is teleported back to the entrance!`,
+      t: ` ${hero.name} is teleported back to the entrance!`,
     });
   } else if (effect === 'sleep_spores') {
-    dispatch({ type: 'LOG', t: `😴 Sleep spores fill the area. Resolve sleep saves per the rules.` });
+    dispatch({ type: 'LOG', t: ` Sleep spores fill the area. Resolve sleep saves per the rules.` });
   } else if (effect === 'snare') {
-    dispatch({ type: 'LOG', t: `🧵 A fungal snare steals an item. Resolve loss per the rules.` });
+    dispatch({ type: 'LOG', t: ` A fungal snare steals an item. Resolve loss per the rules.` });
   } else if (effect === 'mind_control') {
-    dispatch({ type: 'LOG', t: `🧠 Cordyceps attempts to control a hero. Resolve mind control per the rules.` });
+    dispatch({ type: 'LOG', t: ` Cordyceps attempts to control a hero. Resolve mind control per the rules.` });
   }
 
   return { damage, effect, trap };
@@ -230,12 +230,12 @@ export const rollSpecialRoom = (dispatch, options = {}, ctx) => {
   const room = rooms[typeKey];
 
   if (room) {
-    dispatch({ type: 'LOG', t: `✨ Special Feature: ${room.name}` });
-    dispatch({ type: 'LOG', t: `📜 ${room.description}` });
+    dispatch({ type: 'LOG', t: ` Special Feature: ${room.name}` });
+    dispatch({ type: 'LOG', t: ` ${room.description}` });
     if (room.effect === 'water_pool') {
       const poolRoll = d6(rng, rollLog);
       const poolResult = WATER_POOL_TABLE[poolRoll];
-      dispatch({ type: 'LOG', t: `💧 Water Pool (${poolRoll}): ${poolResult}` });
+      dispatch({ type: 'LOG', t: ` Water Pool (${poolRoll}): ${poolResult}` });
     }
   }
 
@@ -265,13 +265,13 @@ export const interactShrine = (dispatch, hero, goldPaid = 0, ctx) => {
   let result;
   if (roll <= 2) {
     result = 'curse';
-    dispatch({ type: 'LOG', t: `😱 The shrine curses ${hero.name}! -1 Life` });
+    dispatch({ type: 'LOG', t: ` The shrine curses ${hero.name}! -1 Life` });
   } else if (roll <= 4) {
     result = 'nothing';
     dispatch({ type: 'LOG', t: `The shrine accepts the offering silently.` });
   } else {
     result = 'blessing';
-    dispatch({ type: 'LOG', t: `✨ The shrine blesses ${hero.name}! +1 Life` });
+    dispatch({ type: 'LOG', t: ` The shrine blesses ${hero.name}! +1 Life` });
   }
 
   return {
@@ -303,7 +303,7 @@ export const interactFountain = (dispatch, hero, ctx) => {
     healing = -1;
     dispatch({
       type: 'LOG',
-      t: `☠️ The fountain is poisoned! ${hero.name} takes 1 damage.`,
+      t: `️ The fountain is poisoned! ${hero.name} takes 1 damage.`,
     });
   } else if (roll <= 3) {
     result = 'nothing';
@@ -311,13 +311,13 @@ export const interactFountain = (dispatch, hero, ctx) => {
   } else if (roll <= 5) {
     result = 'heal';
     healing = 1;
-    dispatch({ type: 'LOG', t: `💧 The fountain heals ${hero.name}! +1 Life` });
+    dispatch({ type: 'LOG', t: ` The fountain heals ${hero.name}! +1 Life` });
   } else {
     result = 'full_heal';
     healing = 999; // Will be capped to max HP
     dispatch({
       type: 'LOG',
-      t: `✨ Magical waters! ${hero.name} is fully healed!`,
+      t: ` Magical waters! ${hero.name} is fully healed!`,
     });
   }
 
@@ -339,7 +339,7 @@ export const interactStatue = (dispatch, hero, options = {}, ctx) => {
     result = 'trap';
     dispatch({
       type: 'LOG',
-      t: `⚠️ The statue is trapped! Roll on trap table...`,
+      t: `️ The statue is trapped! Roll on trap table...`,
     });
     return { roll, result, triggered: true };
   } else if (roll <= 4) {
@@ -349,7 +349,7 @@ export const interactStatue = (dispatch, hero, options = {}, ctx) => {
     result = 'treasure';
     dispatch({
       type: 'LOG',
-      t: `💎 ${hero.name} finds treasure hidden in the statue!`,
+      t: ` ${hero.name} finds treasure hidden in the statue!`,
     });
     rollTreasure(dispatch, { environment: options.environment }, ctx);
   }
@@ -380,10 +380,10 @@ export const interactAltar = (dispatch, goldPaid = 0, ctx) => {
   } else if (roll <= 5) {
     result = 'clue';
     dispatch({ type: 'CLUE', n: 1 });
-    dispatch({ type: 'LOG', t: `🔮 A vision reveals a clue!` });
+    dispatch({ type: 'LOG', t: ` A vision reveals a clue!` });
   } else {
     result = 'magic_item';
-    dispatch({ type: 'LOG', t: `✨ A magic item materializes!` });
+    dispatch({ type: 'LOG', t: ` A magic item materializes!` });
   }
 
   return { roll, result };
@@ -404,7 +404,7 @@ export const interactLibrary = (dispatch, hero, ctx) => {
     result = 'trap';
     dispatch({
       type: 'LOG',
-      t: `📖 A trapped book! ${hero.name} takes 1 damage.`,
+      t: ` A trapped book! ${hero.name} takes 1 damage.`,
     });
   } else if (roll <= 4) {
     result = 'nothing';
@@ -414,7 +414,7 @@ export const interactLibrary = (dispatch, hero, ctx) => {
     dispatch({ type: 'CLUE', n: 1 });
     dispatch({
       type: 'LOG',
-      t: `📚 ${hero.name} finds useful information! +1 Clue`,
+      t: ` ${hero.name} finds useful information! +1 Clue`,
     });
   }
 
@@ -439,13 +439,13 @@ export const interactArmory = (dispatch, hero, ctx) => {
     result = 'weapon';
     dispatch({
       type: 'LOG',
-      t: `⚔️ ${hero.name} finds a weapon! +1 to next attack.`,
+      t: `️ ${hero.name} finds a weapon! +1 to next attack.`,
     });
   } else {
     result = 'shield';
     dispatch({
       type: 'LOG',
-      t: `🛡️ ${hero.name} finds a shield! +1 to next defense.`,
+      t: `️ ${hero.name} finds a shield! +1 to next defense.`,
     });
   }
 
@@ -463,8 +463,8 @@ export const rollPuzzle = (dispatch, ctx) => {
   const typeKey = PUZZLE_TABLE[roll];
   const puzzle = PUZZLE_TYPES[typeKey];
 
-  dispatch({ type: 'LOG', t: `🧩 Puzzle Room: ${puzzle.name}` });
-  dispatch({ type: 'LOG', t: `📜 ${puzzle.description}` });
+  dispatch({ type: 'LOG', t: ` Puzzle Room: ${puzzle.name}` });
+  dispatch({ type: 'LOG', t: ` ${puzzle.description}` });
 
   return { roll, typeKey, ...puzzle };
 };
@@ -503,13 +503,13 @@ export const attemptPuzzle = (dispatch, hero, puzzleType, ctx) => {
   });
 
   if (success) {
-    dispatch({ type: 'LOG', t: `✅ ${hero.name} solves the puzzle!` });
+    dispatch({ type: 'LOG', t: ` ${hero.name} solves the puzzle!` });
     // Many puzzles give clues on success
     if (['riddle', 'symbol'].includes(puzzleType)) {
       dispatch({ type: 'CLUE', n: 1 });
     }
   } else {
-    dispatch({ type: 'LOG', t: `❌ ${hero.name} fails the puzzle.` });
+    dispatch({ type: 'LOG', t: ` ${hero.name} fails the puzzle.` });
   }
 
   return { success, roll, total, dc: puzzle.successDC };
@@ -532,15 +532,15 @@ export const generateCorridor = (dispatch, ctx) => {
 
   dispatch({
     type: 'LOG',
-    t: `🚪 Passage: ${direction}, ${length} squares long`,
+    t: ` Passage: ${direction}, ${length} squares long`,
   });
 
   if (contents === 'door') {
     dispatch({ type: 'LOG', t: `A door at the end of the passage.` });
   } else if (contents === 'trap') {
-    dispatch({ type: 'LOG', t: `⚠️ There's a trap in the passage!` });
+    dispatch({ type: 'LOG', t: `️ There's a trap in the passage!` });
   } else if (contents === 'wandering') {
-    dispatch({ type: 'LOG', t: `👹 Wandering monster in the passage!` });
+    dispatch({ type: 'LOG', t: ` Wandering monster in the passage!` });
     rollWanderingMonster(dispatch, {}, ctx);
   }
 
@@ -583,11 +583,11 @@ export const enterBossRoom = (dispatch, clues, hcl, ctx) => {
   const access = checkBossRoomAccess(clues);
 
   if (!access.canEnter) {
-    dispatch({ type: 'LOG', t: `❌ ${access.message}` });
+    dispatch({ type: 'LOG', t: ` ${access.message}` });
     return { success: false, ...access };
   }
 
-  dispatch({ type: 'LOG', t: `🏰 Entering the Boss Room!` });
+  dispatch({ type: 'LOG', t: ` Entering the Boss Room!` });
   dispatch({ type: 'LOG', t: access.message });
 
   // Spawn the boss

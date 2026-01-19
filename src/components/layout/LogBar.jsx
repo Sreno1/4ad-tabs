@@ -29,7 +29,7 @@ export default function LogBar({ state, dispatch, collapsed, onToggle, selectedH
         {/* show collapsed music info on the far-right next to the toggle */}
         {collapsed && audioPlayer.getCurrentTrack() && (
           <div className="text-xs text-amber-300 truncate mr-3 max-w-[28ch]" title={audioPlayer.getCurrentTrack().title || ''}>
-            {audioPlayer.isPlaying() ? '⏵' : '⏸'} {audioPlayer.getCurrentTrack().title}
+            {audioPlayer.isPlaying() ? '⏵' : ''} {audioPlayer.getCurrentTrack().title}
           </div>
         )}
         <button className="text-slate-400 hover:text-white flex-shrink-0 ml-2">

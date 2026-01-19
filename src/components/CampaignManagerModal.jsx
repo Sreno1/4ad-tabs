@@ -27,14 +27,14 @@ export default function CampaignManagerModal({ isOpen, onClose, state, dispatch 
 
     // Show completion message
     const msg = success 
-      ? '🎉 Adventure Complete! Stats saved to campaign.'
+      ? ' Adventure Complete! Stats saved to campaign.'
   : 'Adventure Failed. Better luck next time.';
     dispatch({ type: 'LOG', t: msg });
   };
 
   const handleNewAdventure = () => {
     dispatch({ type: 'NEW_ADVENTURE' });
-    dispatch({ type: 'LOG', t: '🗺️ New adventure begins! Party and resources carried over.' });
+    dispatch({ type: 'LOG', t: '️ New adventure begins! Party and resources carried over.' });
     onClose();
   };
 
@@ -211,7 +211,7 @@ export default function CampaignManagerModal({ isOpen, onClose, state, dispatch 
                   clearAllCampaigns();
                   // Reset in-memory state
                   dispatch({ type: 'RESET_CAMPAIGN' });
-                  dispatch({ type: 'LOG', t: '🔄 Campaign reset. Starting fresh.' });
+                  dispatch({ type: 'LOG', t: ' Campaign reset. Starting fresh.' });
                   onClose();
                   // Reload so the app starts in campaign manager with no active campaign
                   setTimeout(() => window.location.reload(), 50);

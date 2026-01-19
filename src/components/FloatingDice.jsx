@@ -427,7 +427,7 @@ export default function FloatingDice({ onLogRoll = null, inline = false, onShowF
       aria-label="Class abilities"
       title="Class Abilities"
     >
-      ✨
+      
     </button>
 
     <button
@@ -442,7 +442,7 @@ export default function FloatingDice({ onLogRoll = null, inline = false, onShowF
       className="w-10 h-10 rounded-full bg-slate-700 text-amber-400 border-2 border-slate-600 hover:bg-slate-600 shadow-md flex items-center justify-center"
       aria-label="Dungeon features"
     >
-      ✨
+      
     </button>
   </div>
 

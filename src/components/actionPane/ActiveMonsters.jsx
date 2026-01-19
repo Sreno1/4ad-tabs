@@ -72,7 +72,7 @@ const ActiveMonsters = memo(function ActiveMonsters({ activeMonsters, state, dis
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   {isMinor ? (
-                    <span className="text-blue-400">👥</span>
+                    <span className="text-blue-400"></span>
                   ) : (
                     <span className="text-red-400"></span>
                   )}
@@ -99,7 +99,7 @@ const ActiveMonsters = memo(function ActiveMonsters({ activeMonsters, state, dis
                       className="bg-slate-600 px-1.5 rounded hover:bg-slate-500"
                     >-</button>
                     <span className="text-red-300 font-bold min-w-[3rem] text-center">
-                      ❤️ {monster.hp}/{monster.maxHp}
+                      ️ {monster.hp}/{monster.maxHp}
                     </span>
                     <button
                       onClick={() => dispatch(updateMonster(originalIdx, { hp: Math.min(monster.maxHp, monster.hp + 1) }))}

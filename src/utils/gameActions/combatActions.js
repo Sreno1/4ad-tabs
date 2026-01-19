@@ -77,7 +77,7 @@ export const calculateAttack = (hero, foeLevel, options = {}, ctx) => {
     total,
     hits,
     exploded,
-  message: `${hero.name}: ${roll}+${mod}=${total} vs L${foeLevel} → ${hits > 0 ? hits + " kill(s)" : "Miss"}${exploded ? " 💥EXPLODE" : ""}${corridorNote}`,
+  message: `${hero.name}: ${roll}+${mod}=${total} vs L${foeLevel} → ${hits > 0 ? hits + " kill(s)" : "Miss"}${exploded ? " EXPLODE" : ""}${corridorNote}`,
   };
 };
 
@@ -250,7 +250,7 @@ export const calculateEnhancedAttack = (hero, foeLevel, options = {}, ctx) => {
     finalTotal,
     hits,
     exploded,
-    message: `${hero.name}: ${rollStr}${modStr}=${finalTotal} vs L${foeLevel} → ${hits > 0 ? hits + " kill(s)" : "Miss"}${exploded ? " 💥EXPLODED!" : ""}`,
+    message: `${hero.name}: ${rollStr}${modStr}=${finalTotal} vs L${foeLevel} → ${hits > 0 ? hits + " kill(s)" : "Miss"}${exploded ? " EXPLODED!" : ""}`,
   };
 };
 
@@ -439,7 +439,7 @@ export const attackMinorFoe = (hero, foe, options = {}, ctx) => {
     kills: killResult.kills,
     exploded,
     isMinorFoe: true,
-    message: `${hero.name}: ${rollStr}${modStr}=${finalTotal} vs L${foe.level} → ${killResult.message}${exploded ? " 💥EXPLODED!" : ""}`,
+    message: `${hero.name}: ${rollStr}${modStr}=${finalTotal} vs L${foe.level} → ${killResult.message}${exploded ? " EXPLODED!" : ""}`,
   };
 };
 
@@ -611,8 +611,8 @@ export const performSaveRoll = (
       statusKey: "wounded",
       value: true,
     });
-  dispatch({ type: "LOG", t: `💀 ${hero.name} makes a SAVE ROLL!${modStr}` });
-  dispatch({ type: "LOG", t: `${formatRollPrefix(result.roll)}✅ ${result.message}` });
+  dispatch({ type: "LOG", t: ` ${hero.name} makes a SAVE ROLL!${modStr}` });
+  dispatch({ type: "LOG", t: `${formatRollPrefix(result.roll)} ${result.message}` });
   } else {
     // Dead - set to 0 HP and mark as dead
     dispatch({ type: "UPD_HERO", i: heroIdx, u: { hp: 0 } });
@@ -622,8 +622,8 @@ export const performSaveRoll = (
       statusKey: "dead",
       value: true,
     });
-  dispatch({ type: "LOG", t: `💀 ${hero.name} makes a SAVE ROLL!${modStr}` });
-  dispatch({ type: "LOG", t: `${formatRollPrefix(result.roll)}❌ ${result.message}` });
+  dispatch({ type: "LOG", t: ` ${hero.name} makes a SAVE ROLL!${modStr}` });
+  dispatch({ type: "LOG", t: `${formatRollPrefix(result.roll)} ${result.message}` });
   }
 
   return result;
@@ -649,7 +649,7 @@ export const useBlessingForSave = (
   ctx,
 ) => {
   dispatch({ type: "USE_BLESS", heroIdx });
-  dispatch({ type: "LOG", t: `🙏 Cleric uses Blessing to grant a re-roll!` });
+  dispatch({ type: "LOG", t: ` Cleric uses Blessing to grant a re-roll!` });
 
   return performSaveRoll(dispatch, targetHero, targetIdx, damageSource, options, ctx);
 };
@@ -672,7 +672,7 @@ export const useLuckForSave = (
   ctx,
 ) => {
   dispatch({ type: "USE_LUCK", heroIdx });
-  dispatch({ type: "LOG", t: `🍀 Halfling uses Luck to re-roll!` });
+  dispatch({ type: "LOG", t: ` Halfling uses Luck to re-roll!` });
 
   return performSaveRoll(dispatch, hero, heroIdx, damageSource, options, ctx);
 };
@@ -700,15 +700,15 @@ export const attemptFlee = (dispatch, hero, heroIdx, monsterLevel, ctx) => {
   if (success) {
     dispatch({
       type: "LOG",
-  t: `${formatRollPrefix(roll)}🏃 ${hero.name} escapes! (${roll}+${mod}=${total} vs L${monsterLevel})`,
+  t: `${formatRollPrefix(roll)} ${hero.name} escapes! (${roll}+${mod}=${total} vs L${monsterLevel})`,
     });
   } else {
     // Failed flee = free attack from monsters
     dispatch({
       type: "LOG",
-  t: `${formatRollPrefix(roll)}❌ ${hero.name} fails to escape! (${roll}+${mod}=${total} vs L${monsterLevel})`,
+  t: `${formatRollPrefix(roll)} ${hero.name} fails to escape! (${roll}+${mod}=${total} vs L${monsterLevel})`,
     });
-    dispatch({ type: "LOG", t: `⚔️ Monsters get a free attack!` });
+    dispatch({ type: "LOG", t: `️ Monsters get a free attack!` });
   }
 
   return { success, roll, mod, total, freeAttack: !success };
@@ -730,8 +730,8 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
   dispatch({
     type: "LOG",
     t: isWithdraw
-      ? `⚔️ Foes strike as party withdraws! (PCs get +1 Defense)`
-      : `⚔️ Foes strike as party flees!`,
+      ? `️ Foes strike as party withdraws! (PCs get +1 Defense)`
+      : `️ Foes strike as party flees!`,
   });
 
   let totalDamage = 0;
@@ -760,7 +760,7 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
 
     // Skip asleep monsters
     if (monster.status && monster.status.asleep) {
-      dispatch({ type: 'LOG', t: `😴 ${monster.name} is asleep and does not attack.` });
+      dispatch({ type: 'LOG', t: ` ${monster.name} is asleep and does not attack.` });
       return;
     }
 
@@ -786,7 +786,7 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
       hitCount += 1;
       dispatch({
         type: "LOG",
-        t: `${formatRollPrefix(roll)}❌ ${monster.name} hits ${target.name}! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense})`,
+        t: `${formatRollPrefix(roll)} ${monster.name} hits ${target.name}! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense})`,
       });
 
       // Apply damage
@@ -799,13 +799,13 @@ export const foeStrikeDuringEscape = (dispatch, party, monsters, isWithdraw = fa
         });
 
         if (target.hp - 1 <= 0) {
-          dispatch({ type: "LOG", t: `💀 ${target.name} is defeated!` });
+          dispatch({ type: "LOG", t: ` ${target.name} is defeated!` });
         }
       }
     } else {
       dispatch({
         type: "LOG",
-        t: `${formatRollPrefix(roll)}✅ ${target.name} avoids ${monster.name}'s attack! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense}${defenseMod === 1 ? '+1' : defenseMod === -1 ? '-1' : ''})`,
+        t: `${formatRollPrefix(roll)} ${target.name} avoids ${monster.name}'s attack! (${roll}+${monster.level}=${monsterAttack} vs ${targetDefense}${defenseMod === 1 ? '+1' : defenseMod === -1 ? '-1' : ''})`,
       });
     }
   });
@@ -827,7 +827,7 @@ export const initialWanderingStrikes = (dispatch, state, ctx) => {
   const marchingOrder = state.marchingOrder || [0,1,2,3];
   const location = state.currentCombatLocation?.type || null;
 
-  dispatch({ type: 'LOG', t: `⚠️ Wandering Monsters ambush! They strike immediately.` });
+  dispatch({ type: 'LOG', t: `️ Wandering Monsters ambush! They strike immediately.` });
 
   // Build list of alive hero indices
   const aliveIdx = party.map((h, idx) => ({ h, idx })).filter(x => x.h && x.h.hp > 0).map(x => x.idx);
@@ -846,7 +846,7 @@ export const initialWanderingStrikes = (dispatch, state, ctx) => {
     if (!hero || hero.hp <= 0) return false;
     // Skip asleep monsters
     if (monster.status && monster.status.asleep) {
-      dispatch({ type: 'LOG', t: `😴 ${monster.name} is asleep and does not attack.` });
+      dispatch({ type: 'LOG', t: ` ${monster.name} is asleep and does not attack.` });
       return false;
     }
   const roll = d6(rng, rollLog);
@@ -854,11 +854,11 @@ export const initialWanderingStrikes = (dispatch, state, ctx) => {
     const effectiveLevel = getEffectiveMonsterLevel(monster);
     const hits = (roll + effectiveLevel) > defense;
     if (hits) {
-      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}❌ ${monster.name} hits ${hero.name}! (${roll}+${monster.level} vs ${defense})` });
+      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)} ${monster.name} hits ${hero.name}! (${roll}+${monster.level} vs ${defense})` });
       dispatch({ type: 'UPD_HERO', i: heroIdx, u: { hp: Math.max(0, hero.hp - 1) } });
-      if (hero.hp - 1 <= 0) dispatch({ type: 'LOG', t: `💀 ${hero.name} is defeated!` });
+      if (hero.hp - 1 <= 0) dispatch({ type: 'LOG', t: ` ${hero.name} is defeated!` });
     } else {
-      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}✅ ${hero.name} avoids ${monster.name}'s attack (${roll}+${monster.level} vs ${defense})` });
+      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)} ${hero.name} avoids ${monster.name}'s attack (${roll}+${monster.level} vs ${defense})` });
     }
     return hits;
   };
@@ -942,7 +942,7 @@ export const performMonsterAttacks = (dispatch, state, ctx) => {
   const marchingOrder = state.marchingOrder || [0,1,2,3];
   const location = state.currentCombatLocation?.type || null;
 
-  dispatch({ type: 'LOG', t: `⚔️ Monsters strike!` });
+  dispatch({ type: 'LOG', t: `️ Monsters strike!` });
 
   // Build list of alive hero indices
   const aliveIdx = party.map((h, idx) => ({ h, idx })).filter(x => x.h && x.h.hp > 0).map(x => x.idx);
@@ -961,7 +961,7 @@ export const performMonsterAttacks = (dispatch, state, ctx) => {
     const hero = party[heroIdx];
     if (!hero || hero.hp <= 0) return false;
     if (monster.status && monster.status.asleep) {
-      dispatch({ type: 'LOG', t: `😴 ${monster.name} is asleep and does not attack.` });
+      dispatch({ type: 'LOG', t: ` ${monster.name} is asleep and does not attack.` });
       return false;
     }
   const roll = d6(rng, rollLog);
@@ -969,11 +969,11 @@ export const performMonsterAttacks = (dispatch, state, ctx) => {
     const effectiveLevel = getEffectiveMonsterLevel(monster);
     const hits = (roll + effectiveLevel) > defense;
     if (hits) {
-      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}❌ ${monster.name} hits ${hero.name}! (${roll}+${monster.level} vs ${defense})` });
+      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)} ${monster.name} hits ${hero.name}! (${roll}+${monster.level} vs ${defense})` });
       dispatch({ type: 'UPD_HERO', i: heroIdx, u: { hp: Math.max(0, hero.hp - 1) } });
-      if (hero.hp - 1 <= 0) dispatch({ type: 'LOG', t: `💀 ${hero.name} is defeated!` });
+      if (hero.hp - 1 <= 0) dispatch({ type: 'LOG', t: ` ${hero.name} is defeated!` });
     } else {
-      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)}✅ ${hero.name} avoids ${monster.name}'s attack (${roll}+${monster.level} vs ${defense})` });
+      dispatch({ type: 'LOG', t: `${formatRollPrefix(roll)} ${hero.name} avoids ${monster.name}'s attack (${roll}+${monster.level} vs ${defense})` });
     }
     return hits;
   };
@@ -1005,7 +1005,7 @@ export const performMonsterAttacks = (dispatch, state, ctx) => {
       const target = frontPositions[0];
       // Use up to two attackers
       for (let i = 0; i < Math.min(2, attackers.length); i++) resolveAttack(attackers[i], target);
-      if (attackers.length > 2) dispatch({ type: 'LOG', t: `⚠️ ${attackers.length-2} foes cannot reach the front in the corridor.` });
+      if (attackers.length > 2) dispatch({ type: 'LOG', t: `️ ${attackers.length-2} foes cannot reach the front in the corridor.` });
       return;
     }
     // Two front positions: assign first two attackers to them
@@ -1013,7 +1013,7 @@ export const performMonsterAttacks = (dispatch, state, ctx) => {
       const target = frontPositions[i % frontPositions.length];
       resolveAttack(attackers[i], target);
     }
-    if (attackers.length > 2) dispatch({ type: 'LOG', t: `⚠️ ${attackers.length-2} foes cannot reach the front in the corridor.` });
+    if (attackers.length > 2) dispatch({ type: 'LOG', t: `️ ${attackers.length-2} foes cannot reach the front in the corridor.` });
     return;
   }
 
@@ -1091,7 +1091,7 @@ export const performMonsterAttacks = (dispatch, state, ctx) => {
  * @returns {object} Party flee result
  */
 export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel, options = {}, ctx) => {
-  dispatch({ type: "LOG", t: `🏃 Party attempts to flee!` });
+  dispatch({ type: "LOG", t: ` Party attempts to flee!` });
 
   const results = party
     .filter((h) => h.hp > 0)
@@ -1103,7 +1103,7 @@ export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel, option
   if (allEscaped) {
     // Foes strike once during escape
     const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false, options, ctx);
-    dispatch({ type: "LOG", t: `✅ Party escapes successfully!` });
+    dispatch({ type: "LOG", t: ` Party escapes successfully!` });
     dispatch({ type: "CLEAR_MONSTERS" });
     return { allEscaped, results, failedCount, strikeResult };
   } else {
@@ -1111,7 +1111,7 @@ export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel, option
     const strikeResult = foeStrikeDuringEscape(dispatch, party, monsters, false, options, ctx);
     dispatch({
       type: "LOG",
-      t: `❌ ${failedCount} hero(es) failed to escape and combat continues!`,
+      t: ` ${failedCount} hero(es) failed to escape and combat continues!`,
     });
     return { allEscaped, results, failedCount, strikeResult };
   }
@@ -1129,13 +1129,13 @@ export const attemptPartyFlee = (dispatch, party, monsters, monsterLevel, option
  */
 export const attemptWithdraw = (dispatch, party, monsters, doors, ctx) => {
   const { rng, rollLog } = ctx || getDefaultContext();
-  dispatch({ type: "LOG", t: `🚪 Party attempts to withdraw!` });
+  dispatch({ type: "LOG", t: ` Party attempts to withdraw!` });
 
   // Check if there's at least one door to slam shut
   if (!doors || doors.length === 0) {
     dispatch({
       type: "LOG",
-      t: `❌ Cannot withdraw! No door to slam shut behind the party.`,
+      t: ` Cannot withdraw! No door to slam shut behind the party.`,
     });
     return { success: false, reason: "No door available" };
   }
@@ -1146,7 +1146,7 @@ export const attemptWithdraw = (dispatch, party, monsters, doors, ctx) => {
   // Withdrawal succeeds - clear monsters and leave them in the tile
   dispatch({
     type: "LOG",
-    t: `✅ Party successfully withdraws and slams the door! Foes remain in this tile.`,
+    t: ` Party successfully withdraws and slams the door! Foes remain in this tile.`,
   });
 
   // Roll for Wandering Monsters (1-in-6)
@@ -1154,14 +1154,14 @@ export const attemptWithdraw = (dispatch, party, monsters, doors, ctx) => {
   if (wanderingRoll === 1) {
     dispatch({
       type: "LOG",
-      t: `${formatRollPrefix(wanderingRoll)}⚠️ Party encounters a Wandering Monster during retreat! (rolled ${wanderingRoll})`,
+      t: `${formatRollPrefix(wanderingRoll)}️ Party encounters a Wandering Monster during retreat! (rolled ${wanderingRoll})`,
     });
     // Actual wandering monster spawning handled by caller
     return { success: true, wanderingMonster: true, strikeResult };
   } else {
     dispatch({
       type: "LOG",
-      t: `${formatRollPrefix(wanderingRoll)}✅ Party retreats safely! (wandering check: ${wanderingRoll}, no encounter)`,
+      t: `${formatRollPrefix(wanderingRoll)} Party retreats safely! (wandering check: ${wanderingRoll}, no encounter)`,
     });
     dispatch({ type: "CLEAR_MONSTERS" });
     return { success: true, wanderingMonster: false, strikeResult };
@@ -1284,11 +1284,11 @@ export const processMinorFoeAttack = (
     dispatch({ type: "UPD_MONSTER", i: foeIdx, u: { count: newCount } });
 
     if (newCount === 0) {
-      dispatch({ type: "LOG", t: `💀 All ${foe.name} defeated!` });
+      dispatch({ type: "LOG", t: ` All ${foe.name} defeated!` });
     } else {
       dispatch({
         type: "LOG",
-        t: `💀 ${attackResult.kills} ${foe.name} killed! ${newCount} remaining.`,
+        t: ` ${attackResult.kills} ${foe.name} killed! ${newCount} remaining.`,
       });
 
       // Check morale if not already checked this encounter
@@ -1310,7 +1310,7 @@ export const processMinorFoeAttack = (
               i: foeIdx,
               u: { count: 0, fled: true },
             });
-            dispatch({ type: "LOG", t: `🏃 The remaining ${foe.name} flee!` });
+            dispatch({ type: "LOG", t: ` The remaining ${foe.name} flee!` });
           }
         }
       }
@@ -1361,11 +1361,11 @@ export const processMajorFoeAttack = (
     dispatch({ type: "UPD_MONSTER", i: foeIdx, u: { hp: newHP } });
 
     if (newHP === 0) {
-      dispatch({ type: "LOG", t: `💀 ${foe.name} defeated!` });
+      dispatch({ type: "LOG", t: ` ${foe.name} defeated!` });
     } else {
       dispatch({
         type: "LOG",
-        t: `⚔️ ${foe.name} takes ${attackResult.hits} damage! (${newHP}/${foe.maxHp} HP)`,
+        t: `️ ${foe.name} takes ${attackResult.hits} damage! (${newHP}/${foe.maxHp} HP)`,
       });
 
       // Check for level reduction at half HP

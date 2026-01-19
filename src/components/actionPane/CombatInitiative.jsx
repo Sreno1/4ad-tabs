@@ -22,13 +22,13 @@ const CombatInitiative = memo(function CombatInitiative({
               onClick={handleRollReaction}
               className="flex-1 bg-blue-600 hover:bg-blue-500 px-3 py-2 rounded text-sm font-bold"
             >
-              🎲 Roll Reaction
+               Roll Reaction
             </button>
             <button
               onClick={handlePartyAttacks}
               className="flex-1 bg-orange-600 hover:bg-orange-500 px-3 py-2 rounded text-sm font-bold"
             >
-              ⚔️ Attack First!
+              ️ Attack First!
             </button>
           </div>
         </div>
@@ -45,7 +45,7 @@ const CombatInitiative = memo(function CombatInitiative({
               onClick={handlePartyAttacks}
               className="flex-1 bg-orange-600 hover:bg-orange-500 px-3 py-2 rounded text-sm"
             >
-              ⚔️ Attack
+              ️ Attack
             </button>
             <button
               onClick={() => {
@@ -54,7 +54,7 @@ const CombatInitiative = memo(function CombatInitiative({
               }}
               className="flex-1 bg-green-600 hover:bg-green-500 px-3 py-2 rounded text-sm"
             >
-              🤝 Negotiate
+               Negotiate
             </button>
           </div>
         </div>
@@ -63,7 +63,7 @@ const CombatInitiative = memo(function CombatInitiative({
       {/* Phase: Party's turn */}
       {combatPhase === COMBAT_PHASES.PARTY_TURN && (
         <div className="bg-green-900/30 rounded p-2">
-          <div className="text-green-400 font-bold text-sm mb-2">⚔️ Party's Turn - ATTACK!</div>
+          <div className="text-green-400 font-bold text-sm mb-2">️ Party's Turn - ATTACK!</div>
         </div>
       )}
 

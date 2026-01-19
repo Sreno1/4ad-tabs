@@ -27,7 +27,7 @@ export function campaignReducer(state, action) {
           hcl: state.hcl
         },
         log: [...state.log, {
-          message: `📜 Campaign mode enabled!`,
+          message: ` Campaign mode enabled!`,
           type: 'system',
           timestamp: new Date().toISOString()
         }]
@@ -38,7 +38,7 @@ export function campaignReducer(state, action) {
         ...state,
         mode: 'adventure',
         log: [...state.log, {
-          message: '📜 Campaign mode disabled.',
+          message: ' Campaign mode disabled.',
           type: 'system',
           timestamp: new Date().toISOString()
         }]
@@ -205,7 +205,7 @@ export function campaignReducer(state, action) {
             hcl: state.hcl
           },
           log: [...state.log, {
-            message: `🏆 Adventure ${success ? 'completed' : 'ended'}! ${adventureSummary.survivors} survivors.`,
+            message: ` Adventure ${success ? 'completed' : 'ended'}! ${adventureSummary.survivors} survivors.`,
             type: 'system',
             timestamp: new Date().toISOString()
           }]

@@ -143,7 +143,7 @@ export default function MarchingOrder({ state, selectedHero, onSelectHero, dispa
           </span>
 
           {!isAlive && (
-            <span className="absolute bottom-0 right-0 text-[8px]">💀</span>
+            <span className="absolute bottom-0 right-0 text-[8px]"></span>
           )}
           {/* no position badges - show only HP */}
         </div>

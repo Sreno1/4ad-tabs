@@ -63,9 +63,9 @@ export const spawnMajorFoe = (dispatch, hcl, isBoss = false, ctx) => {
   dispatch({ type: 'ADD_MONSTER', m: monster });
 
   if (isBoss) {
-    dispatch({ type: 'LOG', t: `👑 ${monster.name} L${monster.level} (${monster.hp}HP, +1 ATK) appears! THE BOSS!` });
+    dispatch({ type: 'LOG', t: ` ${monster.name} L${monster.level} (${monster.hp}HP, +1 ATK) appears! THE BOSS!` });
   } else {
-    dispatch({ type: 'LOG', t: `⚔️ ${monster.name} L${monster.level} (${monster.hp}HP) appears!` });
+    dispatch({ type: 'LOG', t: `️ ${monster.name} L${monster.level} (${monster.hp}HP) appears!` });
   }
 };
 
@@ -128,7 +128,7 @@ export const rollWanderingMonster = (dispatch, opts = {}, ctx) => {
         combatActions.initialWanderingStrikes(dispatch, opts.state, ctx);
       } else {
         // If state not provided, log a warning (non-fatal)
-        dispatch({ type: 'LOG', t: '⚠️ Wandering ambush occurred but state was not provided for immediate strikes.' });
+        dispatch({ type: 'LOG', t: '️ Wandering ambush occurred but state was not provided for immediate strikes.' });
       }
     } catch (e) {
       // ignore
@@ -152,14 +152,14 @@ export const rollMonsterReaction = (dispatch, monsterIdx, ctx) => {
   const reaction = rollReaction(null, ctx);
 
   dispatch({ type: 'SET_MONSTER_REACTION', monsterIdx, reaction: reaction.reaction });
-  dispatch({ type: 'LOG', t: `${formatRollPrefix(reaction.roll)}🎲 Reaction: ${reaction.description}` });
+  dispatch({ type: 'LOG', t: `${formatRollPrefix(reaction.roll)} Reaction: ${reaction.description}` });
 
   if (reaction.initiative === 'monster') {
-    dispatch({ type: 'LOG', t: `⚠️ Monster attacks first!` });
+    dispatch({ type: 'LOG', t: `️ Monster attacks first!` });
   } else if (reaction.initiative === 'party') {
-    dispatch({ type: 'LOG', t: `✅ Party acts first!` });
+    dispatch({ type: 'LOG', t: ` Party acts first!` });
   } else {
-    dispatch({ type: 'LOG', t: `⚔️ Roll for initiative!` });
+    dispatch({ type: 'LOG', t: `️ Roll for initiative!` });
   }
 
   return reaction;
@@ -199,13 +199,13 @@ export const awardXP = (dispatch, monster, party, ctx) => {
 
       dispatch({
         type: 'LOG',
-        t: `${formatRollPrefix(roll)}🎲 ${hero.name} rolls ${roll} for XP: ${earnedXP} XP earned!`
+        t: `${formatRollPrefix(roll)} ${hero.name} rolls ${roll} for XP: ${earnedXP} XP earned!`
       });
     }
   });
 
   const totalXP = rolls.reduce((sum, r) => sum + r.earnedXP, 0);
-  dispatch({ type: 'LOG', t: `⭐ Party earned ${totalXP} total XP from ${monster.name}!` });
+  dispatch({ type: 'LOG', t: ` Party earned ${totalXP} total XP from ${monster.name}!` });
 
   return { baseXP, totalXP, rolls, recipients: aliveHeroes.length };
 };
@@ -224,7 +224,7 @@ export const checkLevelUp = (dispatch, hero, heroIdx) => {
 
   const oldLevel = hero.lvl;
   dispatch({ type: 'LEVEL_UP', heroIdx });
-  dispatch({ type: 'LOG', t: `🎉 ${hero.name} levels up! L${oldLevel} → L${oldLevel + 1}` });
+  dispatch({ type: 'LOG', t: ` ${hero.name} levels up! L${oldLevel} → L${oldLevel + 1}` });
 
   return { leveledUp: true, oldLevel, newLevel: oldLevel + 1 };
 };
@@ -254,7 +254,7 @@ export const processMonsterRoundStart = (dispatch, monsters) => {
         const newTurns = monster.entangleTurns - 1;
         if (newTurns <= 0) {
           dispatch({ type: 'UPD_MONSTER', i: idx, u: { entangled: false, entangleTurns: 0 } });
-          dispatch({ type: 'LOG', t: `🕸️ ${monster.name} is no longer entangled.` });
+          dispatch({ type: 'LOG', t: `️ ${monster.name} is no longer entangled.` });
         } else {
           dispatch({ type: 'UPD_MONSTER', i: idx, u: { entangleTurns: newTurns } });
         }
@@ -265,7 +265,7 @@ export const processMonsterRoundStart = (dispatch, monsters) => {
         const newTurns = monster.boundTurns - 1;
         if (newTurns <= 0) {
           dispatch({ type: 'UPD_MONSTER', i: idx, u: { bound: false, boundTurns: 0 } });
-          dispatch({ type: 'LOG', t: `🔗 ${monster.name} is no longer bound.` });
+          dispatch({ type: 'LOG', t: ` ${monster.name} is no longer bound.` });
         } else {
           dispatch({ type: 'UPD_MONSTER', i: idx, u: { boundTurns: newTurns } });
         }
@@ -278,7 +278,7 @@ export const processMonsterRoundStart = (dispatch, monsters) => {
           const newStatus = { ...(monster.status || {}) };
           delete newStatus.asleep;
           dispatch({ type: 'UPD_MONSTER', i: idx, u: { status: newStatus, asleepTurns: 0 } });
-          dispatch({ type: 'LOG', t: `😴 ${monster.name} wakes up.` });
+          dispatch({ type: 'LOG', t: ` ${monster.name} wakes up.` });
         } else {
           dispatch({ type: 'UPD_MONSTER', i: idx, u: { asleepTurns: newTurns } });
         }
@@ -327,8 +327,8 @@ export const checkMinorFoeMorale = (foe, initialCount, currentCount, ctx) => {
     adjustedRoll,
     fled,
     message: fled
-      ? `${formatRollPrefix(roll)}🏃 Morale check: d6=${roll}${modStr} → ${foe.name} FLEE!`
-      : `${formatRollPrefix(roll)}⚔️ Morale check: d6=${roll}${modStr} → ${foe.name} keep fighting!`
+      ? `${formatRollPrefix(roll)} Morale check: d6=${roll}${modStr} → ${foe.name} FLEE!`
+      : `${formatRollPrefix(roll)}️ Morale check: d6=${roll}${modStr} → ${foe.name} keep fighting!`
   };
 };
 
@@ -347,7 +347,7 @@ export const checkMajorFoeLevelReduction = (foe) => {
     shouldReduce,
     newLevel: shouldReduce ? Math.max(1, foe.level - 1) : foe.level,
     message: shouldReduce
-      ? `📉 ${foe.name} is wounded! Level reduced to L${Math.max(1, foe.level - 1)}`
+      ? ` ${foe.name} is wounded! Level reduced to L${Math.max(1, foe.level - 1)}`
       : null
   };
 };
@@ -377,7 +377,7 @@ export const rollSurprise = (monster, surpriseChanceOverride = null, ctx) => {
     roll,
     chance: surpriseChance,
     message: surprised
-      ? `${formatRollPrefix(roll)}😱 Party is surprised! (rolled ${roll}, needed ≤${surpriseChance})`
-      : `${formatRollPrefix(roll)}✅ Party avoids surprise (rolled ${roll}, needed ≤${surpriseChance})`
+      ? `${formatRollPrefix(roll)} Party is surprised! (rolled ${roll}, needed ≤${surpriseChance})`
+      : `${formatRollPrefix(roll)} Party avoids surprise (rolled ${roll}, needed ≤${surpriseChance})`
   };
 };

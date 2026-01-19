@@ -228,7 +228,7 @@ export default function OnboardingScreen({ onComplete }) {
                       onClick={randomizeParty}
                       dataAction="randomize-party"
                     >
-                      🎲 Random Party
+                       Random Party
                     </Button>
                   </div>
 
@@ -359,15 +359,15 @@ export default function OnboardingScreen({ onComplete }) {
           const getItemIcon = (category) => {
             switch (category) {
               case "weapon":
-                return "⚔️";
+                return "️";
               case "armor":
-                return "🛡️";
+                return "️";
               case "shield":
-                return "🔰";
+                return "";
               case "consumable":
-                return "🧪";
+                return "";
               default:
-                return "📦";
+                return "";
             }
           };
 
@@ -477,7 +477,7 @@ export default function OnboardingScreen({ onComplete }) {
                       }`}
                       aria-pressed={sortByPrice}
                     >
-                      {sortByPrice ? "📊 Sort: Price" : "🔤 Sort: Name"}
+                      {sortByPrice ? " Sort: Price" : " Sort: Name"}
                     </button>
                     <button
                       id="onboarding_shop_affordability_button"
@@ -489,7 +489,7 @@ export default function OnboardingScreen({ onComplete }) {
                       }`}
                       aria-pressed={hideUnaffordable}
                     >
-                      {hideUnaffordable ? "💰 Affordable Only" : "👁️ Show All"}
+                      {hideUnaffordable ? " Affordable Only" : "️ Show All"}
                     </button>
                   </div>
 
@@ -689,7 +689,7 @@ export default function OnboardingScreen({ onComplete }) {
                   }
                   dataAction="start-adventure"
                 >
-                  🗡️ Begin Adventure
+                  ️ Begin Adventure
                 </Button>
               </Card>
             </div>

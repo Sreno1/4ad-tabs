@@ -52,7 +52,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
         <div className="bg-slate-900 rounded-lg max-w-md w-full p-6 border-2 border-purple-500">
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 rounded-t-lg -m-6 mb-4">
             <div className="flex justify-between items-center">
-              <h2 id="abilities-empty-title" className="text-2xl font-bold text-white">✨ Abilities</h2>
+              <h2 id="abilities-empty-title" className="text-2xl font-bold text-white"> Abilities</h2>
               <button
                 onClick={onClose}
                 className="text-white hover:text-red-300 text-2xl font-bold"
@@ -167,7 +167,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
         {/* Header */}
         <div id="abilities_modal_header" className="bg-gradient-to-r from-purple-600 to-indigo-600 p-4 sticky top-0 z-10">
           <div className="flex justify-between items-center">
-            <h2 id="abilities_modal_title" className="text-2xl font-bold text-white">✨ Class Abilities</h2>
+            <h2 id="abilities_modal_title" className="text-2xl font-bold text-white"> Class Abilities</h2>
             <button
               id="abilities_modal_close_button"
               onClick={onClose}
@@ -203,7 +203,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Character Trait Display */}
           {hasTraits(hero.key) && (
             <div id="abilities_trait_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_trait_title" className="text-cyan-400 font-bold text-sm mb-2">🎯 Character Trait</div>
+              <div id="abilities_trait_title" className="text-cyan-400 font-bold text-sm mb-2"> Character Trait</div>
               {hero.trait ? (
                 <div id="abilities_trait_display" className="bg-cyan-900 border-2 border-cyan-600 rounded p-3">
                   <div id="abilities_trait_display_header" className="flex justify-between items-start mb-2">
@@ -242,7 +242,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {hero.key === 'acrobat' && (
             <div id="abilities_acrobat_section" className="bg-slate-800 rounded p-3">
               <div id="abilities_acrobat_header" className="flex justify-between items-center mb-2">
-                <div id="abilities_acrobat_title" className="text-cyan-400 font-bold">🤸 Acrobat Tricks</div>
+                <div id="abilities_acrobat_title" className="text-cyan-400 font-bold"> Acrobat Tricks</div>
                 <div id="abilities_acrobat_points" className="text-cyan-300 text-sm font-bold">
                   {tricksRemaining}/{maxTricks} points
                 </div>
@@ -277,7 +277,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {hero.key === 'gnome' && (
             <div id="abilities_gnome_section" className="bg-slate-800 rounded p-3">
               <div id="abilities_gnome_header" className="flex justify-between items-center mb-2">
-                <div id="abilities_gnome_title" className="text-amber-400 font-bold">🔧 Gnome Gadgets</div>
+                <div id="abilities_gnome_title" className="text-amber-400 font-bold"> Gnome Gadgets</div>
                 <div id="abilities_gnome_points" className="text-amber-300 text-sm font-bold">
                   {gadgetsRemaining}/{maxGadgets} points
                 </div>
@@ -316,7 +316,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {hero.key === 'paladin' && (
             <div id="abilities_paladin_section" className="bg-slate-800 rounded p-3">
               <div id="abilities_paladin_header" className="flex justify-between items-center mb-2">
-                <div id="abilities_paladin_title" className="text-yellow-400 font-bold">🙏 Paladin Prayers</div>
+                <div id="abilities_paladin_title" className="text-yellow-400 font-bold"> Paladin Prayers</div>
                 <div id="abilities_paladin_points" className="text-yellow-300 text-sm font-bold">
                   {prayerRemaining}/{maxPrayer} points
                 </div>
@@ -351,7 +351,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {hero.key === 'swashbuckler' && (
             <div id="abilities_swashbuckler_section" className="bg-slate-800 rounded p-3">
               <div id="abilities_swashbuckler_header" className="flex justify-between items-center mb-2">
-                <div id="abilities_swashbuckler_title" className="text-red-400 font-bold">⚔️ Swashbuckler Panache</div>
+                <div id="abilities_swashbuckler_title" className="text-red-400 font-bold">️ Swashbuckler Panache</div>
                 <div id="abilities_swashbuckler_points" className="text-red-300 text-sm font-bold">
                   {panacheCurrent}/{maxPanache} points
                 </div>
@@ -392,7 +392,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Assassin - Hide in Shadows */}
           {hero.key === 'assassin' && (
             <div id="abilities_assassin_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_assassin_title" className="text-indigo-400 font-bold mb-2">🗡️ Assassin: Hide in Shadows</div>
+              <div id="abilities_assassin_title" className="text-indigo-400 font-bold mb-2">️ Assassin: Hide in Shadows</div>
               <div id="abilities_assassin_description" className="text-xs text-slate-400 mb-3">
                 Use a turn to hide and mark target. Next successful attack deals TRIPLE damage!
               </div>
@@ -413,7 +413,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {hero.key === 'mushroomMonk' && (
             <div id="abilities_mushroom_monk_section" className="bg-slate-800 rounded p-3">
               <div id="abilities_mushroom_monk_header" className="flex justify-between items-center mb-2">
-                <div id="abilities_mushroom_monk_title" className="text-green-400 font-bold">🍄 Mushroom Monk: Spore Cloud</div>
+                <div id="abilities_mushroom_monk_title" className="text-green-400 font-bold"> Mushroom Monk: Spore Cloud</div>
                 <div id="abilities_mushroom_monk_points" className="text-green-300 text-sm font-bold">
                   {sporesRemaining}/{maxSpores} uses (Tier {tier})
                 </div>
@@ -445,7 +445,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Warrior */}
           {hero.key === 'warrior' && (
             <div id="abilities_warrior_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_warrior_title" className="text-orange-400 font-bold mb-2">⚔️ Warrior Abilities</div>
+              <div id="abilities_warrior_title" className="text-orange-400 font-bold mb-2">️ Warrior Abilities</div>
               <div id="abilities_warrior_list" className="space-y-2">
                 <div id="abilities_warrior_ability_combat_master" className="bg-slate-700 rounded p-2">
                   <div id="abilities_warrior_ability_combat_master_name" className="text-white text-sm font-bold">Combat Master: +L to Attack</div>
@@ -462,7 +462,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Cleric */}
           {hero.key === 'cleric' && (
             <div id="abilities_cleric_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_cleric_title" className="text-yellow-400 font-bold mb-2">✨ Cleric Abilities</div>
+              <div id="abilities_cleric_title" className="text-yellow-400 font-bold mb-2"> Cleric Abilities</div>
               <div id="abilities_cleric_list" className="space-y-2">
                 <div id="abilities_cleric_ability_healing" className="bg-slate-700 rounded p-2">
                   <div id="abilities_cleric_ability_healing_name" className="text-white text-sm font-bold">Healing: d6+L Life</div>
@@ -485,7 +485,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Rogue */}
           {hero.key === 'rogue' && (
             <div id="abilities_rogue_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_rogue_title" className="text-purple-400 font-bold mb-2">🗡️ Rogue Abilities</div>
+              <div id="abilities_rogue_title" className="text-purple-400 font-bold mb-2">️ Rogue Abilities</div>
               <div id="abilities_rogue_list" className="space-y-2">
                 <div id="abilities_rogue_ability_defense_master" className="bg-slate-700 rounded p-2">
                   <div id="abilities_rogue_ability_defense_master_name" className="text-white text-sm font-bold">Defense Master: +L to Defense</div>
@@ -510,7 +510,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Wizard */}
           {hero.key === 'wizard' && (
             <div id="abilities_wizard_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_wizard_title" className="text-blue-400 font-bold mb-2">🔮 Wizard Abilities</div>
+              <div id="abilities_wizard_title" className="text-blue-400 font-bold mb-2"> Wizard Abilities</div>
               <div id="abilities_wizard_list" className="space-y-2">
                 <div id="abilities_wizard_ability_spell_slots" className="bg-slate-700 rounded p-2">
                   <div id="abilities_wizard_ability_spell_slots_name" className="text-white text-sm font-bold">Spell Slots: L+2</div>
@@ -536,7 +536,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Barbarian */}
           {hero.key === 'barbarian' && (
             <div id="abilities_barbarian_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_barbarian_title" className="text-red-400 font-bold mb-2">💥 Barbarian Abilities</div>
+              <div id="abilities_barbarian_title" className="text-red-400 font-bold mb-2"> Barbarian Abilities</div>
               <div id="abilities_barbarian_list" className="space-y-2">
                 <div id="abilities_barbarian_ability_rage" className="bg-slate-700 rounded p-2">
                   <div id="abilities_barbarian_ability_rage_name" className="text-white text-sm font-bold">Rage Attack (1+½L per adventure)</div>
@@ -562,7 +562,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Halfling */}
           {hero.key === 'halfling' && (
             <div id="abilities_halfling_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_halfling_title" className="text-green-400 font-bold mb-2">🍀 Halfling Abilities</div>
+              <div id="abilities_halfling_title" className="text-green-400 font-bold mb-2"> Halfling Abilities</div>
               <div id="abilities_halfling_list" className="space-y-2">
                 <div id="abilities_halfling_ability_luck" className="bg-slate-700 rounded p-2">
                   <div id="abilities_halfling_ability_luck_name" className="text-white text-sm font-bold">Luck Points: L+1</div>
@@ -584,7 +584,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Dwarf */}
           {hero.key === 'dwarf' && (
             <div id="abilities_dwarf_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_dwarf_title" className="text-amber-400 font-bold mb-2">⚒️ Dwarf Abilities</div>
+              <div id="abilities_dwarf_title" className="text-amber-400 font-bold mb-2">️ Dwarf Abilities</div>
               <div id="abilities_dwarf_list" className="space-y-2">
                 <div id="abilities_dwarf_ability_combat_master" className="bg-slate-700 rounded p-2">
                   <div id="abilities_dwarf_ability_combat_master_name" className="text-white text-sm font-bold">Combat Master: +L to Attack</div>
@@ -613,7 +613,7 @@ export default function Abilities({ isOpen, state, dispatch, onClose }) {
           {/* Elf */}
           {hero.key === 'elf' && (
             <div id="abilities_elf_section" className="bg-slate-800 rounded p-3">
-              <div id="abilities_elf_title" className="text-emerald-400 font-bold mb-2">🧝 Elf Abilities</div>
+              <div id="abilities_elf_title" className="text-emerald-400 font-bold mb-2"> Elf Abilities</div>
               <div id="abilities_elf_list" className="space-y-2">
                 <div id="abilities_elf_ability_combat_master" className="bg-slate-700 rounded p-2">
                   <div id="abilities_elf_ability_combat_master_name" className="text-white text-sm font-bold">Combat Master: +L to Attack</div>

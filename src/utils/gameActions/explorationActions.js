@@ -37,7 +37,7 @@ export const performSearchRoll = (options = {}, ctx) => {
   if (total <= 1) {
     return {
       type: 'wandering_monsters',
-      message: '⚠️ Your search attracted Wandering Monsters!',
+      message: '️ Your search attracted Wandering Monsters!',
       roll,
       total
     };
@@ -47,10 +47,10 @@ export const performSearchRoll = (options = {}, ctx) => {
     if (total >= 5) {
       return {
         type: 'found_something',
-        message: '✨ You found something! Choose what you discovered:',
+        message: ' You found something! Choose what you discovered:',
         choices: [
-          { key: 'clue', label: '🔍 Clue', description: 'Gather information (need 3 to reveal a secret)' },
-          { key: 'listen', label: '👂 Listen', description: 'Roll the next tile contents before entering' }
+          { key: 'clue', label: ' Clue', description: 'Gather information (need 3 to reveal a secret)' },
+          { key: 'listen', label: ' Listen', description: 'Roll the next tile contents before entering' }
         ],
         roll,
         total
@@ -59,9 +59,9 @@ export const performSearchRoll = (options = {}, ctx) => {
     if (total === 4 && hasCavernListener) {
       return {
         type: 'found_something',
-        message: '👂 You can Listen for clues beyond the next opening:',
+        message: ' You can Listen for clues beyond the next opening:',
         choices: [
-          { key: 'listen', label: '👂 Listen', description: 'Roll the next tile contents before entering' }
+          { key: 'listen', label: ' Listen', description: 'Roll the next tile contents before entering' }
         ],
         roll,
         total,
@@ -72,10 +72,10 @@ export const performSearchRoll = (options = {}, ctx) => {
     if (total >= 5 || (total === 4 && hasFungalSearchBonus)) {
       return {
         type: 'found_something',
-        message: '🍄 You found something! Choose what you discovered:',
+        message: ' You found something! Choose what you discovered:',
         choices: [
-          { key: 'clue', label: '🔍 Clue', description: 'Gather information (need 3 to reveal a secret)' },
-          { key: 'rare_mushroom', label: '🍄 Rare Mushroom', description: 'Roll on the Rare Mushroom table' }
+          { key: 'clue', label: ' Clue', description: 'Gather information (need 3 to reveal a secret)' },
+          { key: 'rare_mushroom', label: ' Rare Mushroom', description: 'Roll on the Rare Mushroom table' }
         ],
         roll,
         total
@@ -84,12 +84,12 @@ export const performSearchRoll = (options = {}, ctx) => {
   } else if (total >= 5) {
     return {
       type: 'found_something',
-      message: '✨ You found something! Choose what you discovered:',
+      message: ' You found something! Choose what you discovered:',
       choices: [
-        { key: 'clue', label: '🔍 Clue', description: 'Gather information (need 3 to reveal a secret)' },
-        { key: 'hidden_treasure', label: '💰 Hidden Treasure', description: '(2d6+HCL)×(2d6+HCL) gold' },
-        { key: 'secret_door', label: '🚪 Secret Door', description: 'Leads to new tile (1-in-6 shortcut out)' },
-        { key: 'secret_passage', label: '🗺️ Secret Passage', description: 'Passage to different environment' }
+        { key: 'clue', label: ' Clue', description: 'Gather information (need 3 to reveal a secret)' },
+        { key: 'hidden_treasure', label: ' Hidden Treasure', description: '(2d6+HCL)×(2d6+HCL) gold' },
+        { key: 'secret_door', label: ' Secret Door', description: 'Leads to new tile (1-in-6 shortcut out)' },
+        { key: 'secret_passage', label: '️ Secret Passage', description: 'Passage to different environment' }
       ],
       roll,
       total
@@ -116,7 +116,7 @@ export const findClue = (dispatch, heroIdx, heroName) => {
   dispatch({ type: 'ADD_HERO_CLUE', heroIdx, amount: 1 });
   dispatch({
     type: 'LOG',
-    t: `🔍 ${heroName} discovered a Clue!`
+    t: ` ${heroName} discovered a Clue!`
   });
 
   return { success: true, message: 'Clue discovered!' };
@@ -158,7 +158,7 @@ export const rollHiddenTreasureComplication = (ctx) => {
   if (roll <= 2) {
     return {
       type: 'alarm',
-      message: '🔔 Alarm! Wandering Monsters attack!',
+      message: ' Alarm! Wandering Monsters attack!',
       roll
     };
   }
@@ -166,14 +166,14 @@ export const rollHiddenTreasureComplication = (ctx) => {
   if (roll <= 5) {
     return {
       type: 'trap',
-      message: '⚠️ The treasure is trapped! Rogue can attempt to disarm.',
+      message: '️ The treasure is trapped! Rogue can attempt to disarm.',
       roll
     };
   }
 
   return {
     type: 'ghost',
-    message: '👻 A ghost guards the treasure! Cleric can attempt to banish.',
+    message: ' A ghost guards the treasure! Cleric can attempt to banish.',
     roll
   };
 };
@@ -193,7 +193,7 @@ export const findHiddenTreasure = (dispatch, hcl, ctx) => {
 
   dispatch({
     type: 'LOG',
-    t: `💰 Hidden treasure: ${treasure.formula}`
+    t: ` Hidden treasure: ${treasure.formula}`
   });
 
   dispatch({
@@ -220,7 +220,7 @@ export const findSecretDoor = (dispatch, ctx) => {
   if (isShortcut) {
     dispatch({
       type: 'LOG',
-      t: '🚪✨ Secret door found! It\'s a safe shortcut out of the dungeon!'
+      t: ' Secret door found! It\'s a safe shortcut out of the dungeon!'
     });
 
     return {
@@ -232,7 +232,7 @@ export const findSecretDoor = (dispatch, ctx) => {
 
   dispatch({
     type: 'LOG',
-    t: '🚪 Secret door found! Leads to a new tile. Treasure behind it is DOUBLED.'
+    t: ' Secret door found! Leads to a new tile. Treasure behind it is DOUBLED.'
   });
 
   return {
@@ -262,7 +262,7 @@ export const findSecretPassage = (dispatch, currentEnvironment, chosenEnvironmen
     const nextEnv = otherEnvironments.includes(chosenEnvironment) ? chosenEnvironment : otherEnvironments[0];
     dispatch({
       type: 'LOG',
-      t: `🗺️ Secret passage found! Leads to the ${envNames[nextEnv]}!`
+      t: `️ Secret passage found! Leads to the ${envNames[nextEnv]}!`
     });
     dispatch({ type: 'CHANGE_ENVIRONMENT', environment: nextEnv });
     return {
@@ -312,7 +312,7 @@ export const spendCluesForSecret = (dispatch, heroIdx, currentClues, heroName, c
 
   dispatch({
     type: 'LOG',
-    t: `🔮 Secret revealed: ${secret}`
+    t: ` Secret revealed: ${secret}`
   });
 
   return {
@@ -333,6 +333,6 @@ export const markTileSearched = (dispatch, x, y) => {
   // For now, just log it
   dispatch({
     type: 'LOG',
-    t: `📍 Tile (${x},${y}) searched`
+    t: ` Tile (${x},${y}) searched`
   });
 };

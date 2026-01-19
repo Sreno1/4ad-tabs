@@ -106,7 +106,7 @@ export const performStealthSave = (dispatch, heroOrHeroes, foeLevel = 1, options
   const reasonsStr = (worst.reasons && worst.reasons.length > 0) ? ` (${worst.reasons.join(', ')})` : '';
   const heroNames = heroes.map(h => h.name).join(', ');
 
-  const message = `🕶️ Stealth: ${heroNames} ${success ? 'succeed' : 'fail'}! Roll: ${rollResult.rolls.join('+')}+${worst.mod} = ${total} vs L${foeLevel}${reasonsStr}`;
+  const message = `️ Stealth: ${heroNames} ${success ? 'succeed' : 'fail'}! Roll: ${rollResult.rolls.join('+')}+${worst.mod} = ${total} vs L${foeLevel}${reasonsStr}`;
   dispatch(logMessage(`${formatRollPrefix(rollResult)}${message}`, 'exploration'));
   // Show modal for immediate feedback
   dispatch({ type: SHOW_MODAL, message, msgType: success ? 'success' : 'failure', autoClose: 3500 });

@@ -37,7 +37,7 @@ export default function AppHeader({
   const handleEnvironmentChange = (value) => {
     const envKey = normalizeEnvironment(value);
     dispatch({ type: 'CHANGE_ENVIRONMENT', environment: envKey });
-    dispatch(logMessage(`🌍 Environment set to ${ENVIRONMENTS.find(env => env.id === envKey)?.label || 'Dungeon'}.`, 'exploration'));
+    dispatch(logMessage(` Environment set to ${ENVIRONMENTS.find(env => env.id === envKey)?.label || 'Dungeon'}.`, 'exploration'));
   };
 
   const viewOptions = [

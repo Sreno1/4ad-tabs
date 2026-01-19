@@ -22,7 +22,7 @@ export const useClericHeal = (dispatch, clericIdx, targetIdx, targetHero, ctx) =
   dispatch({ type: 'UPD_HERO', i: targetIdx, u: { hp: newHP } });
   dispatch({
     type: 'LOG',
-    t: `💚 Cleric heals ${targetHero.name} for ${healAmount} HP! (${targetHero.hp}→${newHP})`,
+    t: ` Cleric heals ${targetHero.name} for ${healAmount} HP! (${targetHero.hp}→${newHP})`,
   });
 
   return { healAmount, newHP };
@@ -46,7 +46,7 @@ export const useClericBless = (dispatch, clericIdx, targetIdx, targetHero) => {
   });
   dispatch({
     type: 'LOG',
-    t: `✨ Cleric blesses ${targetHero.name}! +1 to next roll.`,
+    t: ` Cleric blesses ${targetHero.name}! +1 to next roll.`,
   });
 
   return { blessed: true };
@@ -65,10 +65,10 @@ export const useBarbarianRage = (dispatch, barbarianIdx, activate = true) => {
   if (activate) {
     dispatch({
       type: 'LOG',
-      t: `😤 Barbarian enters RAGE! +2 to attack, -1 to defense.`,
+      t: ` Barbarian enters RAGE! +2 to attack, -1 to defense.`,
     });
   } else {
-    dispatch({ type: 'LOG', t: `😌 Barbarian calms down. Rage ends.` });
+    dispatch({ type: 'LOG', t: ` Barbarian calms down. Rage ends.` });
   }
 
   return { rageActive: activate };
@@ -82,7 +82,7 @@ export const useBarbarianRage = (dispatch, barbarianIdx, activate = true) => {
  */
 export const useHalflingLuck = (dispatch, halflingIdx) => {
   dispatch({ type: 'USE_LUCK', heroIdx: halflingIdx });
-  dispatch({ type: 'LOG', t: `🍀 Halfling uses Luck! Re-roll available.` });
+  dispatch({ type: 'LOG', t: ` Halfling uses Luck! Re-roll available.` });
 
   return { luckUsed: true };
 };
@@ -104,7 +104,7 @@ export const useAssassinHide = (dispatch, assassinIdx, hidden = true) => {
   if (hidden) {
     dispatch({
       type: 'LOG',
-      t: `🥷 Assassin hides in shadows! Next attack deals 3x damage!`,
+      t: ` Assassin hides in shadows! Next attack deals 3x damage!`,
     });
   } else {
     dispatch({ type: 'LOG', t: `Assassin revealed.` });
@@ -126,7 +126,7 @@ export const setRangerSwornEnemy = (dispatch, rangerIdx, enemyType) => {
   });
   dispatch({
     type: 'LOG',
-    t: `🎯 Ranger declares ${enemyType} as sworn enemy! +2 vs this type.`,
+    t: ` Ranger declares ${enemyType} as sworn enemy! +2 vs this type.`,
   });
 };
 
@@ -143,9 +143,9 @@ export const useSwashbucklerPanache = (dispatch, swashIdx, action = 'dodge') => 
   });
 
   const actions = {
-    dodge: '🤺 Swashbuckler dodges with style! +2 Defense this turn.',
-    riposte: '⚔️ Swashbuckler ripostes! Counter-attack on next hit.',
-    flourish: '✨ Swashbuckler flourishes! +2 Attack this turn.',
+    dodge: ' Swashbuckler dodges with style! +2 Defense this turn.',
+    riposte: '️ Swashbuckler ripostes! Counter-attack on next hit.',
+    flourish: ' Swashbuckler flourishes! +2 Attack this turn.',
   };
 
   dispatch({ type: 'LOG', t: actions[action] || actions.dodge });
@@ -167,7 +167,7 @@ export const useMonkFlurry = (dispatch, monkIdx, level) => {
   });
   dispatch({
     type: 'LOG',
-    t: `🥋 Mushroom Monk activates Flurry! ${attacks} attacks this turn!`,
+    t: ` Mushroom Monk activates Flurry! ${attacks} attacks this turn!`,
   });
 };
 
@@ -184,9 +184,9 @@ export const useAcrobatTrick = (dispatch, acrobatIdx, trick = 'dodge') => {
   });
 
   const tricks = {
-    dodge: '🤸 Acrobat tumbles! +2 Defense this turn.',
-    leap: '🦘 Acrobat leaps! Move to any position.',
-    distract: '👋 Acrobat distracts! Target at -1 to attack.',
+    dodge: ' Acrobat tumbles! +2 Defense this turn.',
+    leap: ' Acrobat leaps! Move to any position.',
+    distract: ' Acrobat distracts! Target at -1 to attack.',
   };
 
   dispatch({ type: 'LOG', t: tricks[trick] || tricks.dodge });
@@ -205,9 +205,9 @@ export const usePaladinPrayer = (dispatch, paladinIdx, prayer = 'smite') => {
   });
 
   const prayers = {
-    smite: '⚡ Paladin smites evil! +2 damage vs undead/demons.',
-    protect: '🛡️ Divine protection! +2 Defense for party this turn.',
-    heal: '✨ Lay on hands! Restore 1d6 HP to target.',
+    smite: ' Paladin smites evil! +2 damage vs undead/demons.',
+    protect: '️ Divine protection! +2 Defense for party this turn.',
+    heal: ' Lay on hands! Restore 1d6 HP to target.',
   };
 
   dispatch({ type: 'LOG', t: prayers[prayer] || prayers.smite });
@@ -227,7 +227,7 @@ export const useLightGladiatorParry = (dispatch, gladiatorIdx) => {
   });
   dispatch({
     type: 'LOG',
-    t: `⚔️ Light Gladiator parries! Next attack blocked, riposte on attacker.`,
+    t: `️ Light Gladiator parries! Next attack blocked, riposte on attacker.`,
   });
 };
 
@@ -246,7 +246,7 @@ export const useBulwarkSacrifice = (dispatch, bulwarkIdx, targetIdx) => {
   });
   dispatch({
     type: 'LOG',
-    t: `🛡️ Bulwark protects ally! Takes damage for them this turn.`,
+    t: `️ Bulwark protects ally! Takes damage for them this turn.`,
   });
 };
 
@@ -265,6 +265,6 @@ export const toggleDualWield = (dispatch, heroIdx, active = true) => {
   });
 
   if (active) {
-    dispatch({ type: 'LOG', t: `⚔️⚔️ Dual wielding activated! +½L to attacks.` });
+    dispatch({ type: 'LOG', t: `️️ Dual wielding activated! +½L to attacks.` });
   }
 };

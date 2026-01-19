@@ -19,7 +19,7 @@ export default function ResultModal({ state, dispatch }) {
     <div id="result_modal_overlay" className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[99999]">
       <div id="result_modal" className="bg-slate-800 rounded-lg p-4 max-w-md w-full mx-4 border-2 border-amber-400">
         <div className="flex justify-between items-start mb-2">
-          <div className="font-bold text-lg text-amber-300">{modal.type === 'success' ? '✅ Success' : modal.type === 'failure' ? '❌ Result' : 'ℹ️ Result'}</div>
+          <div className="font-bold text-lg text-amber-300">{modal.type === 'success' ? ' Success' : modal.type === 'failure' ? ' Result' : '️ Result'}</div>
           <button onClick={() => dispatch({ type: HIDE_MODAL })} className="text-slate-400 hover:text-white">
             <X />
           </button>

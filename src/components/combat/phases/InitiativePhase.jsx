@@ -4,10 +4,10 @@ import Tooltip from '../../Tooltip.jsx';
 import { DEFAULT_REACTION_TABLE, REACTION_TYPES } from '../../../data/monsters.js';
 
 const PHASE_LABELS = {
-  'party_ranged': '🏹Party Ranged',
+  'party_ranged': 'Party Ranged',
   'party_spells': 'Party Spells',
   'party_melee': 'Party Melee',
-  'monster_ranged': '🎯Monster Ranged',
+  'monster_ranged': 'Monster Ranged',
   'monster_melee': 'Monster Melee'
 };
 

@@ -299,14 +299,14 @@ export default function ActionPane({
                       }}
                       className="mt-2 w-full bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded text-sm"
                     >
-                      🗺️ Choose Destination
+                      ️ Choose Destination
                     </button>
                   ) : roomDetails.special.effect ? (
                     <button
                       onClick={() => setShowDungeonFeatures(true)}
                       className="mt-2 w-full bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded text-sm"
                     >
-                      ✨ Interact with Feature
+                       Interact with Feature
                     </button>
                   ) : null}
                 </div>
@@ -314,17 +314,17 @@ export default function ActionPane({
 
               {actionMode === ACTION_MODES.EMPTY && (
                 <div className="bg-slate-700/50 rounded p-3">
-                  <div className="text-slate-400 font-bold">{corridor ? "📦 Empty Corridor" : "📦 Empty Room"}</div>
+                  <div className="text-slate-400 font-bold">{corridor ? " Empty Corridor" : " Empty Room"}</div>
                   <div className="text-slate-300 text-sm mt-1">{corridor ? "Corridors can be searched but have fewer features." : "You may search the room for hidden treasure or secrets."}</div>
                 </div>
               )}
 
               {actionMode === ACTION_MODES.TREASURE && (
-                <div className="bg-amber-900/30 rounded p-3"><div className="text-amber-400 font-bold">💰 Treasure!</div></div>
+                <div className="bg-amber-900/30 rounded p-3"><div className="text-amber-400 font-bold"> Treasure!</div></div>
               )}
 
               {actionMode === ACTION_MODES.QUEST && (
-                <div className="bg-amber-900/30 rounded p-3"><div className="text-amber-500 font-bold">🏆 Quest Room!</div><div className="text-slate-300 text-sm mt-1">This is the dungeon's final objective! Complete your quest here.</div></div>
+                <div className="bg-amber-900/30 rounded p-3"><div className="text-amber-500 font-bold"> Quest Room!</div><div className="text-slate-300 text-sm mt-1">This is the dungeon's final objective! Complete your quest here.</div></div>
               )}
 
               {/* Dual-content rolls are auto-resolved based on the d66 roll (no player choice required) */}
@@ -353,7 +353,7 @@ export default function ActionPane({
                   }}
                   className="w-full px-3 py-2 rounded text-sm bg-blue-600 hover:bg-blue-500"
                 >
-                  🔍 Search {tileResult?.isCorridor || corridor ? "Corridor" : "Room"}
+                   Search {tileResult?.isCorridor || corridor ? "Corridor" : "Room"}
                 </button>
               )}
 
@@ -457,7 +457,7 @@ export default function ActionPane({
               const roll = d6() + d6();
               const contents = TILE_CONTENTS_TABLE[roll];
               const description = contents?.roomDescription || contents?.corridorDescription || contents?.description || 'Unknown';
-              dispatch(logMessage(`👂 Listen: 2d6=${roll} → ${description}`, 'exploration'));
+              dispatch(logMessage(` Listen: 2d6=${roll} → ${description}`, 'exploration'));
             } else if (choice === 'rare_mushroom') {
               rollRareMushroomTable(dispatch);
             }
@@ -501,7 +501,7 @@ export default function ActionPane({
                   }
                 }
               } else {
-                dispatch({ type: 'LOG', t: `⚠️ No conscious Rogue available to disarm the trap!` });
+                dispatch({ type: 'LOG', t: `️ No conscious Rogue available to disarm the trap!` });
                 // If no rogue, trigger trap on random party member
                 const aliveParty = state.party.filter(h => h.hp > 0);
                 if (aliveParty.length > 0) {
@@ -535,12 +535,12 @@ export default function ActionPane({
                 if (total >= dc) {
                   dispatch({
           type: 'LOG',
-          t: `${formatRollPrefix(roll)}✨ ${cleric.name} banishes the ghost! (${roll}+${bonus}=${total} vs DC${dc})`
+          t: `${formatRollPrefix(roll)} ${cleric.name} banishes the ghost! (${roll}+${bonus}=${total} vs DC${dc})`
                   });
                 } else {
                   dispatch({
           type: 'LOG',
-          t: `${formatRollPrefix(roll)}💀 ${cleric.name} fails to banish the ghost! (${roll}+${bonus}=${total} vs DC${dc}) All PCs lose 1 Life!`
+          t: `${formatRollPrefix(roll)} ${cleric.name} fails to banish the ghost! (${roll}+${bonus}=${total} vs DC${dc}) All PCs lose 1 Life!`
                   });
                   // Apply 1 damage to all party members
                   state.party.forEach((hero, idx) => {
@@ -550,7 +550,7 @@ export default function ActionPane({
                   });
                 }
               } else {
-                dispatch({ type: 'LOG', t: `⚠️ No conscious Cleric available! All PCs lose 1 Life from the ghost!` });
+                dispatch({ type: 'LOG', t: `️ No conscious Cleric available! All PCs lose 1 Life from the ghost!` });
                 // Apply 1 damage to all party members
                 state.party.forEach((hero, idx) => {
                   if (hero.hp > 0) {
@@ -663,7 +663,7 @@ function HeroSelectionModal({ party, onSelect, onClose }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-slate-800 rounded-lg p-6 max-w-md w-full mx-4 border-2 border-amber-400">
         <div className="flex justify-between items-start mb-4">
-          <h2 className="text-xl font-bold text-amber-400">🔍 Who Found the Clue?</h2>
+          <h2 className="text-xl font-bold text-amber-400"> Who Found the Clue?</h2>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white text-2xl leading-none"

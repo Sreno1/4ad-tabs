@@ -65,7 +65,7 @@ const PartyTurnPhase = memo(function PartyTurnPhase({
               i: originalIdx,
               u: { count: 0, fled: true },
             });
-            dispatch({ type: 'LOG', t: `🏃 The remaining ${monster.name} flee!` });
+            dispatch({ type: 'LOG', t: ` The remaining ${monster.name} flee!` });
           }
         }
       }

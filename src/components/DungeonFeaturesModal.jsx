@@ -251,7 +251,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
                 disabled={!activeHero}
                 className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 px-3 py-1.5 rounded text-xs"
               >
-                🔍 Detect Trap
+                 Detect Trap
               </button>
               {currentTrap?.detected && !currentTrap?.disarmed && !currentTrap?.triggered && (
                 <button 
@@ -259,7 +259,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
                   disabled={!activeHero}
                   className="bg-amber-600 hover:bg-amber-500 disabled:bg-slate-600 px-3 py-1.5 rounded text-xs"
                 >
-                  🔧 Disarm
+                   Disarm
                 </button>
               )}
               {currentTrap && !currentTrap?.triggered && !currentTrap?.disarmed && (
@@ -283,7 +283,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
                   Damage: {currentTrap.damage} | Detect DC: {currentTrap.detectDC} | Disarm DC: {currentTrap.disarmDC}
                 </div>
                 {currentTrap.detected && !currentTrap.disarmed && !currentTrap.triggered && (
-                  <div className="text-blue-400 mt-1">🔍 Trap Detected!</div>
+                  <div className="text-blue-400 mt-1"> Trap Detected!</div>
                 )}
                 {currentTrap.disarmed && <div className="text-green-400 mt-1">✓ Trap Disarmed!</div>}
                 {currentTrap.triggered && <div className="text-red-400 mt-1">Trap Triggered!</div>}
@@ -326,7 +326,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
                 <div className="font-bold text-purple-400">{currentSpecial.name}</div>
                 <div className="text-slate-300">{currentSpecial.description}</div>
                 {currentSpecial.requiresGold && (
-                  <div className="text-amber-400 mt-1">💰 Requires {currentSpecial.requiresGold} gold</div>
+                  <div className="text-amber-400 mt-1"> Requires {currentSpecial.requiresGold} gold</div>
                 )}
                 {currentSpecial.interacted && <div className="text-purple-400 mt-1">✓ Interacted!</div>}
               </div>
@@ -352,7 +352,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
                   disabled={!activeHero}
                   className="bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-600 px-3 py-1.5 rounded text-xs"
                 >
-                  🧩 Attempt Puzzle
+                   Attempt Puzzle
                 </button>
               )}
             </div>
@@ -388,7 +388,7 @@ export default function DungeonFeaturesModal({ isOpen, onClose, state, dispatch,
 
           {/* Quick Reference */}
           <div id="dungeon_features_reference_section" className="bg-slate-700/50 rounded p-3">
-            <div id="dungeon_features_reference_title" className="text-amber-400 font-bold text-sm mb-2">📖 Quick Reference</div>
+            <div id="dungeon_features_reference_title" className="text-amber-400 font-bold text-sm mb-2"> Quick Reference</div>
             <div id="dungeon_features_reference_content" className="text-xs text-slate-400 space-y-1">
               <div><span className="text-amber-400">Warriors/Barbarians:</span> Auto-open stuck doors</div>
               <div><span className="text-amber-400">Rogues:</span> +Level to detect/disarm traps, pick locks</div>

@@ -212,7 +212,7 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
                   title="Previous track"
                   aria-label="Previous track"
                 >
-                  ◀
+                  
                 </button>
                 <button
                   id="adventure_log_player_toggle"
@@ -221,7 +221,7 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
                   title={isPlaying ? 'Pause' : 'Play'}
                   aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
-                  {isPlaying ? '⏸' : '⏵'}
+                  {isPlaying ? '' : '⏵'}
                 </button>
                 <button
                   id="adventure_log_player_next"
@@ -230,7 +230,7 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
                   title="Next track"
                   aria-label="Next track"
                 >
-                  ▶
+                  
                 </button>
 
                 <div id="adventure_log_player_track" className="text-slate-300 text-xs px-2">
@@ -253,7 +253,7 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
 
             {logArchive && logArchive.length > 0 && (
               <div id="adventure_log_archive_indicator" className="text-xs text-slate-500" aria-live="polite">
-                📚 {logArchive.length} archived log(s)
+                 {logArchive.length} archived log(s)
               </div>
             )}
           </div>
@@ -360,7 +360,7 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? '⏸' : '⏵'}
+              {isPlaying ? '' : '⏵'}
             </button>
             <div className="text-slate-300 text-xs">{tracks[currentTrackIndex] ? formatTrackTitle(tracks[currentTrackIndex]) : 'Track'}</div>
             <input
@@ -430,7 +430,7 @@ export default function Log({ state, dispatch, isBottomPanel = false }) {
         {/* Archive indicator */}
         {state.logArchive && state.logArchive.length > 0 && (
           <div id="adventure_log_mobile_archive_indicator" className="text-xs text-slate-500 text-center" aria-live="polite">
-            📚 {state.logArchive.length} archived log(s) · View in Settings
+             {state.logArchive.length} archived log(s) · View in Settings
           </div>
         )}
       </div>

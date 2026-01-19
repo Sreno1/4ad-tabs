@@ -19,7 +19,7 @@ import { formatRollPrefix } from '../rollLog.js';
 export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context = {}, ctx) => {
   const spell = SPELLS[spellKey];
   if (!spell) {
-    dispatch({ type: 'LOG', t: `❌ Unknown spell: ${spellKey}` });
+    dispatch({ type: 'LOG', t: ` Unknown spell: ${spellKey}` });
     return { success: false };
   }
 
@@ -53,16 +53,16 @@ export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context 
   const spellContext = { ...context, targets: context.targets || [], castingBonus };
   const result = castSpell(spellKey, caster, spellContext, ctx);
   // Log main message
-  dispatch({ type: 'LOG', t: `✨ ${result.message}` });
+  dispatch({ type: 'LOG', t: ` ${result.message}` });
 
   // If MR check details were recorded, log them for visibility
   if (result.details && result.details.mr) {
     const mr = result.details.mr;
-    dispatch({ type: 'LOG', t: `${formatRollPrefix(mr.roll)}🛡️ MR Roll: d6=${mr.roll} + L${caster.lvl} = ${mr.total} vs MR${mr.mr} → ${mr.passed ? 'Pass' : 'Fail'}` });
+    dispatch({ type: 'LOG', t: `${formatRollPrefix(mr.roll)}️ MR Roll: d6=${mr.roll} + L${caster.lvl} = ${mr.total} vs MR${mr.mr} → ${mr.passed ? 'Pass' : 'Fail'}` });
   }
   if (result.details && result.details.cast) {
     const c = result.details.cast;
-    dispatch({ type: 'LOG', t: `${formatRollPrefix(c.roll)}🎲 Cast Roll: d6=${c.roll} + L${caster.lvl} + ${castingBonus} = ${c.total} vs target` });
+    dispatch({ type: 'LOG', t: `${formatRollPrefix(c.roll)} Cast Roll: d6=${c.roll} + L${caster.lvl} + ${castingBonus} = ${c.total} vs target` });
   }
 
   // Prefer the computed result.effect (some spells override behavior), else use definition
@@ -97,7 +97,7 @@ export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context 
           // major foe: mark asleep with numeric turns
           const turns = (typeof result.duration === 'number') ? result.duration : 1;
           dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { status: { ...(m.status||{}), asleep: true }, asleepTurns: turns } });
-          dispatch({ type: 'LOG', t: `😴 ${m.name} is put to sleep for ${turns} turn(s).` });
+          dispatch({ type: 'LOG', t: ` ${m.name} is put to sleep for ${turns} turn(s).` });
         }
       }
       break;
@@ -121,13 +121,13 @@ export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context 
       if (context.targetMonsterIdx !== undefined) {
         const turns = (typeof result.duration === 'number') ? result.duration : 0;
         dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { entangled: true, entangleTurns: turns } });
-        dispatch({ type: 'LOG', t: `🕸️ ${context.targetMonster.name} is entangled for ${turns || 'the encounter'} turn(s).` });
+        dispatch({ type: 'LOG', t: `️ ${context.targetMonster.name} is entangled for ${turns || 'the encounter'} turn(s).` });
       } else if (context.multipleTargetIdxs) {
         const turns = (typeof result.duration === 'number') ? result.duration : 0;
         (context.multipleTargetIdxs || []).forEach(i => {
           const m = (context.allMonsters || [])[i];
           dispatch({ type: 'UPD_MONSTER', i, u: { entangled: true, entangleTurns: turns } });
-          dispatch({ type: 'LOG', t: `🕸️ ${m?.name || 'Target'} is entangled for ${turns || 'the encounter'} turn(s).` });
+          dispatch({ type: 'LOG', t: `️ ${m?.name || 'Target'} is entangled for ${turns || 'the encounter'} turn(s).` });
         });
       }
       break;
@@ -136,7 +136,7 @@ export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context 
       if (context.targetMonsterIdx !== undefined) {
         const turnsB = (typeof result.duration === 'number') ? result.duration : 1;
         dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { bound: true, boundTurns: turnsB } });
-        dispatch({ type: 'LOG', t: `🔗 ${context.targetMonster.name} is bound for ${turnsB} turn(s).` });
+        dispatch({ type: 'LOG', t: ` ${context.targetMonster.name} is bound for ${turnsB} turn(s).` });
       }
       break;
 
@@ -188,7 +188,7 @@ export const performCastSpell = (dispatch, caster, casterIdx, spellKey, context 
 
     case 'food':
       // Add an inventory item or party status; keep simple: log amount in details
-      dispatch({ type: 'LOG', t: `🍽️ ${caster.name} conjures ${result.amount} illusory rations.` });
+      dispatch({ type: 'LOG', t: `️ ${caster.name} conjures ${result.amount} illusory rations.` });
       break;
 
     case 'subdual_damage':
@@ -230,14 +230,14 @@ export const getRemainingSpells = (hero, abilities) => {
 export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, context = {}, ctx) => {
   // Check if hero can use scrolls
   if (!canUseScroll(caster)) {
-    dispatch({ type: 'LOG', t: `❌ ${caster.name} cannot read magical scrolls!` });
+    dispatch({ type: 'LOG', t: ` ${caster.name} cannot read magical scrolls!` });
     return { success: false, message: 'Barbarians cannot read scrolls' };
   }
 
   // Get the spell from the scroll
   const spell = getScrollSpell(scrollKey);
   if (!spell) {
-    dispatch({ type: 'LOG', t: `❌ Unknown scroll: ${scrollKey}` });
+    dispatch({ type: 'LOG', t: ` Unknown scroll: ${scrollKey}` });
     return { success: false };
   }
 
@@ -251,15 +251,15 @@ export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, c
   const result = castSpell(spellKey, caster, spellContext, ctx);
   result.scrollBonus = bonus;
   result.message = `${caster.name} reads ${scrollKey.replace('scroll_', '')} scroll and casts it (+${bonus} bonus)! ${result.message}`;
-  dispatch({ type: 'LOG', t: `✨ ${result.message}` });
+  dispatch({ type: 'LOG', t: ` ${result.message}` });
 
   if (result.details && result.details.mr) {
     const mr = result.details.mr;
-    dispatch({ type: 'LOG', t: `🛡️ MR Roll: d6=${mr.roll} + L${caster.lvl} = ${mr.total} vs MR${mr.mr} → ${mr.passed ? 'Pass' : 'Fail'}` });
+    dispatch({ type: 'LOG', t: `️ MR Roll: d6=${mr.roll} + L${caster.lvl} = ${mr.total} vs MR${mr.mr} → ${mr.passed ? 'Pass' : 'Fail'}` });
   }
   if (result.details && result.details.cast) {
     const c = result.details.cast;
-    dispatch({ type: 'LOG', t: `🎲 Cast Roll: d6=${c.roll} + L${caster.lvl} = ${c.total} vs L${c.total ? c.total : 'target'}` });
+    dispatch({ type: 'LOG', t: ` Cast Roll: d6=${c.roll} + L${caster.lvl} = ${c.total} vs L${c.total ? c.total : 'target'}` });
   }
 
   // Remove scroll from inventory
@@ -297,7 +297,7 @@ export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, c
         } else {
           const turns = (typeof result.duration === 'number') ? result.duration : 1;
           dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { status: { ...(m.status||{}), asleep: true }, asleepTurns: turns } });
-          dispatch({ type: 'LOG', t: `😴 ${m.name} is put to sleep for ${turns} turn(s).` });
+          dispatch({ type: 'LOG', t: ` ${m.name} is put to sleep for ${turns} turn(s).` });
         }
       }
       break;
@@ -314,13 +314,13 @@ export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, c
       if (context.targetMonsterIdx !== undefined) {
         const turns = (typeof result.duration === 'number') ? result.duration : 0;
         dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { entangled: true, entangleTurns: turns } });
-        dispatch({ type: 'LOG', t: `🕸️ ${context.targetMonster.name} is entangled for ${turns || 'the encounter'} turn(s).` });
+        dispatch({ type: 'LOG', t: `️ ${context.targetMonster.name} is entangled for ${turns || 'the encounter'} turn(s).` });
       } else if (context.multipleTargetIdxs) {
         const turns = (typeof result.duration === 'number') ? result.duration : 0;
         (context.multipleTargetIdxs || []).forEach(i => {
           const m = (context.allMonsters || [])[i];
           dispatch({ type: 'UPD_MONSTER', i, u: { entangled: true, entangleTurns: turns } });
-          dispatch({ type: 'LOG', t: `🕸️ ${m?.name || 'Target'} is entangled for ${turns || 'the encounter'} turn(s).` });
+          dispatch({ type: 'LOG', t: `️ ${m?.name || 'Target'} is entangled for ${turns || 'the encounter'} turn(s).` });
         });
       }
       break;
@@ -344,7 +344,7 @@ export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, c
       if (context.targetMonsterIdx !== undefined) {
         const turnsB = (typeof result.duration === 'number') ? result.duration : 1;
         dispatch({ type: 'UPD_MONSTER', i: context.targetMonsterIdx, u: { bound: true, boundTurns: turnsB } });
-        dispatch({ type: 'LOG', t: `🔗 ${context.targetMonster.name} is bound for ${turnsB} turn(s).` });
+        dispatch({ type: 'LOG', t: ` ${context.targetMonster.name} is bound for ${turnsB} turn(s).` });
       }
       break;
     case 'fog':
@@ -369,27 +369,27 @@ export const performCastScrollSpell = (dispatch, caster, casterIdx, scrollKey, c
 export const performCopyScroll = (dispatch, caster, casterIdx, scrollKey) => {
   // Check if hero is a wizard
   if (caster.key !== 'wizard') {
-    dispatch({ type: 'LOG', t: `❌ Only wizards can copy scrolls into their spellbook!` });
+    dispatch({ type: 'LOG', t: ` Only wizards can copy scrolls into their spellbook!` });
     return { success: false, message: 'Only wizards can copy scrolls' };
   }
 
   // Get the spell from the scroll
   const spell = getScrollSpell(scrollKey);
   if (!spell) {
-    dispatch({ type: 'LOG', t: `❌ Unknown scroll: ${scrollKey}` });
+    dispatch({ type: 'LOG', t: ` Unknown scroll: ${scrollKey}` });
     return { success: false };
   }
 
   // Find spell key
   const spellKey = Object.keys(SPELLS).find(key => SPELLS[key] === spell);
   if (!spellKey) {
-    dispatch({ type: 'LOG', t: `❌ Could not identify spell in scroll` });
+    dispatch({ type: 'LOG', t: ` Could not identify spell in scroll` });
     return { success: false };
   }
 
   // Check if spell is already learned
   if (caster.learnedSpells?.includes(spellKey)) {
-    dispatch({ type: 'LOG', t: `❌ ${caster.name} has already learned this spell!` });
+    dispatch({ type: 'LOG', t: ` ${caster.name} has already learned this spell!` });
     return { success: false, message: 'Spell already learned' };
   }
 
@@ -411,7 +411,7 @@ export const performCopyScroll = (dispatch, caster, casterIdx, scrollKey) => {
   }
 
   const message = `${caster.name} copies ${spell.name} into her spellbook and learns it permanently!`;
-  dispatch({ type: 'LOG', t: `📖 ${message}` });
+  dispatch({ type: 'LOG', t: ` ${message}` });
 
   return { success: true, message };
 };

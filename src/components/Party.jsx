@@ -72,7 +72,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
       maxHp: newMaxHp,
       hp: hero.hp + 1 // Gain 1 HP on level up
     }));
-    dispatch(logMessage(`🎉 ${hero.name} leveled up to L${newLevel}!`));
+    dispatch(logMessage(` ${hero.name} leveled up to L${newLevel}!`));
   }, [party, dispatch]);
 
   const adjustHP = useCallback((index, delta) => {
@@ -195,7 +195,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
             aria-label={`${hero.name} rage: ${isRaging ? 'active' : 'inactive'}`}
             aria-pressed={isRaging}
           >
-            {isRaging ? '🔥 RAGING' : 'Rage'}
+            {isRaging ? ' RAGING' : 'Rage'}
           </button>
         </div>
       );
@@ -338,7 +338,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 title="Stealth Save"
                 className="ml-1 bg-slate-700 hover:bg-slate-600 text-xs text-slate-200 px-2 py-0.5 rounded"
               >
-                🕶️
+                ️
               </button>
             </div>
           </div>
@@ -346,15 +346,15 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
           {/* Status Effects */}
           {(hero.status?.blessed || hero.status?.wounded || hero.status?.dead) && (
             <div id={`party_card_${i}_status`} className="flex gap-1 mt-1 text-xs">
-              {hero.status?.blessed && <span className="bg-amber-600 px-1 rounded">✨ Blessed</span>}
-              {hero.status?.wounded && <span className="bg-orange-600 px-1 rounded">🩹 Wounded</span>}
-              {hero.status?.dead && <span className="bg-red-800 px-1 rounded">💀 Dead</span>}
+              {hero.status?.blessed && <span className="bg-amber-600 px-1 rounded"> Blessed</span>}
+              {hero.status?.wounded && <span className="bg-orange-600 px-1 rounded"> Wounded</span>}
+              {hero.status?.dead && <span className="bg-red-800 px-1 rounded"> Dead</span>}
             </div>
           )}
 
           {/* Clues Tracker */}
           <div id={`party_card_${i}_clues`} className="flex gap-1 mt-1 text-xs items-center">
-            <span className="text-blue-400 font-semibold">🔍 Clues:</span>
+            <span className="text-blue-400 font-semibold"> Clues:</span>
               <div className="flex gap-0.5">
                 {[1, 2, 3].map(clueNum => {
                   const filled = clueNum <= (hero.clues || 0);
@@ -383,12 +383,12 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
           {/* Bandage & Carried Treasure */}
           <div id={`party_card_${i}_bandage_treasure`} className="flex gap-3 mt-1 text-xs items-center">
             <div className="flex items-center gap-1">
-              <span className="text-emerald-300 font-semibold">🩹 Bandage:</span>
+              <span className="text-emerald-300 font-semibold"> Bandage:</span>
               <span className="text-slate-300">{Math.max(0, 1 - ((state.abilities?.[i]?.bandagesUsed) || 0))}/1</span>
             </div>
 
             <div className="flex items-center gap-1">
-              <span className="text-yellow-300 font-semibold">💰 Carried:</span>
+              <span className="text-yellow-300 font-semibold"> Carried:</span>
               <span className="text-slate-300">{(hero.carriedTreasureWeight || 0)}gp/{hero.maxCarryWeight || 200}gp</span>
             </div>
           </div>
@@ -400,7 +400,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                 <div id={`party_card_${i}_trait_display`} className="flex-1 bg-cyan-900 border border-cyan-600 rounded px-2 py-1 flex justify-between items-center">
                   <div>
                     <span className="text-cyan-400 text-xs font-bold">
-                      🎯 {getTrait(hero.key, hero.trait)?.name || hero.trait}
+                       {getTrait(hero.key, hero.trait)?.name || hero.trait}
                     </span>
                     {hero.traitChoice && (
                       <span className="text-cyan-300 text-xs ml-1">({hero.traitChoice})</span>
@@ -413,7 +413,7 @@ export default function Party({ state, dispatch, selectedHero = 0, onSelectHero 
                     title="Change Trait"
                     aria-label={`Change ${hero.name} trait`}
                   >
-                    ✏️
+                    ️
                   </button>
                 </div>
               ) : (

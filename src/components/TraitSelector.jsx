@@ -97,7 +97,7 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
         <div id="trait_selector_modal_header" className="bg-gradient-to-r from-cyan-600 to-blue-600 p-4 sticky top-0 z-[10001]">
           <div className="flex justify-between items-center">
             <div>
-              <h2 id="trait_selector_modal_title" className="text-2xl font-bold text-white">🎯 Select Character Trait</h2>
+              <h2 id="trait_selector_modal_title" className="text-2xl font-bold text-white"> Select Character Trait</h2>
               <div id="trait_selector_modal_hero_info" className="text-cyan-200 text-sm">{hero.name} ({hero.key})</div>
             </div>
             <button id="trait_selector_modal_close_button" onClick={onClose} className="text-white hover:text-red-300 text-2xl font-bold">✕</button>
@@ -148,7 +148,7 @@ export default function TraitSelector({ isOpen, hero, heroIdx, dispatch, onClose
               onClick={handleRandomRoll}
               className="flex-1 bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded text-white font-bold"
             >
-              🎲 Roll Random Trait (d6)
+               Roll Random Trait (d6)
             </button>
           </div>
 

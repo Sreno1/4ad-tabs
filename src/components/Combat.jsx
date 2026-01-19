@@ -109,7 +109,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
         }
       }
       if (!surpriseApplied) {
-        addToCombatLog('🔔 New encounter started — choose initiative.');
+        addToCombatLog(' New encounter started — choose initiative.');
       }
     }
     prevMonsterCountRef.current = now;
@@ -122,7 +122,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       // Hide the combat module and prompt for initiative
       setShowCombatModule(false);
       setShowRangedVolley(false);
-      addToCombatLog('🔎 Initiative not set — choose initiative to begin combat.');
+      addToCombatLog(' Initiative not set — choose initiative to begin combat.');
     }
   }, [state.monsters, combatInitiative, showCombatModule, addToCombatLog]);
 
@@ -179,13 +179,13 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
     // Check if hero can melee attack based on location and marching order
     const meleeCheck = canHeroMeleeAttack(state, heroIndex, { allowRearWhenPartyFirst });
     if (!meleeCheck.canMelee) {
-      addToCombatLog(`❌ ${hero.name} cannot melee attack: ${meleeCheck.reason}`);
+      addToCombatLog(` ${hero.name} cannot melee attack: ${meleeCheck.reason}`);
       return;
     }
 
     // Prevent multiple melee attacks per hero per round
     if (attackedThisRound[heroIndex]) {
-      addToCombatLog(`⚔️ ${hero.name} has already attacked this round.`);
+      addToCombatLog(`️ ${hero.name} has already attacked this round.`);
       return;
     }
 
@@ -273,7 +273,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       if (newHP <= 0 && hero.hp > 0) {
         // Trigger save roll
         setPendingSave({ heroIdx: heroIndex, damageSource: 'monster' });
-        addToCombatLog(`💀 ${hero.name} takes lethal damage! SAVE ROLL needed!`);
+        addToCombatLog(` ${hero.name} takes lethal damage! SAVE ROLL needed!`);
       } else {
         dispatch({ type: 'UPD_HERO', i: heroIndex, u: { hp: newHP } });
       }
@@ -322,7 +322,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
         setShowCombatModule(true);
       } else {
         // No initiative set: leave InitiativePhase visible so player can choose.
-        addToCombatLog('🔎 Choose initiative before starting the round.');
+        addToCombatLog(' Choose initiative before starting the round.');
         return;
       }
     } else {
@@ -446,7 +446,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
     
     // Check if monster defeated
     if (newHP === 0 && monster.hp > 0) {
-      addToCombatLog(`💀 ${monster.name} defeated!`);
+      addToCombatLog(` ${monster.name} defeated!`);
   try { sfx.play('treasure', { volume: 0.9 }); } catch (e) {}
     }
   }, [state.monsters, dispatch, addToCombatLog]);
@@ -576,7 +576,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       {pendingSave && (
         <div id="combat_save_modal" className="bg-red-900 border-2 border-red-500 rounded p-3 animate-pulse">
           <div id="combat_save_title" className="text-red-300 font-bold text-center mb-2">
-            💀 SAVE ROLL REQUIRED!
+             SAVE ROLL REQUIRED!
           </div>
           <div className="text-white text-center text-sm mb-3">
             {state.party[pendingSave.heroIdx]?.name} must make a save roll to survive!
@@ -616,7 +616,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                 onClick={handleLuckReroll}
                 className="w-full bg-green-600 hover:bg-green-500 py-1 rounded text-sm"
               >
-                🍀 Use Luck for Re-roll
+                 Use Luck for Re-roll
               </button>
             )}
           </div>
@@ -656,7 +656,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
             >
               <div id={`monster_${index}_header`} className="flex justify-between items-center">
                 <div id={`monster_${index}_info`} className="flex items-center gap-1">
-                  {isMinor && <span className="text-blue-400 text-xs">👥</span>}
+                  {isMinor && <span className="text-blue-400 text-xs"></span>}
                   {!isMinor && <span className="text-red-400 text-xs"></span>}
                   <div className="flex items-center gap-2">
                     <span id={`monster_${index}_name`} className="text-amber-400 font-bold text-xs">{monster.name}</span>
@@ -687,7 +687,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                     </span>
                   )}
                   {monster.levelReduced && (
-                    <span id={`monster_${index}_level_reduced`} className="text-yellow-400 text-xs" title="Level reduced due to wounds">📉</span>
+                    <span id={`monster_${index}_level_reduced`} className="text-yellow-400 text-xs" title="Level reduced due to wounds"></span>
                   )}
                 </div>
                 <button
@@ -740,7 +740,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
               />
               {isDefeated && (
                 <div className="text-green-400 text-xs mt-0.5">
-                  💀 {monster.fled ? 'Fled!' : 'Defeated!'}
+                   {monster.fled ? 'Fled!' : 'Defeated!'}
                 </div>
               )}
             </div>
@@ -780,7 +780,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       {/* Ranged Volley Modal - appears before combat module when party attacks first and ranged heroes exist */}
       {showRangedVolley && (
         <div className="bg-slate-900 border-2 border-slate-700 rounded p-3">
-          <div className="text-amber-300 font-bold text-center mb-2">🏹 Pre-Initiative Ranged Volley</div>
+          <div className="text-amber-300 font-bold text-center mb-2"> Pre-Initiative Ranged Volley</div>
           <div className="text-white text-sm mb-2">Select each hero with a ranged weapon to fire one free attack before normal combat begins. Close when finished.</div>
           <div className="flex flex-col gap-2">
             {state.party.map((h, idx) => {
@@ -832,7 +832,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                 return (
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <div className="text-orange-400 font-bold text-sm">⚔️ Attack (L{computedFoeLevel}+)</div>
+                      <div className="text-orange-400 font-bold text-sm">️ Attack (L{computedFoeLevel}+)</div>
                       <button
                         onClick={handleNewRound}
                         className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
@@ -884,12 +884,12 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                           title={!canMelee ? meleeCheck.reason : ''}
                         >
                           <span className="font-bold">{hero.name}</span>
-                          {!meleeCheck.canMelee && <span className="text-xs ml-2 text-amber-400">🏹 Ranged Only</span>}
-                          {attackedThisRound[index] && <span className="text-xs ml-2 text-rose-300">⚔️ Attacked</span>}
+                          {!meleeCheck.canMelee && <span className="text-xs ml-2 text-amber-400"> Ranged Only</span>}
+                          {attackedThisRound[index] && <span className="text-xs ml-2 text-rose-300">️ Attacked</span>}
                           {canMelee && <span className="text-xs ml-2 text-slate-300">{weaponName}</span>}
                           <span className="text-xs ml-2">({modLabel})</span>
-                          {abilities.rageActive && <span className="ml-1 text-red-300">😤</span>}
-                          {hero.status?.blessed && <span className="ml-1 text-yellow-300">✨</span>}
+                          {abilities.rageActive && <span className="ml-1 text-red-300"></span>}
+                          {hero.status?.blessed && <span className="ml-1 text-yellow-300"></span>}
                         </button>
                       );
                     })}
@@ -906,7 +906,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                 return (
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <div className="text-red-400 font-bold text-sm">🛡️ Defend (L{computedFoeLevel + 1}+)</div>
+                      <div className="text-red-400 font-bold text-sm">️ Defend (L{computedFoeLevel + 1}+)</div>
                       <button
                         onClick={handleNewRound}
                         className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"

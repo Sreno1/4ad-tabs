@@ -36,7 +36,7 @@ export function useCombatFlow(state, dispatch) {
     setMonsterReaction(result);
 
     // Log the result
-    dispatch(logMessage(`🎲 ${monster.name} Reaction (${result.roll}): ${result.name} - ${result.description}`, 'combat'));
+    dispatch(logMessage(` ${monster.name} Reaction (${result.roll}): ${result.name} - ${result.description}`, 'combat'));
 
     // Determine initiative based on reaction
     if (result.hostile === true) {
@@ -85,9 +85,9 @@ export function useCombatFlow(state, dispatch) {
   // Handle combat victory
   const handleCombatVictory = () => {
     setCombatPhase(COMBAT_PHASES.VICTORY);
-    dispatch(logMessage(`🎉 Combat Victory!`, 'combat'));
+    dispatch(logMessage(` Combat Victory!`, 'combat'));
     try {
-      dispatch({ type: 'SHOW_MODAL', message: '🎉 Combat Victory! Roll for treasure.', msgType: 'success', autoClose: 3500 });
+      dispatch({ type: 'SHOW_MODAL', message: ' Combat Victory! Roll for treasure.', msgType: 'success', autoClose: 3500 });
     } catch (e) {}
 
     // Award XP for all defeated monsters

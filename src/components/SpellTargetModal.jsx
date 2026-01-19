@@ -21,7 +21,7 @@ export default function SpellTargetModal({ spell, caster, party, monsters, onCon
               {monsters.map((m, i) => (
                 <button key={i} className={`w-full text-left p-2 rounded ${selectedMonsterIdx===i? 'bg-slate-200' : 'hover:bg-slate-100'}`} onClick={() => setSelectedMonsterIdx(i)}>
                   {m.name} {m.count !== undefined ? `(${m.count})` : `HP:${m.hp}/${m.maxHp}`}
-                  {m.status && (m.status.asleep ? ' 😴' : '')}
+                  {m.status && (m.status.asleep ? ' ' : '')}
                 </button>
               ))}
             </div>

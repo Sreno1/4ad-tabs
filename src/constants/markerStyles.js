@@ -21,11 +21,11 @@ const MARKER_STYLES = {
   },
   cleared: { char: '⊙', color: '#22c55e' },
   entrance: { char: '⌂', color: '#06b6d4' },
-  exit: { char: '⛨', color: '#10b981' },
-  clear: { char: '✖', color: '#ef4444' },
+  exit: { char: '', color: '#10b981' },
+  clear: { char: '', color: '#ef4444' },
   note: {
     color: '#a3e635', // lime-400
-    char: '✎',
+    char: '',
   },
 };
 

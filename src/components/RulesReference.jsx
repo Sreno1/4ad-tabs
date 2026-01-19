@@ -341,7 +341,7 @@ export default function RulesReference({ isOpen, onClose }) {
 
           {/* Quick Tips */}
           <div id="rules_reference_tips_section" className="bg-amber-900/30 border border-amber-700/50 rounded-lg p-3 mt-4">
-            <h3 id="rules_reference_tips_title" className="text-sm font-bold text-amber-400 mb-2">💡 Quick Tips</h3>
+            <h3 id="rules_reference_tips_title" className="text-sm font-bold text-amber-400 mb-2"> Quick Tips</h3>
             <ul id="rules_reference_tips_list" className="text-xs text-slate-300 space-y-1 list-disc list-inside">
               <li>Hover over buttons and labels for tooltips</li>
               <li>Combat: attack modifiers are automatically calculated</li>
@@ -354,7 +354,7 @@ export default function RulesReference({ isOpen, onClose }) {
         
         {/* Footer */}
         <div id="rules_reference_modal_footer" className="p-3 border-t border-slate-700 text-center text-xs text-slate-500">
-          Four Against Darkness © Andrea Sfiligoi. This is a digital companion app.
+          Four Against Darkness  Andrea Sfiligoi. This is a digital companion app.
         </div>
       </div>
     </div>

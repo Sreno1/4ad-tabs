@@ -237,7 +237,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   const handleDoorToggle = useCallback((x, y, edge) => {
     const envKey = normalizeEnvironment(state.currentEnvironment);
     if (envKey === 'caverns' || envKey === 'fungal_grottoes') {
-      dispatch(logMessage(`🚫 Doors cannot be placed in ${envKey === 'caverns' ? 'Caverns' : 'Fungal Grottoes'}.`, 'exploration'));
+      dispatch(logMessage(` Doors cannot be placed in ${envKey === 'caverns' ? 'Caverns' : 'Fungal Grottoes'}.`, 'exploration'));
       return;
     }
     dispatch({ type: 'TOGGLE_DOOR', x, y, edge });

@@ -17,7 +17,7 @@ export default function BossMechanics({ state, dispatch }) {
     const roll = d6();
     const result = checkForBoss(state.majorFoes || 0, roll, { isLastTile });
     setBossCheckResult(result);
-  dispatch({ type: "LOG", t: `${formatRollPrefix(roll)}🎲 Boss Check: ${result.message}` });
+  dispatch({ type: "LOG", t: `${formatRollPrefix(roll)} Boss Check: ${result.message}` });
 
     if (result.isBoss) {
       // Spawn the boss
@@ -110,7 +110,7 @@ export default function BossMechanics({ state, dispatch }) {
           </div>
           {bossCheckResult.isBoss && (
             <div className="text-red-300 mt-1">
-              👑 BOSS: +1 Life, +1 Attack, 3× Treasure!
+               BOSS: +1 Life, +1 Attack, 3× Treasure!
             </div>
           )}
         </div>

@@ -279,7 +279,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
           {/* Migration Warning */}
           {isOldFormat && (
             <div className="bg-yellow-900 border-2 border-yellow-500 rounded p-3">
-              <div className="text-yellow-300 font-bold text-sm mb-2">⚠️ Old Save Format Detected</div>
+              <div className="text-yellow-300 font-bold text-sm mb-2">️ Old Save Format Detected</div>
               <div className="text-yellow-200 text-xs mb-2">
                 This character uses the old equipment system. Click below to migrate to the new format.
               </div>
@@ -315,7 +315,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
 
           {/* Equipment Bonuses Summary */}
           <div id="equipment_bonuses_section" className="bg-slate-800 rounded p-3">
-            <div id="equipment_bonuses_title" className="text-green-400 font-bold text-sm mb-2">📊 Equipment Bonuses</div>
+            <div id="equipment_bonuses_title" className="text-green-400 font-bold text-sm mb-2"> Equipment Bonuses</div>
             <div id="equipment_bonuses_grid" className="grid grid-cols-4 gap-2 text-xs">
               <div id="equipment_bonus_attack" className="bg-slate-700 p-2 rounded">
                 <div className="text-slate-400">Attack</div>
@@ -339,7 +339,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
           {/* Equipped Items */}
           <div id="equipment_equipped_section" className="bg-slate-800 rounded p-3">
             <div id="equipment_equipped_header" className="flex justify-between items-center mb-2">
-              <div id="equipment_equipped_title" className="text-amber-400 font-bold text-sm">🎒 Equipped ({equipped.length})</div>
+              <div id="equipment_equipped_title" className="text-amber-400 font-bold text-sm"> Equipped ({equipped.length})</div>
               {equipped.length === 0 && (
                 <button
                   id="equipment_starting_gear_button"
@@ -411,7 +411,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
           {/* Inventory */}
           <div id="equipment_inventory_section" className="bg-slate-800 rounded p-3">
             <div id="equipment_inventory_header" className="flex items-center justify-between mb-2">
-              <div id="equipment_inventory_title" className="text-amber-400 font-bold text-sm">🎁 Inventory ({inventory.length})</div>
+              <div id="equipment_inventory_title" className="text-amber-400 font-bold text-sm"> Inventory ({inventory.length})</div>
               <div id="equipment_inventory_buttons" className="flex gap-2">
                 <button id="equipment_new_item_button" onClick={openNewItemModal} className="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs">New Item</button>
                 <button id="equipment_new_scroll_button" onClick={openNewScrollModal} className="bg-purple-600 hover:bg-purple-500 px-2 py-1 rounded text-xs">New Scroll</button>
@@ -580,7 +580,7 @@ export default function Equipment({ isOpen, state, dispatch, onClose }) {
           {/* Shop */}
           <div id="equipment_shop_section" className="bg-slate-800 rounded p-3">
             <div id="equipment_shop_header" className="flex justify-between items-center mb-2">
-              <div id="equipment_shop_title" className="text-amber-400 font-bold text-sm">🏪 Shop (Gold: {state.gold})</div>
+              <div id="equipment_shop_title" className="text-amber-400 font-bold text-sm"> Shop (Gold: {state.gold})</div>
               <button
                 id="equipment_shop_toggle_button"
                 onClick={() => setShowShop(!showShop)}

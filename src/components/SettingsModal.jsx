@@ -133,7 +133,7 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
       >
         {/* Header */}
         <div id="settings_modal_header" className="flex justify-between items-center p-4 border-b border-slate-700">
-          <h2 id="settings_modal_title" className="text-lg font-bold text-amber-400">⚙️ Settings</h2>
+          <h2 id="settings_modal_title" className="text-lg font-bold text-amber-400">️ Settings</h2>
           <button
             id="settings_modal_close_button"
             onClick={onClose}
@@ -175,8 +175,8 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                 </button>
               ))}            </div>
             <p id="settings_theme_help" className="text-xs text-slate-500">
-              {theme === 'rpgui' && '🎮 RPGUI theme applies retro 8-bit styling.'}
-              {theme === 'doodle' && '✏️ Doodle theme uses hand-drawn borders and playful style.'}
+              {theme === 'rpgui' && ' RPGUI theme applies retro 8-bit styling.'}
+              {theme === 'doodle' && '️ Doodle theme uses hand-drawn borders and playful style.'}
             </p>
           </div>
 
@@ -274,9 +274,9 @@ export default function SettingsModal({ isOpen, onClose, state, dispatch }) {
                 aria-controls="settings_log_archive_list"
               >
                 <span id="settings_log_archive_count" className="text-slate-400">
-                  📚 Archived: {archiveCount} logs ({totalArchivedEntries} entries)
+                   Archived: {archiveCount} logs ({totalArchivedEntries} entries)
                 </span>
-                <span className="text-slate-500">{showArchive ? '▼' : '▶'}</span>
+                <span className="text-slate-500">{showArchive ? '▼' : ''}</span>
               </button>
 
               {showArchive && state.logArchive && state.logArchive.length > 0 && (
