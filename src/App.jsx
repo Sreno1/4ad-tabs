@@ -53,6 +53,7 @@ import {
   clearActiveCampaign,
 } from "./utils/campaignStorage.js";
 import { initialState } from "./state/initialState.js";
+import ContextMenu from "./components/ContextMenu.jsx";
 
 export default function App() {
   const [state, dispatch, campaignControls] = useGameState();
@@ -529,6 +530,28 @@ export default function App() {
     );
   }
 
+  // Context menu state (lifted from Dungeon)
+  const [contextMenu, setContextMenu] = useState(null); // {xPx, yPx, cellX, cellY, ...}
+  const [contextSelectedTile, setContextSelectedTile] = useState(null); // {x, y}
+
+  // Debug: log contextMenu and items
+  React.useEffect(() => {
+    console.log('App.jsx contextMenu:', contextMenu);
+    if (contextMenu && contextMenu.items) {
+      console.log('App.jsx contextMenu.items:', contextMenu.items);
+    }
+  }, [contextMenu]);
+
+  // Handlers to open/close context menu
+  const openContextMenu = useCallback((menu) => {
+    setContextMenu(menu);
+    setContextSelectedTile(menu ? { x: menu.cellX, y: menu.cellY } : null);
+  }, []);
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null);
+    setContextSelectedTile(null);
+  }, []);
+
   return (
     <div id="app_root" className="h-screen bg-slate-900 text-white flex flex-col overflow-hidden">
       {/* Global result modal for success/failure/treasure messages */}
@@ -815,6 +838,10 @@ export default function App() {
                               }
                               requestMiddleView(nextView);
                             }}
+                            openContextMenu={openContextMenu}
+                            closeContextMenu={closeContextMenu}
+                            contextSelectedTile={contextSelectedTile}
+                            contextMenu={contextMenu}
                           />
                         </div>
                       </div>
@@ -943,6 +970,15 @@ export default function App() {
 
       {/* Floating Dice Roller: fixed bottom-right on desktop */}
       <FloatingDice inline={false} onShowFeatures={(key) => { setActiveDungeonFeature(key); setShowDungeonFeatures(true); }} onShowAbilities={() => setShowAbilities(true)} state={state} dispatch={dispatch} />
+      {/* Render context menu at root level so it is not clipped by overflow/scroll containers */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.xPx}
+          y={contextMenu.yPx}
+          items={contextMenu.items}
+          onClose={closeContextMenu}
+        />
+      )}
     </div>
   );
 }
