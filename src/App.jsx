@@ -534,14 +534,6 @@ export default function App() {
   const [contextMenu, setContextMenu] = useState(null); // {xPx, yPx, cellX, cellY, ...}
   const [contextSelectedTile, setContextSelectedTile] = useState(null); // {x, y}
 
-  // Debug: log contextMenu and items
-  React.useEffect(() => {
-    console.log('App.jsx contextMenu:', contextMenu);
-    if (contextMenu && contextMenu.items) {
-      console.log('App.jsx contextMenu.items:', contextMenu.items);
-    }
-  }, [contextMenu]);
-
   // Handlers to open/close context menu
   const openContextMenu = useCallback((menu) => {
     setContextMenu(menu);

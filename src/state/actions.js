@@ -141,3 +141,9 @@ export const CLEAR_WANDERING_ENCOUNTER = 'CLEAR_WANDERING_ENCOUNTER';
 
 // Tile exploration
 export const MARK_TILE_SEARCHED = 'MARK_TILE_SEARCHED';
+
+// Weapon switching (turn cost)
+export const SWITCH_WEAPON = 'SWITCH_WEAPON';
+
+// Ranged engagement (first round restriction)
+export const SET_RANGED_ENGAGEMENT = 'SET_RANGED_ENGAGEMENT';

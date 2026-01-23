@@ -54,6 +54,16 @@ export const WEAPON_TYPES = {
     description: 'Silver-plated weapon. +1 vs lycanthropes',
     cost: 50
   },
+  masterwork_weapon: {
+    key: 'masterwork_weapon',
+    name: 'Masterwork Weapon',
+    category: 'weapon',
+    type: 'melee',
+    attackMod: 0,
+    explodeThreshold: 5, // Explodes on 5+ instead of 6+
+    description: 'Masterwork crafted weapon. Attack rolls explode on 5+ instead of 6+',
+    cost: 100
+  },
 
   // Ranged Weapons
   bow: {
@@ -502,4 +512,97 @@ export const getStartingEquipment = (classKey) => {
   };
 
   return startingGear[classKey] || ['hand_weapon'];
+};
+
+/**
+ * Get the active/equipped weapon for a hero
+ * @param {object} hero - Hero object
+ * @returns {object|null} Active weapon item or null
+ */
+export const getActiveWeapon = (hero) => {
+  if (!hero.equipment || !Array.isArray(hero.equipment) || hero.equipment.length === 0) {
+    return null;
+  }
+
+  // If hero has activeWeaponIdx, use that
+  if (typeof hero.activeWeaponIdx === 'number') {
+    const weaponKey = hero.equipment[hero.activeWeaponIdx];
+    const weapon = getEquipment(weaponKey);
+    if (weapon && weapon.category === 'weapon') {
+      return weapon;
+    }
+  }
+
+  // Otherwise, return first weapon in equipment
+  for (const itemKey of hero.equipment) {
+    const item = getEquipment(itemKey);
+    if (item && item.category === 'weapon') {
+      return item;
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Check if hero is unarmed (has no weapon equipped)
+ * Per 4AD rules (combat.txt p.66): Unarmed PCs have -2 on Attack rolls
+ * @param {object} hero - Hero object
+ * @returns {boolean} True if hero has no weapon
+ */
+export const isHeroUnarmed = (hero) => {
+  const activeWeapon = getActiveWeapon(hero);
+  return activeWeapon === null;
+};
+
+/**
+ * Get all weapons carried by a hero
+ * @param {object} hero - Hero object
+ * @returns {array} Array of weapon items with their equipment indices
+ */
+export const getAllWeapons = (hero) => {
+  if (!hero.equipment || !Array.isArray(hero.equipment)) {
+    return [];
+  }
+
+  const weapons = [];
+  hero.equipment.forEach((itemKey, idx) => {
+    const item = getEquipment(itemKey);
+    if (item && item.category === 'weapon') {
+      weapons.push({ item, equipmentIdx: idx, itemKey });
+    }
+  });
+
+  return weapons;
+};
+
+/**
+ * Check if switching to a weapon requires a turn cost
+ * @param {object} currentWeapon - Currently active weapon
+ * @param {object} newWeapon - Weapon to switch to
+ * @returns {boolean} True if switching costs a turn
+ */
+export const weaponSwitchCostsTurn = (currentWeapon, newWeapon) => {
+  // No cost if no current weapon (first equip)
+  if (!currentWeapon) return false;
+
+  // No cost if both are same weapon
+  if (currentWeapon.key === newWeapon.key) return false;
+
+  // Switching between melee weapons: costs a turn
+  if (currentWeapon.type === 'melee' && newWeapon.type === 'melee') {
+    return true;
+  }
+
+  // Switching between ranged and melee: costs a turn
+  if (currentWeapon.type !== newWeapon.type) {
+    return true;
+  }
+
+  // Switching between different ranged weapons: costs a turn
+  if (currentWeapon.type === 'ranged' && newWeapon.type === 'ranged') {
+    return true;
+  }
+
+  return false;
 };

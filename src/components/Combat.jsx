@@ -3,7 +3,7 @@ import { d6 } from '../utils/dice.js';
 import sfx from '../utils/sfx.js';
 import { updateMonster, deleteMonster } from '../state/actionCreators.js';
 import { MONSTER_ABILITIES } from '../data/monsters.js';
-import { getEquipment, hasEquipment } from '../data/equipment.js';
+import { getEquipment, hasEquipment, getActiveWeapon, getAllWeapons, weaponSwitchCostsTurn, isHeroUnarmed } from '../data/equipment.js';
 import { hasDarkvision, getFlurryAttacks, getPrayerPoints, getTrickPoints, getMaxPanache, getSpellSlots } from '../data/classes.js';
 import { SPELLS, getAvailableSpells } from '../data/spells.js';
 import {
@@ -35,11 +35,12 @@ import {
   getRemainingSpells,
   processMinorFoeAttack,
   processMajorFoeAttack,
+  monsterHatesHero,
 } from '../utils/gameActions/index.js';
 import MonsterReaction from './combat/MonsterReaction';
 import InitiativePhase from './combat/phases/InitiativePhase';
 import VictoryPhase from './combat/phases/VictoryPhase';
-import { canHeroMeleeAttack, getNarrowCorridorPenalty, getEquippedMeleeWeapon } from '../utils/combatLocationHelpers.js';
+import { canHeroMeleeAttack, getNarrowCorridorPenalty, getEquippedMeleeWeapon, canUseRangedWeapon } from '../utils/combatLocationHelpers.js';
 
 export default function Combat({ state, dispatch, selectedHero = 0, setSelectedHero = () => {}, handleRollReaction = () => {} }) {
   // Local combat log (for UI) and helper to forward messages to global log
@@ -75,6 +76,9 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
   const [showAbilities, setShowAbilities] = useState(null);
   const [showSpells, setShowSpells] = useState(null);
   const [shieldsDisabledFirst, setShieldsDisabledFirst] = useState(false);
+  const [showWeaponSwitch, setShowWeaponSwitch] = useState(null);
+  const [subdualAttackEnabled, setSubdualAttackEnabled] = useState({}); // Per-hero subdual toggle
+  const [fleeingAttacksUsed, setFleeingAttacksUsed] = useState({}); // Track which heroes attacked fleeing foes
 
   // Ensure new encounters always start at the InitiativePhase: if monsters were 0 and now >0,
   // reset combat module visibility and initiative so player can choose.
@@ -89,8 +93,10 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       setShowRangedVolley(false);
       setRoundStartsWith('attack');
       setAttackedThisRound({});
-  // Clear any wandering encounter metadata that might force ambush/monster-first
-  try { dispatch({ type: 'CLEAR_WANDERING_ENCOUNTER' }); } catch (e) {}
+      // Clear any wandering encounter metadata that might force ambush/monster-first
+      try { dispatch({ type: 'CLEAR_WANDERING_ENCOUNTER' }); } catch (e) {}
+      // Reset ranged engagement flag for new encounter
+      try { dispatch({ type: 'SET_RANGED_ENGAGEMENT', engaged: false }); } catch (e) {}
       let surpriseApplied = false;
       const wanderingMeta = state?.combatMeta?.wanderingEncounter;
       if (!wanderingMeta) {
@@ -137,18 +143,20 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
         awardXP(dispatch, monster, state.party);
       }
     });
-    
+
     // Check for level ups
     state.party.forEach((hero, idx) => {
       if (hero.hp > 0) {
         checkLevelUp(dispatch, hero, idx);
       }
     });
-    
+
     dispatch({ type: 'CLEAR_MONSTERS' });
     clearCombatLog();
     setCombatInitiative(null);
     setTargetMonsterIdx(null);
+    // Reset ranged engagement flag
+    dispatch({ type: 'SET_RANGED_ENGAGEMENT', engaged: false });
     dispatch({ type: 'LOG', t: '--- Encounter ended ---' });
   }, [state.monsters, state.party, dispatch, clearCombatLog]);
 
@@ -174,16 +182,31 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
     const hero = state.party[heroIndex];
     if (!hero || hero.hp <= 0) return;
 
-    // Determine if rear-line heroes should be allowed to melee because the party attacks first
-    const allowRearWhenPartyFirst = combatInitiative && !combatInitiative.monsterFirst && (showRangedVolley || roundStartsWith === 'attack');
-    // Check if hero can melee attack based on location and marching order
-    const meleeCheck = canHeroMeleeAttack(state, heroIndex, { allowRearWhenPartyFirst });
-    if (!meleeCheck.canMelee) {
-      addToCombatLog(` ${hero.name} cannot melee attack: ${meleeCheck.reason}`);
-      return;
+    // Get active weapon to determine if this is a ranged attack
+    const activeWeapon = getActiveWeapon(hero);
+    const isRangedAttack = activeWeapon && activeWeapon.type === 'ranged';
+
+    // Check ranged weapon restrictions
+    if (isRangedAttack) {
+      const rangedCheck = canUseRangedWeapon(state, { preInitiativeRanged: false });
+      if (!rangedCheck.allowed) {
+        addToCombatLog(` ${hero.name} cannot use ranged weapon: ${rangedCheck.reason}`);
+        return;
+      }
     }
 
-    // Prevent multiple melee attacks per hero per round
+    // Determine if rear-line heroes should be allowed to melee because the party attacks first
+    const allowRearWhenPartyFirst = combatInitiative && !combatInitiative.monsterFirst && (showRangedVolley || roundStartsWith === 'attack');
+    // Check if hero can melee attack based on location and marching order (only for melee attacks)
+    if (!isRangedAttack) {
+      const meleeCheck = canHeroMeleeAttack(state, heroIndex, { allowRearWhenPartyFirst });
+      if (!meleeCheck.canMelee) {
+        addToCombatLog(` ${hero.name} cannot melee attack: ${meleeCheck.reason}`);
+        return;
+      }
+    }
+
+    // Prevent multiple attacks per hero per round
     if (attackedThisRound[heroIndex]) {
       addToCombatLog(`️ ${hero.name} has already attacked this round.`);
       return;
@@ -213,7 +236,11 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       location: state.currentCombatLocation,
       // Rogue bonus: outnumbers Minor Foes if party size > foe count
       rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(monster) &&
-        state.party.filter(h => h.hp > 0).length > (monster.count || 1)
+        state.party.filter(h => h.hp > 0).length > (monster.count || 1),
+      // Subdual attack toggle
+      subdual: subdualAttackEnabled[heroIndex] || false,
+      // Automatic unarmed detection (combat.txt p.66: -2 attack if no weapon)
+      unarmed: isHeroUnarmed(hero)
     };
     
   // Play generic attack sound
@@ -239,6 +266,69 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       dispatch({ type: 'SET_HERO_STATUS', heroIdx: heroIndex, statusKey: 'blessed', value: false });
     }
   }, [state.party, state.abilities, state.monsters, getTargetMonster, isMinorFoe, dispatch, showCombatModule]);
+
+  // Handle attacking fleeing foes (free attack at +1)
+  const handleAttackFleeingFoe = useCallback((heroIndex, monsterIdx) => {
+    const hero = state.party[heroIndex];
+    const monster = state.monsters[monsterIdx];
+    if (!hero || hero.hp <= 0 || !monster) return;
+
+    // Check if already attacked this fleeing foe
+    if (fleeingAttacksUsed[heroIndex]) {
+      addToCombatLog(`️ ${hero.name} has already attacked fleeing foes this round.`);
+      return;
+    }
+
+    // Get active weapon
+    const activeWeapon = getActiveWeapon(hero);
+    const isRangedAttack = activeWeapon && activeWeapon.type === 'ranged';
+
+    // Check corridor restrictions (combat.txt p.116)
+    const location = state.currentCombatLocation;
+    if (location && location.type === 'corridor' && !isRangedAttack) {
+      const marchingOrder = state.marchingOrder || [0,1,2,3];
+      const position = marchingOrder.indexOf(heroIndex);
+      if (position > 1) {
+        addToCombatLog(` ${hero.name} cannot attack fleeing foes from rear position in corridor. Use ranged weapons or spells.`);
+        return;
+      }
+    }
+
+    // Build attack options with fleeing foe bonus
+    const heroAbilities = state.abilities?.[heroIndex] || {};
+    const options = {
+      rageActive: heroAbilities.rageActive,
+      blessed: hero.status?.blessed,
+      hasLightSource: effectiveHasLight,
+      location: state.currentCombatLocation,
+      rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(monster) &&
+        state.party.filter(h => h.hp > 0).length > (monster.count || 1),
+      subdual: subdualAttackEnabled[heroIndex] || false,
+      attackingFleeingFoe: true, // +1 bonus
+      unarmed: isHeroUnarmed(hero) // Automatic unarmed detection
+    };
+
+    try { sfx.play('attack', { volume: 0.8 }); } catch (e) {}
+
+    if (isMinorFoe(monster)) {
+      const foe = {
+        ...monster,
+        count: monster.count || 1,
+        initialCount: monster.initialCount || monster.count || 1
+      };
+      processMinorFoeAttack(dispatch, hero, heroIndex, foe, monsterIdx, options);
+    } else {
+      processMajorFoeAttack(dispatch, hero, heroIndex, monster, monsterIdx, options);
+    }
+
+    // Mark this hero as having used their fleeing attack
+    setFleeingAttacksUsed(prev => ({ ...prev, [heroIndex]: true }));
+
+    // Clear blessed status after use
+    if (hero.status?.blessed) {
+      dispatch({ type: 'SET_HERO_STATUS', heroIdx: heroIndex, statusKey: 'blessed', value: false });
+    }
+  }, [state, fleeingAttacksUsed, subdualAttackEnabled, effectiveHasLight, getActiveWeapon, isMinorFoe, dispatch, addToCombatLog]);
 
   const handleDefense = useCallback((heroIndex) => {
     const hero = state.party[heroIndex];
@@ -326,13 +416,31 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
         return;
       }
     } else {
-      // Alternate attack/defend each new round
-      setRoundStartsWith(prev => (prev === 'attack' ? 'defend' : 'attack'));
+      // Maintain the same initiative order throughout the encounter
+      const start = combatInitiative.monsterFirst ? 'defend' : 'attack';
+      setRoundStartsWith(start);
     }
-  // Reset per-round attack markers
-  setAttackedThisRound({});
-  addToCombatLog('--- New Round ---');
-  }, [state.monsters, dispatch, addToCombatLog, combatInitiative, showCombatModule]);
+    // Reset per-round attack markers
+    setAttackedThisRound({});
+    // Clear weapon switch turn cost flags for all heroes
+    state.party.forEach((hero, idx) => {
+      if (hero.switchedWeaponThisTurn) {
+        dispatch({ type: 'UPD_HERO', i: idx, u: { switchedWeaponThisTurn: false } });
+      }
+    });
+
+    // Set ranged engagement flag for room combat (melee range closed after first round)
+    const location = state.currentCombatLocation;
+    if (!location || location.type === 'room') {
+      // If this is the start of round 2+, mark ranged as engaged (melee range closed)
+      if (!state.combatMeta?.rangedEngaged) {
+        dispatch({ type: 'SET_RANGED_ENGAGEMENT', engaged: true });
+        addToCombatLog('--- Melee range closed - ranged weapons no longer usable ---');
+      }
+    }
+
+    addToCombatLog('--- New Round ---');
+  }, [state.monsters, state.party, state.currentCombatLocation, state.combatMeta, dispatch, addToCombatLog, combatInitiative, showCombatModule]);
 
   // If initiative is set externally (InitiativePhase), reveal the appropriate module automatically.
   // However, if the party attacks first and there are ranged heroes, defer showing the main combat module
@@ -537,6 +645,40 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
     setSpellTargeting(null);
   }, []);
 
+  // Weapon switching
+  const handleSwitchWeapon = useCallback((heroIdx, equipmentIdx) => {
+    const hero = state.party[heroIdx];
+    if (!hero || hero.hp <= 0) return;
+
+    const currentWeapon = getActiveWeapon(hero);
+    const newWeaponKey = hero.equipment[equipmentIdx];
+    const newWeapon = getEquipment(newWeaponKey);
+
+    if (!newWeapon || newWeapon.category !== 'weapon') {
+      addToCombatLog(`Cannot switch to ${newWeaponKey}: not a weapon`);
+      return;
+    }
+
+    // Check if switching costs a turn
+    const costsTurn = weaponSwitchCostsTurn(currentWeapon, newWeapon);
+
+    if (costsTurn) {
+      // Mark hero as having used their action this turn
+      setAttackedThisRound(prev => ({ ...prev, [heroIdx]: true }));
+      addToCombatLog(`${hero.name} switches to ${newWeapon.name} (costs 1 turn)`);
+    } else {
+      addToCombatLog(`${hero.name} switches to ${newWeapon.name}`);
+    }
+
+    dispatch({
+      type: 'SWITCH_WEAPON',
+      heroIdx,
+      equipmentIdx
+    });
+
+    setShowWeaponSwitch(null);
+  }, [state.party, dispatch, addToCombatLog]);
+
   // Get ability usage for a hero
   const getAbilityUsage = useCallback((heroIdx) => {
     return state.abilities?.[heroIdx] || {};
@@ -567,9 +709,19 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
   // Combat location flags (used to display compact tag in Active Monsters panel)
   const combatIsCorridor = state.currentCombatLocation && state.currentCombatLocation.type === 'corridor';
   const combatIsNarrow = state.currentCombatLocation && state.currentCombatLocation.width === 'narrow';
+  const rangedRestricted = state.combatMeta?.rangedEngaged && (!state.currentCombatLocation || state.currentCombatLocation.type === 'room');
 
   return (
     <section id="combat_section" className="space-y-2">
+      {/* Ranged Restriction Warning */}
+      {rangedRestricted && (
+        <div className="bg-red-900 border border-red-500 rounded p-2 text-center">
+          <div className="text-red-200 text-xs font-bold">
+            ⚔️ MELEE RANGE CLOSED - Ranged weapons cannot be used (room combat only)
+          </div>
+        </div>
+      )}
+
   {/* Combat location is shown on the Active Monsters panel; removed inline location block here to avoid duplicate labels */}
 
       {/* Save Roll Modal */}
@@ -689,6 +841,16 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                   {monster.levelReduced && (
                     <span id={`monster_${index}_level_reduced`} className="text-yellow-400 text-xs" title="Level reduced due to wounds"></span>
                   )}
+                  {monster.template && monster.template.hates && (
+                    <span className="text-red-400 text-xs" title={`Hates ${monster.template.hates}s - will target them first for extra attacks`}>
+                       Hates {monster.template.hates}s
+                    </span>
+                  )}
+                  {monster.template && monster.template.special && Array.isArray(monster.template.special) && monster.template.special.includes('undead') && (
+                    <span className="text-red-400 text-xs" title="Undead - hates clerics and will target them first for extra attacks">
+                       Hates clerics
+                    </span>
+                  )}
                 </div>
                 <button
                   id={`monster_${index}_delete_button`}
@@ -740,7 +902,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
               />
               {isDefeated && (
                 <div className="text-green-400 text-xs mt-0.5">
-                   {monster.fled ? 'Fled!' : 'Defeated!'}
+                   {monster.fled ? 'Fled!' : monster.subdued ? '️ Subdued! (Can be tied)' : 'Defeated!'}
                 </div>
               )}
             </div>
@@ -749,10 +911,75 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
             <div className="text-slate-500 text-xs text-center py-2">No active monsters</div>
           )}
         </div>
-        
-        
+
+        {/* Fleeing Foes - Free Attacks */}
+        {(() => {
+          const fleeingMonsters = state.monsters.filter((m, idx) => {
+            // Monster is fleeing if it has fled:true OR has a flee/fleeIfOutnumbered reaction
+            const hasFledStatus = m.fled;
+            const hasFleeReaction = m.reaction && (m.reaction.name === 'Flee' ||
+              (m.reaction.name === 'Flee if Outnumbered' && m.reaction.hostile === false));
+            return (hasFledStatus || hasFleeReaction) && !isDefeated(m, idx);
+          });
+
+          if (fleeingMonsters.length === 0) return null;
+
+          return (
+            <div className="bg-amber-900/30 border border-amber-600 rounded p-2 mt-2">
+              <div className="text-amber-300 font-bold text-sm mb-1">️ Foes Fleeing!</div>
+              <div className="text-amber-200 text-xs mb-2">
+                PCs may perform one attack at +1 as they flee. In corridors: only positions 1-2 or ranged/spells.
+              </div>
+              {fleeingMonsters.map((monster, idx) => {
+                const monsterIdx = state.monsters.indexOf(monster);
+                return (
+                  <div key={monsterIdx} className="bg-slate-800 rounded p-2 mb-2">
+                    <div className="text-amber-400 font-bold text-xs mb-1">{monster.name}</div>
+                    <div className="flex flex-wrap gap-1">
+                      {state.party.map((hero, heroIdx) => {
+                        if (hero.hp <= 0) return null;
+                        const alreadyAttacked = fleeingAttacksUsed[heroIdx];
+
+                        return (
+                          <button
+                            key={heroIdx}
+                            onClick={() => handleAttackFleeingFoe(heroIdx, monsterIdx)}
+                            disabled={alreadyAttacked}
+                            className={`${
+                              alreadyAttacked
+                                ? 'bg-slate-700 text-slate-500'
+                                : 'bg-green-600 hover:bg-green-500 text-white'
+                            } px-2 py-0.5 rounded text-xs`}
+                          >
+                            {hero.name} {alreadyAttacked ? '✓' : '(+1)'}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              <button
+                onClick={() => {
+                  // Clear fleeing monsters that weren't killed
+                  state.monsters.forEach((m, idx) => {
+                    if (m.fled || (m.reaction && m.reaction.name === 'Flee')) {
+                      dispatch({ type: 'DEL_MONSTER', i: idx });
+                    }
+                  });
+                  setFleeingAttacksUsed({});
+                  addToCombatLog(' Fleeing foes escape!');
+                }}
+                className="bg-blue-600 hover:bg-blue-500 px-2 py-1 rounded text-xs w-full mt-1"
+              >
+                Let them flee
+              </button>
+            </div>
+          );
+        })()}
+
       </div>
-      
+
       {/* Initiative & Combat Order */}
       {!showCombatModule && (
         <InitiativePhase
@@ -764,6 +991,79 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
           dispatch={dispatch}
         />
       )}
+
+      {/* Weapon Switch Modal */}
+      {showWeaponSwitch !== null && (() => {
+        const hero = state.party[showWeaponSwitch];
+        const weapons = getAllWeapons(hero);
+        const currentWeapon = getActiveWeapon(hero);
+
+        if (weapons.length <= 1) {
+          return (
+            <div className="bg-slate-900 border-2 border-slate-700 rounded p-3">
+              <div className="text-amber-300 font-bold text-center mb-2">Switch Weapon</div>
+              <div className="text-white text-sm mb-2">{hero.name} only has one weapon equipped.</div>
+              <button
+                onClick={() => setShowWeaponSwitch(null)}
+                className="w-full bg-slate-600 hover:bg-slate-500 px-3 py-1 rounded text-sm"
+              >
+                Close
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div className="bg-slate-900 border-2 border-slate-700 rounded p-3">
+            <div className="text-amber-300 font-bold text-center mb-2">Switch Weapon - {hero.name}</div>
+            <div className="text-slate-400 text-xs mb-2">Switching weapons may cost a turn</div>
+            <div className="flex flex-col gap-2">
+              {weapons.map(({ item, equipmentIdx, itemKey }) => {
+                const isCurrent = currentWeapon && currentWeapon.key === item.key;
+                const costsTurn = weaponSwitchCostsTurn(currentWeapon, item);
+
+                return (
+                  <button
+                    key={equipmentIdx}
+                    onClick={() => handleSwitchWeapon(showWeaponSwitch, equipmentIdx)}
+                    disabled={isCurrent}
+                    className={`w-full px-3 py-2 rounded text-sm text-left ${
+                      isCurrent
+                        ? 'bg-amber-700 text-white cursor-default'
+                        : 'bg-slate-700 hover:bg-slate-600 text-white'
+                    }`}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="font-bold">{item.name}</div>
+                        <div className="text-xs text-slate-300">
+                          {item.type === 'melee' ? 'Melee' : 'Ranged'}
+                          {item.attackMod !== 0 && ` (${item.attackMod > 0 ? '+' : ''}${item.attackMod})`}
+                        </div>
+                      </div>
+                      <div className="text-xs">
+                        {isCurrent ? (
+                          <span className="text-amber-300">Active</span>
+                        ) : costsTurn ? (
+                          <span className="text-red-300">Costs Turn</span>
+                        ) : (
+                          <span className="text-green-300">Free</span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setShowWeaponSwitch(null)}
+              className="w-full mt-2 bg-slate-600 hover:bg-slate-500 px-3 py-1 rounded text-sm"
+            >
+              Cancel
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Spell Target Modal */}
       {spellTargeting && (
@@ -850,18 +1150,9 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                         location: state.currentCombatLocation,
                         rogueOutnumbers: hero.key === 'rogue' && isMinorFoe(targetMonster) && state.party.filter(h => h.hp > 0).length > (targetMonster?.count || 1)
                       };
-                      // Determine equipped weapon name (first weapon in equipment list) or 'Unarmed'
-                      let weaponName = 'Unarmed';
-                      if (Array.isArray(hero.equipment) && hero.equipment.length > 0) {
-                        const w = hero.equipment.find(k => {
-                          const it = getEquipment(k);
-                          return it && it.category === 'weapon';
-                        });
-                        if (w) {
-                          const it = getEquipment(w);
-                          if (it && it.name) weaponName = it.name;
-                        }
-                      }
+                      // Determine active weapon name or 'Unarmed'
+                      const activeWeapon = getActiveWeapon(hero);
+                      let weaponName = activeWeapon ? activeWeapon.name : 'Unarmed';
                       const atk = calculateEnhancedAttack(hero, computedFoeLevel, options);
                       const modLabel = atk.mod >= 0 ? `+${atk.mod}` : `${atk.mod}`;
 
@@ -871,26 +1162,74 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                       const meleeCheck = canHeroMeleeAttack(state, index, { allowRearWhenPartyFirst });
                       const canMelee = meleeCheck.canMelee && !attackedThisRound[index];
 
+                      const allHeroWeapons = getAllWeapons(hero);
+                      const hasMultipleWeapons = allHeroWeapons.length > 1;
+
+                      // Check if ranged weapon is restricted
+                      const heroActiveWeapon = getActiveWeapon(hero);
+                      const isRanged = heroActiveWeapon && heroActiveWeapon.type === 'ranged';
+                      const rangedCheck = isRanged ? canUseRangedWeapon(state, { preInitiativeRanged: false }) : { allowed: true };
+                      const canAttack = canMelee && rangedCheck.allowed && !attackedThisRound[index];
+
+                      // Check if any monster hates this hero (for UI indicator)
+                      const isHated = state.monsters && state.monsters.some(m => monsterHatesHero(m, hero));
+                      // Check if hero is unarmed
+                      const unarmed = isHeroUnarmed(hero);
+
                       return (
-                        <button
-                          key={hero.id || index}
-                          onClick={() => handleAttack(index)}
-                          disabled={hero.hp <= 0 || !canMelee}
-                          className={`w-full ${
-                            !canMelee
-                              ? 'bg-slate-700 hover:bg-slate-600 text-slate-400'
-                              : 'bg-orange-600 hover:bg-orange-500'
-                          } disabled:bg-slate-600 py-1 rounded text-sm mb-1 truncate relative`}
-                          title={!canMelee ? meleeCheck.reason : ''}
-                        >
-                          <span className="font-bold">{hero.name}</span>
-                          {!meleeCheck.canMelee && <span className="text-xs ml-2 text-amber-400"> Ranged Only</span>}
-                          {attackedThisRound[index] && <span className="text-xs ml-2 text-rose-300">️ Attacked</span>}
-                          {canMelee && <span className="text-xs ml-2 text-slate-300">{weaponName}</span>}
-                          <span className="text-xs ml-2">({modLabel})</span>
-                          {abilities.rageActive && <span className="ml-1 text-red-300"></span>}
-                          {hero.status?.blessed && <span className="ml-1 text-yellow-300"></span>}
-                        </button>
+                        <div key={hero.id || index} className="relative mb-1">
+                          <button
+                            onClick={() => handleAttack(index)}
+                            disabled={hero.hp <= 0 || !canAttack}
+                            className={`w-full ${
+                              !canAttack
+                                ? 'bg-slate-700 hover:bg-slate-600 text-slate-400'
+                                : 'bg-orange-600 hover:bg-orange-500'
+                            } disabled:bg-slate-600 py-1 rounded text-sm truncate`}
+                            title={!canMelee ? meleeCheck.reason : (!rangedCheck.allowed ? rangedCheck.reason : '')}
+                          >
+                            <span className="font-bold">{hero.name}</span>
+                            {isHated && <span className="text-xs ml-2 text-red-500" title="Monster hatred - will be targeted first for extra attacks"> HATED</span>}
+                            {unarmed && <span className="text-xs ml-2 text-orange-400" title="Unarmed: -2 to attack rolls"> UNARMED</span>}
+                            {subdualAttackEnabled[index] && <span className="text-xs ml-2 text-blue-300"> Subdual</span>}
+                            {!meleeCheck.canMelee && <span className="text-xs ml-2 text-amber-400"> Ranged Only</span>}
+                            {!rangedCheck.allowed && <span className="text-xs ml-2 text-red-400"> Range Closed</span>}
+                            {attackedThisRound[index] && <span className="text-xs ml-2 text-rose-300">️ Attacked</span>}
+                            {canAttack && <span className="text-xs ml-2 text-slate-300">{weaponName}</span>}
+                            <span className="text-xs ml-2">({modLabel})</span>
+                            {abilities.rageActive && <span className="ml-1 text-red-300"></span>}
+                            {hero.status?.blessed && <span className="ml-1 text-yellow-300"></span>}
+                          </button>
+                          {hasMultipleWeapons && hero.hp > 0 && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setShowWeaponSwitch(index);
+                              }}
+                              className="absolute right-1 top-1/2 -translate-y-1/2 bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded text-[10px] border border-slate-600"
+                              title="Switch weapon"
+                            >
+                              Switch
+                            </button>
+                          )}
+                          {/* Subdual attack toggle */}
+                          {hero.hp > 0 && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSubdualAttackEnabled(prev => ({ ...prev, [index]: !prev[index] }));
+                              }}
+                              className={`absolute ${hasMultipleWeapons ? 'right-16' : 'right-1'} top-1/2 -translate-y-1/2 px-2 py-0.5 rounded text-[10px] border ${
+                                subdualAttackEnabled[index]
+                                  ? 'bg-blue-600 border-blue-400 text-white'
+                                  : 'bg-slate-800 hover:bg-slate-700 border-slate-600'
+                              }`}
+                              title="Subdual attack: -1 to attack, foe is subdued (not killed) when reduced to 0 HP. Cannot subdue: Unliving, Hordes, Vermin."
+                            >
+                              {subdualAttackEnabled[index] ? '✓ Subdual' : 'Subdual'}
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
                   </div>

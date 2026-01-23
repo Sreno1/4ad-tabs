@@ -36,10 +36,13 @@ const InitiativePhase = memo(function InitiativePhase({
     }
 
     if (monsterIdx === -1) {
-      // No monsters or all have non-hostile reactions; just determine initiative normally
-      const init = determineInitiative({ hasRanged: party.some(h => h.equipment?.ranged) });
+      // All monsters have non-hostile reactions; party goes first
+      const init = determineInitiative({
+        partyAttacksFirst: true,
+        hasRanged: party.some(h => h.equipment?.ranged)
+      });
       setCombatInitiative(init);
-      addToCombatLog(`${init.reason}`);
+      addToCombatLog('All monsters have non-hostile reactions - Party goes first!');
       return;
     }
 
@@ -47,7 +50,6 @@ const InitiativePhase = memo(function InitiativePhase({
     const reaction = rollMonsterReaction(dispatch, monsterIdx);
 
     // Use the reaction details to determine initiative
-    const hostileMonster = { reaction };
     const init = determineInitiative({
       reaction: reaction,
       hasRanged: party.some(h => h.equipment?.ranged)
@@ -60,38 +62,49 @@ const InitiativePhase = memo(function InitiativePhase({
     setCombatInitiative(null);
   };
 
+  // Check if any monsters have reactions already
+  const monstersWithReactions = monsters.filter(m => m.reaction);
+  const allNonHostile = monstersWithReactions.length > 0 && monstersWithReactions.every(m => !m.reaction.hostile);
+
   return (
     <div className="bg-slate-800 rounded p-2">
       <div className="mb-2">
         <div className="text-cyan-400 font-bold text-sm mb-1">Initiative</div>
         {!combatInitiative && (
-          <div className="flex flex-wrap gap-1">
-            <button
-              onClick={handlePartyAttacks}
-              className="bg-green-600 hover:bg-green-500 px-2 py-0.5 rounded text-xs"
-            >
-              Attack
-            </button>
-            <Tooltip text={(() => {
-              // Prefer a focused monster: hostile first, else first monster
-              let m = monsters.find(m => m.reaction && m.reaction.hostile) || monsters[0];
-              const reactionTable = m?.reactionTable || DEFAULT_REACTION_TABLE;
-              const lines = [];
-              for (let i = 1; i <= 6; i++) {
-                const key = reactionTable[i] || DEFAULT_REACTION_TABLE[i];
-                const t = REACTION_TYPES[key];
-                lines.push(`${i}: ${t ? t.name : key}`);
-              }
-              return lines.join('\n');
-            })()}>
+          <>
+            {allNonHostile && (
+              <div className="bg-green-900 border border-green-500 rounded p-1 mb-2 text-xs text-green-200">
+                 All monsters have friendly/neutral reactions!
+              </div>
+            )}
+            <div className="flex flex-wrap gap-1">
               <button
-                onClick={handleByReaction}
-                className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
+                onClick={handlePartyAttacks}
+                className="bg-green-600 hover:bg-green-500 px-2 py-0.5 rounded text-xs"
               >
-                Reaction
+                Attack
               </button>
-            </Tooltip>
-          </div>
+              <Tooltip text={(() => {
+                // Prefer a focused monster: hostile first, else first monster
+                let m = monsters.find(m => m.reaction && m.reaction.hostile) || monsters[0];
+                const reactionTable = m?.reactionTable || DEFAULT_REACTION_TABLE;
+                const lines = [];
+                for (let i = 1; i <= 6; i++) {
+                  const key = reactionTable[i] || DEFAULT_REACTION_TABLE[i];
+                  const t = REACTION_TYPES[key];
+                  lines.push(`${i}: ${t ? t.name : key}`);
+                }
+                return lines.join('\n');
+              })()}>
+                <button
+                  onClick={handleByReaction}
+                  className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
+                >
+                  Reaction
+                </button>
+              </Tooltip>
+            </div>
+          </>
         )}
       </div>
 

@@ -283,6 +283,17 @@ export function combatReducer(state, action) {
       return { ...state, combatMeta: Object.keys(meta).length ? meta : null };
     }
 
+    // ========== Ranged Engagement ==========
+    case A.SET_RANGED_ENGAGEMENT: {
+      return {
+        ...state,
+        combatMeta: {
+          ...(state.combatMeta || {}),
+          rangedEngaged: action.engaged
+        }
+      };
+    }
+
     default:
       return state;
   }

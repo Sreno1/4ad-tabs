@@ -39,6 +39,7 @@ export {
   determineInitiative,
   processMinorFoeAttack,
   processMajorFoeAttack,
+  monsterHatesHero,
 } from './combatActions.js';
 
 // Dungeon Actions - Doors, traps, rooms, corridors, puzzles, boss room

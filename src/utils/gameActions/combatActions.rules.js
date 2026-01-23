@@ -17,4 +17,15 @@ export function resolveMinorFoeKills(total, foeLevel, foeCount) {
     message: actualKills > 1 ? `${actualKills} foes slain!` : actualKills === 1 ? '1 foe slain!' : 'Miss!'
   };
 }
-// ...add more pure math helpers as needed
+
+export function resolveDefenseRoll(roll, mod, attackLevel) {
+  const total = roll + mod;
+  const blocked = total > attackLevel;
+  return { roll, mod, total, blocked };
+}
+
+export function resolveSaveRoll(roll, mod, saveTarget) {
+  const total = roll + mod;
+  const success = total >= saveTarget;
+  return { roll, mod, total, success };
+}

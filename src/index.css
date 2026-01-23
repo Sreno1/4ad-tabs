@@ -49,6 +49,14 @@ body {
   transition: transform 0.3s ease;
 }
 
+#dungeon_grid {
+  border: 0;
+}
+
+#dungeon_section {
+  padding: 30px;
+}
+
 /* Ensure dungeon grid container centers content properly */
 [data-dungeon-grid="true"] {
   display: flex;

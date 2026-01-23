@@ -30,19 +30,30 @@
 - Note cross references (equipment keys in heroes, monster traits, spell keys).
 
 ### Step 1: Define schemas (domain by domain)
-Use minimal schemas with required fields and typed enums.
+Use strict schemas with all required fields, enums, and ranges as described in the rules and data files.
 
 Example: monster schema
 ```js
 // src/data/schema/monster.js
 export const MonsterSchema = {
-  required: ["id", "name", "level", "type"],
+  required: [
+    "id", "name", "level", "type", "life", "attacks", "traits", "lootTable", "special",
+  ],
   enums: {
-    type: ["minor", "major"],
+    type: ["minor", "major", "vermin", "weird", "boss"],
   },
   ranges: {
     level: [1, 20],
+    life: [1, 99],
+    attacks: [1, 10],
+    amount: [1, 99], // Only for minor/vermin
   },
+  optionals: [
+    "special", "morale", "xp", "amount", "isMinorFoe", "isBoss", "reactionTable", "lootIds", "immunities", "vulnerabilities", "abilities", "description"
+  ],
+  // Rule-level invariants:
+  // - If type is "minor" or "vermin": life must be 1, amount is required and >=1.
+  // - If type is "major", "boss", or "weird": life is required (1+), amount must not be present or must be 1.
 };
 ```
 
@@ -52,11 +63,91 @@ Example: equipment schema
 export const EquipmentSchema = {
   required: ["id", "name", "category", "cost"],
   enums: {
-    category: ["weapon", "armor", "shield", "gear"],
+    category: ["weapon", "armor", "shield", "gear", "light", "ranged", "two-handed", "magic", "consumable"],
+    weaponType: ["melee", "ranged", "thrown", "magic", "crushing", "slashing", "firearm"],
+    armorType: ["light", "heavy"],
   },
   ranges: {
     cost: [0, 10000],
+    attackMod: [-10, 20],
+    defenseMod: [-10, 20],
+    saveMod: [-10, 20],
+    uses: [0, 99],
   },
+  optionals: ["attackMod", "defenseMod", "saveMod", "uses", "lightSource", "description", "special", "weight", "gpValue", "isSilvered", "isMagic", "isConsumable"],
+};
+```
+
+Example: trait schema
+```js
+// src/data/schema/trait.js
+export const TraitSchema = {
+  required: ["id", "name", "effect"],
+  enums: {
+    type: ["combat", "exploration", "magic", "defense", "utility", "stealth", "trick", "class"],
+  },
+  optionals: ["uses", "points", "recharge", "description", "classRestriction", "levelRestriction"],
+};
+```
+
+Example: spell schema
+```js
+// src/data/schema/spell.js
+export const SpellSchema = {
+  required: ["id", "name", "level", "school", "effect", "target"],
+  enums: {
+    school: ["arcane", "divine", "nature", "shadow", "elemental", "druid", "wizard", "cleric"],
+    target: ["single", "all_enemies", "all_allies", "self", "area", "vermin", "major", "minor"],
+  },
+  ranges: {
+    level: [1, 9],
+    cost: [0, 100],
+  },
+  optionals: ["description", "requiresTrait", "requiresTraitId", "isPrayer", "isRitual", "isScroll", "isAutomatic", "damage", "heal", "special"],
+};
+```
+
+Example: class schema
+```js
+// src/data/schema/class.js
+export const ClassSchema = {
+  required: ["id", "name", "baseHp", "baseAttack", "baseDefense", "allowedArmor", "allowedWeapons", "traits", "magicUse", "saves", "stealth", "lifeFormula"],
+  enums: {
+    role: ["warrior", "rogue", "mage", "priest", "ranger", "specialist", "barbarian", "assassin", "druid", "elf", "halfling", "cleric", "wizard"],
+    alignment: ["neutral", "evil", "good", "chaotic", "lawful"],
+  },
+  ranges: {
+    baseHp: [1, 99],
+    baseAttack: [0, 20],
+    baseDefense: [0, 20],
+    trickPoints: [0, 99],
+  },
+  optionals: ["advancedSkills", "startingEquipment", "startingWealth", "optionalTraitTable", "description", "spellSlots", "trickList", "specialRules"],
+};
+```
+
+Example: room schema
+```js
+// src/data/schema/room.js
+export const RoomSchema = {
+  required: ["id", "name", "type", "size", "doors"],
+  enums: {
+    type: ["corridor", "chamber", "lair", "vault", "trap", "special", "entrance", "boss"],
+    size: ["tiny", "small", "medium", "large", "huge"],
+  },
+  optionals: ["description", "features", "loot", "encounters", "traps", "connections"],
+};
+```
+
+Example: reaction schema
+```js
+// src/data/schema/reaction.js
+export const ReactionSchema = {
+  required: ["id", "name", "reactionKey", "hostile", "description"],
+  enums: {
+    reactionKey: ["fight", "flee", "parley", "bribe", "wait", "ambush", "ignore", "surprise", "boss_fight"],
+  },
+  optionals: ["checksMorale", "initiative", "special", "bribeAmount", "isFinalBoss"],
 };
 ```
 

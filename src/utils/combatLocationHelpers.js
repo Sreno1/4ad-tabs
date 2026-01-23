@@ -111,9 +111,16 @@ export const getNarrowCorridorPenalty = (location, weapon) => {
  * @param {object} hero - Hero object
  * @returns {object|null} Weapon object or null
  */
-import { getEquipment } from '../data/equipment.js';
+import { getEquipment, getActiveWeapon } from '../data/equipment.js';
 
 export const getEquippedMeleeWeapon = (hero) => {
+  // First, try to get the active weapon
+  const activeWeapon = getActiveWeapon(hero);
+  if (activeWeapon && activeWeapon.type === 'melee') {
+    return activeWeapon;
+  }
+
+  // Fallback: find first melee weapon in equipment
   if (!hero.equipment || !Array.isArray(hero.equipment)) {
     return null;
   }
@@ -174,4 +181,54 @@ export const setCombatLocation = (dispatch, state, x, y) => {
  */
 export const clearCombatLocation = (dispatch) => {
   dispatch({ type: 'CLEAR_COMBAT_LOCATION' });
+};
+
+/**
+ * Check if ranged attacks are allowed based on combat rules
+ * Per 4AD rules:
+ * - In rooms: Ranged weapons can only be used in the first round (before melee engagement)
+ * - In corridors: Ranged weapons can be used any round
+ * - Pre-initiative volley: Always allowed
+ *
+ * @param {object} state - Game state
+ * @param {object} options - Options { preInitiativeRanged }
+ * @returns {object} { allowed: boolean, reason: string }
+ */
+export const canUseRangedWeapon = (state, options = {}) => {
+  // Pre-initiative ranged volley is always allowed
+  if (options.preInitiativeRanged) {
+    return { allowed: true, reason: null };
+  }
+
+  const location = state.currentCombatLocation;
+
+  // If no location set, assume room rules
+  if (!location) {
+    // Check if ranged engagement has occurred (first round passed)
+    if (state.combatMeta?.rangedEngaged) {
+      return {
+        allowed: false,
+        reason: 'Melee range closed - ranged weapons only usable in first round of room combat'
+      };
+    }
+    return { allowed: true, reason: null };
+  }
+
+  // In rooms, ranged only allowed on first round (before rangedEngaged flag set)
+  if (location.type === 'room') {
+    if (state.combatMeta?.rangedEngaged) {
+      return {
+        allowed: false,
+        reason: 'Melee range closed - ranged weapons only usable in first round of room combat'
+      };
+    }
+    return { allowed: true, reason: null };
+  }
+
+  // In corridors, ranged always allowed
+  if (location.type === 'corridor') {
+    return { allowed: true, reason: null };
+  }
+
+  return { allowed: true, reason: null };
 };

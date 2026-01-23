@@ -295,11 +295,13 @@ Optional architecture work:
 ## 5. IMPLEMENTATION PRIORITY (REMAINING)
 
 ### Priority 0: Refactor Foundations (sequence locked)
-1. Deterministic Rules and RNG Injection (#2) [[ARCH_REFACTOR_02_DETERMINISTIC_RULES_DETAIL]]
-2. Core Rules Test Harness (#6) [[ARCH_REFACTOR_06_TEST_HARNESS_DETAIL]]
-3. [[COMBAT_ACTIONS_REFACTOR_PLAN]]
+1. Deterministic Rules and RNG Injection (#2) [[ARCH_REFACTOR_02_DETERMINISTIC_RULES_DETAIL]] x
+2. Core Rules Test Harness (#6) [[ARCH_REFACTOR_06_TEST_HARNESS_DETAIL]] x
+3. [[COMBAT_ACTIONS_REFACTOR_PLAN]] x
 4. Data Schema and Validation (#5) [[ARCH_REFACTOR_05_DATA_SCHEMA_VALIDATION_DETAIL]]
-5. DGC_REFACTOR_PLAN.md
+5. RUN ALL TESTS FROM COMBAT_SYSTEM_IMPLEMENTATION_PLAN
+   1. note - this will require making sure robust manual systems are in place so that certain monsters can be selected etc. that way testing is easier, but more importantly, those using this as a tool instead of an entire game can still use it without the randomness involved.
+6. DGC_REFACTOR_PLAN.md
 
 ### High Priority: Core Gameplay Gaps
 4. Spell targeting UI + casting edge cases (traits, resistances, status expiry)

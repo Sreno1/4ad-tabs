@@ -4,36 +4,16 @@ export default function ContextMenu({ x, y, items = [], onClose }) {
   const [openKey, setOpenKey] = useState(null);
   const menuRef = useRef(null);
   const justOpenedRef = useRef(true);
-  if (!items || items.length === 0) return (
-    <>
-      {/* Persistent debug overlay: should always be visible at 100,100 */}
-      <div style={{
-        position: 'fixed',
-        left: 100,
-        top: 100,
-        width: 120,
-        height: 40,
-        background: 'rgba(255,0,0,0.3)',
-        color: '#fff',
-        zIndex: 99999,
-        pointerEvents: 'none',
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>DEBUG BOX</div>
-    </>
-  );
+  if (!items || items.length === 0) return null;
 
-  // Clamp x/y to viewport for debug
+  // Clamp x/y to viewport
   const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
   const vw = window.innerWidth || 800;
   const vh = window.innerHeight || 600;
   const menuX = typeof x === 'number' && !isNaN(x) ? clamp(x, 0, vw - 200) : 100;
   const menuY = typeof y === 'number' && !isNaN(y) ? clamp(y, 0, vh - 200) : 100;
-  // Debug log
+
   useEffect(() => {
-    console.log('ContextMenu position:', { x, y, menuX, menuY });
     justOpenedRef.current = true;
     // Reset the flag after a short delay
     const t = setTimeout(() => { justOpenedRef.current = false; }, 50);
@@ -56,73 +36,54 @@ export default function ContextMenu({ x, y, items = [], onClose }) {
   }, [onClose]);
 
   return (
-    <>
-      {/* Persistent debug overlay: should always be visible at 100,100 */}
-      <div style={{
-        position: 'fixed',
-        left: 100,
-        top: 100,
-        width: 120,
-        height: 40,
-        background: 'rgba(255,0,0,0.3)',
+    <div
+      ref={menuRef}
+      className="fixed z-50"
+      style={{
+        left: menuX,
+        top: menuY,
+        minWidth: 180,
+        background: 'rgba(30,30,30,0.98)',
         color: '#fff',
+        pointerEvents: 'auto',
         zIndex: 99999,
-        pointerEvents: 'none',
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}>DEBUG BOX</div>
-      <div
-        ref={menuRef}
-        className="fixed z-50"
-        style={{
-          left: menuX,
-          top: menuY,
-          minWidth: 180,
-          border: '3px solid red',
-          background: 'rgba(30,30,30,0.98)',
-          color: '#fff',
-          pointerEvents: 'auto',
-          zIndex: 99999,
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="bg-slate-800 border border-slate-700 rounded shadow-lg text-sm text-slate-200" role="menu">
-          {items.map((it) => (
-            <div key={it.key} className="">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (it.submenu) {
-                    setOpenKey(openKey === it.key ? null : it.key);
-                    return;
-                  }
-                  try { it.onClick && it.onClick(); } catch (err) {}
-                  onClose && onClose();
-                }}
-                className="w-full text-left px-3 py-2 hover:bg-slate-700 border-b border-slate-700 flex items-center justify-between"
-              >
-                <span>{it.label}</span>
-                {it.submenu && <span className="text-slate-400 text-xs">▸</span>}
-              </button>
-              {it.submenu && openKey === it.key && (
-                <div className="bg-slate-800">
-                  {it.submenu.map(sub => (
-                    <button
-                      key={sub.key}
-                      onClick={(e) => { e.stopPropagation(); try { sub.onClick && sub.onClick(); } catch (err) {} onClose && onClose(); }}
-                      className="w-full text-left px-6 py-2 hover:bg-slate-700 border-b border-slate-700 text-xs"
-                    >
-                      {sub.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+      }}
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="bg-slate-800 border border-slate-700 rounded shadow-lg text-sm text-slate-200" role="menu">
+        {items.map((it) => (
+          <div key={it.key} className="">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (it.submenu) {
+                  setOpenKey(openKey === it.key ? null : it.key);
+                  return;
+                }
+                try { it.onClick && it.onClick(); } catch (err) {}
+                onClose && onClose();
+              }}
+              className="w-full text-left px-3 py-2 hover:bg-slate-700 border-b border-slate-700 flex items-center justify-between"
+            >
+              <span>{it.label}</span>
+              {it.submenu && <span className="text-slate-400 text-xs">▸</span>}
+            </button>
+            {it.submenu && openKey === it.key && (
+              <div className="bg-slate-800">
+                {it.submenu.map(sub => (
+                  <button
+                    key={sub.key}
+                    onClick={(e) => { e.stopPropagation(); try { sub.onClick && sub.onClick(); } catch (err) {} onClose && onClose(); }}
+                    className="w-full text-left px-6 py-2 hover:bg-slate-700 border-b border-slate-700 text-xs"
+                  >
+                    {sub.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
-    </>
+    </div>
   );
 }

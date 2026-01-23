@@ -240,6 +240,20 @@ export function partyReducer(state, action) {
       return { ...state, marchingOrder: newOrder };
     }
 
+    // ========== Weapon Switching ==========
+    case A.SWITCH_WEAPON: {
+      const newParty = state.party.map((h, i) => {
+        if (i !== action.heroIdx) return h;
+        return {
+          ...h,
+          activeWeaponIdx: action.equipmentIdx,
+          // Track that this hero switched weapons this turn
+          switchedWeaponThisTurn: true
+        };
+      });
+      return { ...state, party: newParty };
+    }
+
     default:
       return state;
   }
