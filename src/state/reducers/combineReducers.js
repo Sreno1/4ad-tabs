@@ -26,6 +26,7 @@ export function combineReducers(reducers) {
     let nextState = state;
 
     for (const reducer of reducers) {
+  try { console.log('[composedReducer] running reducer', reducer.name || 'anon', 'for action', action && action.type); } catch (e) {}
       const previousStateForKey = nextState;
       const nextStateForKey = reducer(previousStateForKey, action);
 

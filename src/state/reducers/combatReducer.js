@@ -3,22 +3,35 @@
  */
 import * as A from '../actions.js';
 
+const initialCombatState = {
+  monsters: [],
+  minorEnc: 0,
+  majorFoes: 0,
+  finalBoss: false,
+  abilities: {},
+  hasLightSource: false,
+  currentCombatLocation: null,
+  combatMeta: null,
+  party: []
+};
+
 /**
  * Combat reducer - handles all combat-related state changes
  * @param {Object} state - Full game state
  * @param {Object} action - Action object
  * @returns {Object} Updated state
  */
-export function combatReducer(state, action) {
+export function combatReducer(state = initialCombatState, action) {
+  try { console.log('[combatReducer] invoked with action', action && action.type); } catch (e) {}
   switch (action.type) {
     // ========== Monster Management ==========
     case A.ADD_MONSTER:
-      return { ...state, monsters: [...state.monsters, action.m] };
+  return { ...state, monsters: [...(state.monsters || []), action.m] };
 
     case A.UPD_MONSTER:
       return {
         ...state,
-        monsters: state.monsters.map((m, i) =>
+        monsters: (state.monsters || []).map((m, i) =>
           i === action.i ? { ...m, ...action.u } : m
         )
       };
@@ -26,19 +39,19 @@ export function combatReducer(state, action) {
     case A.DEL_MONSTER: {
       // Track kill for campaign stats if in campaign mode
       const updatedParty = state.mode === 'campaign'
-        ? state.party.map(hero => ({
+        ? (state.party || []).map(hero => ({
             ...hero,
             stats: {
               ...hero.stats,
               monstersKilled: (hero.stats?.monstersKilled || 0) + 1
             }
           }))
-        : state.party;
+        : (state.party || []);
 
       return {
         ...state,
         party: updatedParty,
-        monsters: state.monsters.filter((_, i) => i !== action.i)
+        monsters: (state.monsters || []).filter((_, i) => i !== action.i)
       };
     }
 
@@ -49,7 +62,7 @@ export function combatReducer(state, action) {
     case A.SET_MONSTER_REACTION: {
       return {
         ...state,
-        monsters: state.monsters.map((m, i) =>
+        monsters: (state.monsters || []).map((m, i) =>
           i === action.monsterIdx
             ? { ...m, reaction: action.reaction }
             : m
@@ -62,7 +75,7 @@ export function combatReducer(state, action) {
       if (action.effect === 'heal') {
         return {
           ...state,
-          monsters: state.monsters.map((m, i) =>
+          monsters: (state.monsters || []).map((m, i) =>
             i === action.monsterIdx
               ? { ...m, hp: Math.min(m.maxHp, m.hp + action.value) }
               : m
@@ -74,19 +87,26 @@ export function combatReducer(state, action) {
 
     // ========== Encounter Tracking ==========
     case A.MINOR:
-      return { ...state, minorEnc: state.minorEnc + 1 };
+      return { ...state, minorEnc: (state.minorEnc || 0) + 1 };
 
     case A.ADJUST_MINOR: {
-      const newVal = Math.max(0, (state.minorEnc || 0) + (action.n || 0));
-      return { ...state, minorEnc: newVal };
+  // Ensure n is a number (defensive against string/undefined)
+  const n = (typeof action.n === 'number') ? action.n : (Number(action.n) || 0);
+  const prev = Number(state.minorEnc) || 0;
+  const newVal = Math.max(0, prev + n);
+  try { console.log('[combatReducer] ADJUST_MINOR', { prev, n, newVal }); } catch (e) {}
+  return { ...state, minorEnc: newVal };
     }
 
     case A.MAJOR:
-      return { ...state, majorFoes: state.majorFoes + 1 };
+      return { ...state, majorFoes: (state.majorFoes || 0) + 1 };
 
     case A.ADJUST_MAJOR: {
-      const newVal = Math.max(0, (state.majorFoes || 0) + (action.n || 0));
-      return { ...state, majorFoes: newVal };
+  const n = (typeof action.n === 'number') ? action.n : (Number(action.n) || 0);
+  const prev = Number(state.majorFoes) || 0;
+  const newVal = Math.max(0, prev + n);
+  try { console.log('[combatReducer] ADJUST_MAJOR', { prev, n, newVal }); } catch (e) {}
+  return { ...state, majorFoes: newVal };
     }
 
     case A.BOSS:

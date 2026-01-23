@@ -67,8 +67,10 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
   };
 
   // Process tile contents and trigger appropriate actions
-  const processContents = (contents, events = []) => {
+  // overrides.monsterKey allows manual monster selection instead of random
+  const processContents = (contents, events = [], overrides = {}) => {
     let newEvents = [...events];
+    const { monsterKey: overrideMonsterKey } = overrides;
 
     const rollCountSpec = (spec) => {
       // spec examples: 'd6+2', 'd6', 'd3', 'd6-2'
@@ -90,10 +92,16 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
 
       case 'vermin': {
         // Choose a specific vermin from MONSTER_TABLE with category based on environment
-        const candidates = Object.entries(MONSTER_TABLE)
-          .filter(([, t]) => t.category === environmentCategories.vermin)
-          .map(([k]) => k);
-        const key = candidates[rng.nextInt(candidates.length)];
+        // Use override if provided, otherwise random selection
+        let key;
+        if (overrideMonsterKey && MONSTER_TABLE[overrideMonsterKey]) {
+          key = overrideMonsterKey;
+        } else {
+          const candidates = Object.entries(MONSTER_TABLE)
+            .filter(([, t]) => t.category === environmentCategories.vermin)
+            .map(([k]) => k);
+          key = candidates[rng.nextInt(candidates.length)];
+        }
         const template = MONSTER_TABLE[key];
         // Create monster object from the MONSTER_TABLE entry and dispatch
     const monster = createMonsterFromTable(key, state.hcl, ctx);
@@ -138,10 +146,16 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
 
       case 'minions': {
         // Choose a specific minion from MONSTER_TABLE with category based on environment
-        const candidates = Object.entries(MONSTER_TABLE)
-          .filter(([, t]) => t.category === environmentCategories.minions)
-          .map(([k]) => k);
-        const key = candidates[rng.nextInt(candidates.length)];
+        // Use override if provided, otherwise random selection
+        let key;
+        if (overrideMonsterKey && MONSTER_TABLE[overrideMonsterKey]) {
+          key = overrideMonsterKey;
+        } else {
+          const candidates = Object.entries(MONSTER_TABLE)
+            .filter(([, t]) => t.category === environmentCategories.minions)
+            .map(([k]) => k);
+          key = candidates[rng.nextInt(candidates.length)];
+        }
         const template = MONSTER_TABLE[key];
     const monster = createMonsterFromTable(key, state.hcl, ctx);
         if (monster) {
@@ -151,6 +165,8 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
             monster.initialCount = numeric;
             monster.isMinorFoe = true;
           }
+          // Mark as minion room encounter for counter tracking
+          monster.encounterSource = 'minion_room';
           dispatch({ type: 'ADD_MONSTER', m: monster });
           if (monster.isMinorFoe && monster.count) {
             dispatch(logMsgAction(`${monster.count} ${monster.name} L${monster.level} appear!`));
@@ -229,10 +245,16 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       }
 
       case 'weird_monster': {
-        const candidates = Object.entries(MONSTER_TABLE)
-          .filter(([, t]) => t.category === environmentCategories.weird)
-          .map(([k]) => k);
-        const key = candidates[rng.nextInt(candidates.length)];
+        // Use override if provided, otherwise random selection
+        let key;
+        if (overrideMonsterKey && MONSTER_TABLE[overrideMonsterKey]) {
+          key = overrideMonsterKey;
+        } else {
+          const candidates = Object.entries(MONSTER_TABLE)
+            .filter(([, t]) => t.category === environmentCategories.weird)
+            .map(([k]) => k);
+          key = candidates[rng.nextInt(candidates.length)];
+        }
         const monster = createMonsterFromTable(key, state.hcl, ctx);
         if (monster) {
           if (typeof monster.count === 'string') {
@@ -255,7 +277,10 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       }
 
       case 'dragon': {
-        const dragonKey = ENVIRONMENT_DRAGONS[environmentKey] || ENVIRONMENT_DRAGONS.dungeon;
+        // Use override if provided, otherwise environment-specific dragon
+        const dragonKey = (overrideMonsterKey && MONSTER_TABLE[overrideMonsterKey])
+          ? overrideMonsterKey
+          : (ENVIRONMENT_DRAGONS[environmentKey] || ENVIRONMENT_DRAGONS.dungeon);
         const monster = createMonsterFromTable(dragonKey, state.hcl, ctx);
         if (monster) {
           dispatch({ type: 'ADD_MONSTER', m: monster });
@@ -268,8 +293,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       }
 
       case 'minor_boss':
-        spawnMonster(dispatch, 'boss', 3, {}, ctx);
-        dispatch({ type: 'MINOR' });
+        spawnMonster(dispatch, 'boss', 3, { encounterSource: 'minor_boss' }, ctx);
   dispatch(logMessage(`Minor Boss appears! (Level 3)`, 'exploration'));
         newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'boss', level: 3, isBoss: false }, timestamp: Date.now() });
         // Dwarf Gold Sense preview for boss
@@ -319,7 +343,6 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
           }
         } else {
           spawnMajorFoe(dispatch, state.hcl, false, ctx);
-          dispatch({ type: 'MAJOR' });
           dispatch(logMessage(`Major Foe appears! (Level ${state.hcl})`, 'exploration'));
           newEvents.push({ type: EVENT_TYPES.MONSTER, data: { monsterType: 'major', level: state.hcl, isBoss: false }, timestamp: Date.now() });
           // Dwarf Gold Sense preview for major foe
@@ -470,7 +493,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       setBossCheckResult(null);
 
       // Immediately process the selected content as if it were a single-content roll
-      processContents({ type: selectedType }, newEvents);
+      processContents({ type: selectedType }, newEvents, { monsterKey: opts.monsterKey });
       // Ensure UI switches to combat if selected content spawns monsters
       if (['vermin', 'minions', 'major_foe', 'minor_boss', 'weird_monster', 'dragon', 'boss'].includes(selectedType)) {
         try { setActionMode(ACTION_MODES.COMBAT); } catch (e) {}
@@ -498,7 +521,7 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
       setBossCheckResult(null);
 
       // Process contents (spawn monsters, treasure, etc)
-      processContents(contentsResult, newEvents);
+      processContents(contentsResult, newEvents, { monsterKey: opts.monsterKey });
       // Ensure UI switches to combat if this content spawns monsters
       if (['vermin', 'minions', 'major_foe', 'minor_boss', 'weird_monster', 'dragon', 'boss'].includes(contentsResult.type)) {
         try { setActionMode(ACTION_MODES.COMBAT); } catch (e) {}

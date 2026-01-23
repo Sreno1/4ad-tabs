@@ -300,8 +300,9 @@ Optional architecture work:
 3. [[COMBAT_ACTIONS_REFACTOR_PLAN]] x
 4. Data Schema and Validation (#5) x[[ARCH_REFACTOR_05_DATA_SCHEMA_VALIDATION_DETAIL]] x
 5. RUN ALL TESTS FROM COMBAT_SYSTEM_IMPLEMENTATION_PLAN
-   1. note - installed jest - will this help?
-   2. note - this will require making sure robust manual systems are in place so that certain monsters can be selected etc. that way testing is easier, but more importantly, those using this as a tool instead of an entire game can still use it without the randomness involved.
+   1. fix combat - not able to move past first round (stuck attacking or defending) but most other changes seem to have worked? x
+   2. note - installed jest - will this help?
+   3. note - this will require making sure robust manual systems are in place so that certain monsters can be selected etc. that way testing is easier, but more importantly, those using this as a tool instead of an entire game can still use it without the randomness involved.
 6. DGC_REFACTOR_PLAN.md
 
 ### High Priority: Core Gameplay Gaps

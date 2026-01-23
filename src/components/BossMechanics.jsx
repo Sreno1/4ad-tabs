@@ -26,7 +26,6 @@ export default function BossMechanics({ state, dispatch }) {
     } else {
       // Spawn regular major foe
       spawnMajorFoe(dispatch, state.hcl, false);
-      dispatch({ type: "MAJOR" });
     }
   };
 

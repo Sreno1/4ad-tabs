@@ -191,12 +191,12 @@ export const applyMonsterAbility = (monsterIdx, effect, value) => ({
 /**
  * Increment minor encounter count
  */
-export const incrementMinorEncounter = () => ({ type: A.MINOR });
+export const incrementMinorEncounter = () => ({ type: A.ADJUST_MINOR, n: 1 });
 
 /**
  * Increment major foe count
  */
-export const incrementMajorFoe = () => ({ type: A.MAJOR });
+export const incrementMajorFoe = () => ({ type: A.ADJUST_MAJOR, n: 1 });
 
 /**
  * Adjust major foe counter by n (positive or negative)

@@ -29,6 +29,11 @@ export const spawnMonster = (dispatch, type, level = null, opts = {}, ctx) => {
     monster.ambush = true;
   }
 
+  // Mark source of spawn for counter tracking (minor_boss, major_foe, wandering, etc.)
+  if (opts.encounterSource) {
+    monster.encounterSource = opts.encounterSource;
+  }
+
   dispatch({ type: 'ADD_MONSTER', m: monster });
 
   // Log message - show count for Minor Foes, HP for others
@@ -58,6 +63,9 @@ export const spawnMajorFoe = (dispatch, hcl, isBoss = false, ctx) => {
     monster.neverChecksMorale = true; // Bosses fight to the bitter end
     monster.treasureMultiplier = 3; // 3x treasure
     monster.name = `${monster.name} [BOSS]`;
+    monster.encounterSource = 'boss'; // Mark as boss encounter
+  } else {
+    monster.encounterSource = 'major_foe'; // Mark as major foe encounter
   }
 
   dispatch({ type: 'ADD_MONSTER', m: monster });
@@ -101,6 +109,7 @@ export const rollWanderingMonster = (dispatch, opts = {}, ctx) => {
     if (spawnedMonster) {
       if (spawnedMonster.count !== undefined) spawnedMonster.isMinorFoe = true;
       if (opts.ambush) spawnedMonster.ambush = true;
+      spawnedMonster.encounterSource = 'wandering'; // Mark as wandering monster
       dispatch({ type: 'ADD_MONSTER', m: spawnedMonster });
       if (spawnedMonster.isMinorFoe && spawnedMonster.count) {
         dispatch({ type: 'LOG', t: `${spawnedMonster.count} ${spawnedMonster.name} L${spawnedMonster.level} appear!` });

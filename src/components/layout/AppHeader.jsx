@@ -90,6 +90,19 @@ export default function AppHeader({
             <div className="flex gap-1">
               <button aria-label="Decrease minion groups" onClick={() => dispatch(adjustMinorEncounters(-1))} className="px-1 text-slate-300">−</button>
               <button aria-label="Increase minion groups" onClick={() => dispatch(adjustMinorEncounters(1))} className="px-1 text-amber-400 font-bold">+</button>
+              {/* Debug button: quick verification that reducer/action path is active */}
+              <button
+                aria-label="Debug increment minion"
+                title="DBG: force increment minorEnc and emit logs"
+                onClick={() => {
+                  try { console.log('[AppHeader] DBG dispatch adjustMinorEncounters +1'); } catch (e) {}
+                  dispatch(logMessage('DBG: dispatching ADJUST_MINOR +1', 'debug'));
+                  dispatch(adjustMinorEncounters(1));
+                }}
+                className="px-1 text-slate-300 border border-slate-600 rounded text-[10px]"
+              >
+                DBG
+              </button>
             </div>
           </div>
 

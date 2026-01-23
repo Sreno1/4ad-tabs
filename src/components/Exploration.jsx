@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { selectParty, selectHero } from '../state/selectors.js';
-import { logMessage, updateHero, encounterBoss, incrementMajorFoe } from '../state/actionCreators.js';
+import { logMessage, updateHero, encounterBoss } from '../state/actionCreators.js';
 import { DoorOpen, AlertTriangle, Sparkles, Compass, Lock, Puzzle, Skull, Info } from 'lucide-react';
 import { d6 } from '../utils/dice.js';
 import { formatRollPrefix } from '../utils/rollLog.js';
@@ -176,7 +176,6 @@ export default function Exploration({ state, dispatch }) {
     } else {
       // Spawn regular major foe
       spawnMajorFoe(dispatch, state.hcl, false);
-  dispatch(incrementMajorFoe());
     }
   };
 

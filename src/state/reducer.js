@@ -24,5 +24,6 @@ import { composedReducer } from "./reducers/index.js";
  * @returns {Object} Updated game state
  */
 export function reducer(state, action) {
+  try { console.log('[rootReducer] action', action && action.type); } catch (e) {}
   return composedReducer(state, action);
 }

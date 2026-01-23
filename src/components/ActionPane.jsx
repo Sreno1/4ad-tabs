@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { selectParty, selectMonsters } from '../state/selectors.js';
-import { setAbility, addMonster, logMessage, clearMonsters } from '../state/actionCreators.js';
+import { setAbility, addMonster, logMessage, clearMonsters, incrementMinorEncounter, incrementMajorFoe } from '../state/actionCreators.js';
 import { Dices } from "lucide-react";
 import { d6 } from "../utils/dice.js";
 import { formatRollPrefix } from '../utils/rollLog.js';
@@ -421,6 +421,44 @@ export default function ActionPane({
             <button
               onClick={() => {
                 try { localStorage.removeItem('lastTileData'); } catch (e) {}
+                // If there are defeated monsters, increment counters before clearing
+                try {
+                  // Defensive defeated detection: different code paths may mark monsters as defeated
+                  const monstersList = (state.monsters || []);
+                  const defeated = monstersList.filter(m => {
+                    // Standard: hp <= 0 or count === 0
+                    if ((m.hp !== undefined && m.hp <= 0) || (m.count !== undefined && m.count === 0)) return true;
+                    // Alternate flags some routines may use
+                    if (m.dead === true || m.defeated === true) return true;
+                    // Fallback: hp explicitly zero-like
+                    if (m.hp === 0) return true;
+                    return false;
+                  });
+                  try { console.log('[ActionPane] exit -> defeated list length', defeated.length, 'monstersList length', monstersList.length); } catch (e) {}
+                  if (defeated.length === 0) {
+                    // show details to help debugging
+                    try { console.log('[ActionPane] exit -> no defeated monsters found; sample monsters:', monstersList.slice(0,5)); } catch (e) {}
+                  }
+                  defeated.forEach(monster => {
+                    try { console.log('[ActionPane] exit -> processing defeated monster', monster && monster.id, monster && monster.encounterSource); } catch (e) {}
+                    if (monster.encounterSource === 'minor_boss') {
+                      try { console.log('[ActionPane] exit -> incrementMinorEncounter (minor_boss)', monster); } catch (e) {}
+                      dispatch(logMessage(` Increment counter: minor encounter (source=${monster.encounterSource})`,'system'));
+                      dispatch(incrementMinorEncounter());
+                    } else if (monster.encounterSource === 'major_foe') {
+                      try { console.log('[ActionPane] exit -> incrementMajorFoe (major_foe)', monster); } catch (e) {}
+                      dispatch(logMessage(` Increment counter: major foe (source=${monster.encounterSource})`,'system'));
+                      dispatch(incrementMajorFoe());
+                    } else if (monster.encounterSource === 'minion_room' || monster.encounterSource === 'wandering' || monster.isMinorFoe) {
+                      try { console.log('[ActionPane] exit -> incrementMinorEncounter (minor group)', monster); } catch (e) {}
+                      dispatch(logMessage(` Increment counter: minor encounter (source=${monster.encounterSource})`,'system'));
+                      dispatch(incrementMinorEncounter());
+                    }
+                  });
+                } catch (e) {
+                  // ignore
+                }
+
                 try { dispatch(clearMonsters()); } catch (e) { dispatch({ type: 'CLEAR_MONSTERS' }); }
                 clearTile();
               }}

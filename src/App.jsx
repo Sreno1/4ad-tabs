@@ -54,6 +54,7 @@ import {
 } from "./utils/campaignStorage.js";
 import { initialState } from "./state/initialState.js";
 import ContextMenu from "./components/ContextMenu.jsx";
+import CustomTileModal from "./components/CustomTileModal.jsx";
 
 export default function App() {
   const [state, dispatch, campaignControls] = useGameState();
@@ -73,6 +74,7 @@ export default function App() {
   const [showCampaign, setShowCampaign] = useState(false);
   const [showRoomDesigner, setShowRoomDesigner] = useState(false);
   const [placementTemplate, setPlacementTemplate] = useState(null);
+  const [showCustomTileModal, setShowCustomTileModal] = useState(false);
   const [showEquipment, setShowEquipment] = useState(false);
   const [showAbilities, setShowAbilities] = useState(false);
   const [selectedHero, setSelectedHero] = useState(0);
@@ -359,23 +361,13 @@ export default function App() {
   }, [dispatch, state]);
 
   const handleCustomTile = useCallback(() => {
+    setShowCustomTileModal(true);
+  }, []);
+
+  const handleCustomTileGenerate = useCallback((opts) => {
     try {
-      const rawD66 = prompt("Enter d66 (e.g. 11, 12, 21, 66):", "11");
-      if (!rawD66) return;
-      const shapeRoll = parseInt(rawD66, 10);
-      if (Number.isNaN(shapeRoll) || !Object.keys(TILE_SHAPE_TABLE).includes(String(shapeRoll))) {
-        alert("Invalid d66 value");
-        return;
-      }
-      const raw2d6 = prompt("Enter 2d6 result (2-12):", "8");
-      if (!raw2d6) return;
-      const contentsRoll = parseInt(raw2d6, 10);
-      if (Number.isNaN(contentsRoll) || contentsRoll < 2 || contentsRoll > 12) {
-        alert("Invalid 2d6 value");
-        return;
-      }
       if (typeof roomEvents.generateTile === "function") {
-        roomEvents.generateTile({ shapeRoll, contentsRoll });
+        roomEvents.generateTile(opts);
       }
     } catch (e) {
       console.error(e);
@@ -909,6 +901,12 @@ export default function App() {
             }}
           />
         )}
+        <CustomTileModal
+          isOpen={showCustomTileModal}
+          onClose={() => setShowCustomTileModal(false)}
+          onGenerate={handleCustomTileGenerate}
+          currentEnvironment={state.currentEnvironment || 'dungeon'}
+        />
       </main>
 
       {/* Mobile Navigation */}

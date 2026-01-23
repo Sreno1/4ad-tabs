@@ -5,6 +5,34 @@ import sfx from '../utils/sfx.js';
 import MARKER_STYLES from '../constants/markerStyles.js';
 import { getEdgeCoverage } from '../utils/tileStyles.js';
 
+// Extracted utilities
+import {
+  COLORS,
+  GLYPHS,
+  getDoorMetrics,
+  getWallThickness,
+  getGlyphSizes,
+  getEdgeThreshold,
+  getDoorColor,
+  getWallColor,
+  getRectangleFillColor,
+} from './DungeonGridCanvas.constants.js';
+
+import {
+  screenToLogicalWithRotation,
+  logicalToGrid,
+  getCellLocalCoords,
+  detectEdge,
+  isInBounds,
+  getGridDimensions,
+  getCanvasDimensions,
+  normalizeRect,
+  forEachCellInRect,
+} from './DungeonGridCanvas.geometry.js';
+
+import { usePanZoom } from './hooks/usePanZoom.js';
+import { useTemplateTransform } from './hooks/useTemplateTransform.js';
+
 /**
  * High-performance canvas-based dungeon grid
  * Renders at 60 FPS with instant hover response
@@ -61,51 +89,33 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const hasMovedRef = useRef(false);
   const pendingStartRef = useRef(null);
 
-  // When placing a template from the Room Designer, we keep a local, transformable
-  // copy so the player can rotate/mirror it with keyboard shortcuts (Q/E/W).
-  const [transformedPlacementTemplate, setTransformedPlacementTemplate] = useState(null);
-  // Pan & zoom state (for smooth panning and zooming like a photo editor)
-  const [scale, setScale] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const isPanningRef = useRef(false);
-  const panStartRef = useRef({ x: 0, y: 0 });
-  const isTKeyPanningRef = useRef(false);
-  const isPointerOverRef = useRef(false);
-  const _prevOverscrollRef = useRef({ html: '', body: '' });
-  const _prevTouchActionRef = useRef({ html: '', body: '' });
+  // Template transform hook - manages local transformed copy for Q/E/W shortcuts
+  // Pass either placementTemplate or autoPlacedRoom as the source
+  const activeTemplateSource = placementTemplate || autoPlacedRoom;
+  const {
+    transformedTemplate: transformedPlacementTemplate,
+    setTransformedTemplate: setTransformedPlacementTemplate,
+    rotateClockwise: rotateTemplateCW,
+    rotateCounterClockwise: rotateTemplateCCW,
+    mirror: mirrorTemplate,
+  } = useTemplateTransform(activeTemplateSource);
 
-  const handlePointerEnterCanvas = useCallback(() => {
-    isPointerOverRef.current = true;
-    try {
-      const html = document.documentElement;
-      const body = document.body;
-      _prevOverscrollRef.current.html = html.style.overscrollBehavior || '';
-      _prevOverscrollRef.current.body = body.style.overscrollBehavior || '';
-      _prevTouchActionRef.current.html = html.style.touchAction || '';
-      _prevTouchActionRef.current.body = body.style.touchAction || '';
-      // disable overscroll/navigation and touch actions while over canvas
-      html.style.overscrollBehavior = 'none';
-      body.style.overscrollBehavior = 'none';
-      html.style.touchAction = 'none';
-      body.style.touchAction = 'none';
-    } catch (e) {
-      // ignore
-    }
-  }, []);
-
-  const handlePointerLeaveCanvas = useCallback(() => {
-    isPointerOverRef.current = false;
-    try {
-      const html = document.documentElement;
-      const body = document.body;
-      html.style.overscrollBehavior = _prevOverscrollRef.current.html || '';
-      body.style.overscrollBehavior = _prevOverscrollRef.current.body || '';
-      html.style.touchAction = _prevTouchActionRef.current.html || '';
-      body.style.touchAction = _prevTouchActionRef.current.body || '';
-    } catch (e) {
-      // ignore
-    }
-  }, []);
+  // Pan & zoom hook
+  const {
+    scale,
+    pan,
+    setPan,
+    isPanningRef,
+    isTKeyPanningRef,
+    handlePointerEnter: handlePointerEnterCanvas,
+    handlePointerLeave: handlePointerLeaveCanvas,
+    handleWheel: handlePanZoomWheel,
+    handleMiddleMouseDown: handleMouseDownPan,
+    handleMiddleMouseUp: handleMouseUpPan,
+    startTKeyPanning,
+    stopTKeyPanning,
+    handleTKeyPanMove,
+  } = usePanZoom();
 
   const cols = grid[0]?.length || 0;
   const rows = grid.length;
@@ -1390,52 +1400,10 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     }
   }, [cellSize, cols, rows, grid, hoveredCell, hoveredDoor, showDoorMode, isDragging, dragFillValue, onCellSet, isPawnDragging, onPartyMove]);
 
-  // Wheel handler: zoom with Ctrl/Cmd or plain wheel to pan vertically (Shift for horizontal)
+  // Wheel handler: delegate to pan/zoom hook
   const handleWheel = useCallback((e) => {
-  // Only handle zoom (ctrl/meta or pinch events). Ignore plain wheel panning.
-  if (!(e.ctrlKey || e.metaKey)) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    if (e.ctrlKey || e.metaKey) {
-      // Zoom around mouse position
-      const delta = -e.deltaY * 0.0015;
-      const newScale = Math.min(3, Math.max(0.5, scale * (1 + delta)));
-      // Adjust pan so zoom centers on mouse
-      const wx = (mouseX - pan.x) / scale;
-      const wy = (mouseY - pan.y) / scale;
-      const nx = mouseX - wx * newScale;
-      const ny = mouseY - wy * newScale;
-      setScale(newScale);
-      setPan({ x: nx, y: ny });
-    } else {
-      // Pan using wheel: vertical unless Shift pressed -> horizontal
-      const panDelta = e.deltaY;
-      if (e.shiftKey) setPan(p => ({ x: p.x - panDelta, y: p.y }));
-      else setPan(p => ({ x: p.x, y: p.y - panDelta }));
-    }
-  }, [scale, pan.x, pan.y]);
-
-  // Track last mouse position to support T-key panning without mouse button
-  const lastMousePosRef = useRef(null);
-
-  const handleMouseDownPan = useCallback((e) => {
-    // start panning on middle mouse button
-    if (e.button !== 1) return;
-    isPanningRef.current = true;
-    panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
-    // capture pointer to keep receiving events
-    try { e.target && e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); } catch (e) {}
-  }, [pan.x, pan.y]);
-
-  const handleMouseUpPan = useCallback((e) => {
-    if (e.button !== 1) return;
-    isPanningRef.current = false;
-    try { e.target && e.target.releasePointerCapture && e.target.releasePointerCapture(e.pointerId); } catch (e) {}
-  }, []);
+    handlePanZoomWheel(e, canvasRef.current);
+  }, [handlePanZoomWheel]);
   
 
   const handleMouseLeave = useCallback(() => {
@@ -1655,102 +1623,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     }
   }, [onCellRightClick, cellSize, cols, rows, shouldRotate, canvasWidth]);
 
-  // Helpers to clone and transform placement templates (grid + doors + walls)
-  const cloneTemplate = useCallback((tpl) => {
-    if (!tpl) return null;
-    const grid = tpl.grid ? tpl.grid.map(r => r.slice()) : (Array.isArray(tpl) ? tpl.map(r => r.slice()) : null);
-    const doors = (tpl.doors || []).map(d => ({ ...d }));
-    const walls = (tpl.walls || []).map(w => ({ ...w }));
-    const cellStyles = { ...(tpl.cellStyles || {}) };
-    return { grid, doors, walls, cellStyles };
-  }, []);
-
-  const rotateCWOnce = useCallback((tpl) => {
-    if (!tpl || !tpl.grid) return tpl;
-    const g = tpl.grid;
-    const H = g.length;
-    const W = g[0]?.length || 0;
-    const ng = Array.from({ length: W }, () => Array(H).fill(0));
-    for (let r = 0; r < W; r++) {
-      for (let c = 0; c < H; c++) {
-        ng[r][c] = g[H - 1 - c][r];
-      }
-    }
-    const edgeMap = {
-      N: 'E',
-      E: 'S',
-      S: 'W',
-      W: 'N',
-      diag1: 'diag3',
-      diag3: 'diag2',
-      diag2: 'diag4',
-      diag4: 'diag1',
-      round1: 'round3',
-      round3: 'round2',
-      round2: 'round4',
-      round4: 'round1',
-    };
-    const rotateStyle = (style) => edgeMap[style] || style;
-    const styleMap = {};
-    Object.keys(tpl.cellStyles || {}).forEach(key => {
-      const parts = key.split(',').map(Number);
-      if (parts.length !== 2) return;
-      const ox = parts[0];
-      const oy = parts[1];
-      const nx = (H - 1) - oy;
-      const ny = ox;
-      styleMap[`${nx},${ny}`] = rotateStyle((tpl.cellStyles || {})[key]);
-    });
-    // Map original (x,y) -> rotated coordinates: x' = H-1 - y, y' = x
-    const ndoors = (tpl.doors || []).map(d => ({ x: (H - 1) - d.y, y: d.x, edge: edgeMap[d.edge] || d.edge }));
-    const nwalls = (tpl.walls || []).map(w => ({ x: (H - 1) - w.y, y: w.x, edge: edgeMap[w.edge] || w.edge }));
-    // Preserve other metadata (id/name) if present
-  return { ...(tpl || {}), grid: ng, doors: ndoors, walls: nwalls, cellStyles: styleMap };
-  }, []);
-
-  const rotateCCW = useCallback((tpl) => {
-    // rotate CCW = rotate CW three times
-    let cur = cloneTemplate(tpl) || tpl;
-    cur = rotateCWOnce(cur);
-    cur = rotateCWOnce(cur);
-    cur = rotateCWOnce(cur);
-  return cur;
-  }, [cloneTemplate, rotateCWOnce]);
-
-  const mirrorHorizontal = useCallback((tpl) => {
-    if (!tpl || !tpl.grid) return tpl;
-    const g = tpl.grid;
-    const H = g.length;
-    const W = g[0]?.length || 0;
-    const ng = g.map(row => row.slice().reverse());
-    const mirrorEdge = (edge) => {
-      if (edge === 'E') return 'W';
-      if (edge === 'W') return 'E';
-      if (edge === 'diag1') return 'diag3';
-      if (edge === 'diag3') return 'diag1';
-      if (edge === 'diag2') return 'diag4';
-      if (edge === 'diag4') return 'diag2';
-      if (edge === 'round1') return 'round3';
-      if (edge === 'round3') return 'round1';
-      if (edge === 'round2') return 'round4';
-      if (edge === 'round4') return 'round2';
-      return edge;
-    };
-    const styleMap = {};
-    Object.keys(tpl.cellStyles || {}).forEach(key => {
-      const parts = key.split(',').map(Number);
-      if (parts.length !== 2) return;
-      const ox = parts[0];
-      const oy = parts[1];
-      const nx = (W - 1) - ox;
-      const ny = oy;
-      const style = (tpl.cellStyles || {})[key];
-      styleMap[`${nx},${ny}`] = mirrorEdge(style);
-    });
-    const ndoors = (tpl.doors || []).map(d => ({ x: (W - 1) - d.x, y: d.y, edge: mirrorEdge(d.edge) }));
-    const nwalls = (tpl.walls || []).map(w => ({ x: (W - 1) - w.x, y: w.y, edge: mirrorEdge(w.edge) }));
-    return { ...(tpl || {}), grid: ng, doors: ndoors, walls: nwalls, cellStyles: styleMap };
-  }, []);
+  // Template transform functions are now provided by useTemplateTransform hook
+  // (rotateTemplateCW, rotateTemplateCCW, mirrorTemplate)
 
   // Ensure the canvas redraws immediately when the transformed template changes
   useEffect(() => {
@@ -1778,21 +1652,20 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     // Placement transform keys: Q = rotate CCW, E = rotate CW, W = mirror
     const handlePlacementKeyDown = (e) => {
       // Active while placing either a designer template or an auto-placed library room
-      if (!(placementTemplate || autoPlacedRoom)) return;
-      const source = placementTemplate || autoPlacedRoom;
+      if (!activeTemplateSource) return;
       if (e.key === 'e' || e.key === 'E') {
         e.preventDefault();
-        setTransformedPlacementTemplate(prev => rotateCWOnce(prev || cloneTemplate(source)));
+        rotateTemplateCW();
         try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
       }
       if (e.key === 'q' || e.key === 'Q') {
         e.preventDefault();
-        setTransformedPlacementTemplate(prev => rotateCCW(prev || cloneTemplate(source)));
+        rotateTemplateCCW();
         try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
       }
       if (e.key === 'w' || e.key === 'W') {
         e.preventDefault();
-        setTransformedPlacementTemplate(prev => mirrorHorizontal(prev || cloneTemplate(source)));
+        mirrorTemplate();
         try { sfx.play('select2', { volume: 0.6 }); } catch (err) {}
       }
     };
@@ -1802,7 +1675,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       // (Q/E/W) should transform the template and must not be interpreted
       // as grid actions (such as toggling doors). Early return to avoid
       // accidental door toggles while in placement mode.
-      if (placementTemplate || autoPlacedRoom) return;
+      if (activeTemplateSource) return;
       if (!hoveredCell) return;
       let edge = null;
       if (e.key === 'w' || e.key === 'W') edge = 'N';
@@ -1922,20 +1795,15 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       stopGameLoop();
       pressedKeysRef.current.clear();
     };
-  }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle, partyPos, onPartyMove, cols, rows, placementTemplate, autoPlacedRoom, cloneTemplate, rotateCWOnce, rotateCCW, mirrorHorizontal]);
+  }, [handleKeyDown, handleKeyUp, hoveredCell, onDoorToggle, partyPos, onPartyMove, cols, rows, activeTemplateSource, rotateTemplateCW, rotateTemplateCCW, mirrorTemplate, isTKeyPanningRef]);
 
-  // Sync transformed placement when the incoming placementTemplate or autoPlacedRoom changes.
+  // Focus canvas when a template becomes active so keyboard shortcuts work immediately.
+  // (Template syncing is handled by useTemplateTransform hook)
   useEffect(() => {
-    const source = placementTemplate || autoPlacedRoom;
-    if (source) {
-      // Initialize transformed copy
-      setTransformedPlacementTemplate(cloneTemplate(source));
-      // Focus the canvas so keyboard shortcuts work immediately
+    if (activeTemplateSource) {
       try { canvasRef.current && canvasRef.current.focus(); } catch (e) {}
-    } else {
-      setTransformedPlacementTemplate(null);
     }
-  }, [placementTemplate, autoPlacedRoom, cloneTemplate]);
+  }, [activeTemplateSource]);
 
   // Add global mouseup listener to handle drag ending outside canvas
   useEffect(() => {

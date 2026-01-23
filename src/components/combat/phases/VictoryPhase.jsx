@@ -4,6 +4,11 @@ import {
   awardXP,
   checkLevelUp
 } from "../../../utils/gameActions/index.js";
+import {
+  incrementMinorEncounter,
+  incrementMajorFoe,
+  logMessage
+} from "../../../state/actionCreators.js";
 
 const VictoryPhase = memo(function VictoryPhase({
   monsters,
@@ -63,6 +68,28 @@ const VictoryPhase = memo(function VictoryPhase({
       if (hero.hp > 0) {
         checkLevelUp(dispatch, hero, idx);
       }
+    });
+
+    // Increment foe counters for defeated monsters based on encounter source
+    const defeatedMonsters = monsters.filter(m => m.hp <= 0 || m.count === 0);
+    defeatedMonsters.forEach(monster => {
+      if (monster.encounterSource === 'minor_boss') {
+        // Minor boss (Level 3 boss) defeated
+  try { console.log('[VictoryPhase] dispatch incrementMinorEncounter (minor_boss)', monster); } catch (e) {}
+  dispatch(logMessage(` Increment counter: minor encounter (source=${monster.encounterSource})`,'system'));
+  dispatch(incrementMinorEncounter());
+      } else if (monster.encounterSource === 'major_foe') {
+        // Major foe (non-boss) defeated
+  try { console.log('[VictoryPhase] dispatch incrementMajorFoe (major_foe)', monster); } catch (e) {}
+  dispatch(logMessage(` Increment counter: major foe (source=${monster.encounterSource})`,'system'));
+  dispatch(incrementMajorFoe());
+  } else if (monster.encounterSource === 'minion_room' || monster.encounterSource === 'wandering' || monster.isMinorFoe) {
+        // Minion groups from room or wandering encounters defeated
+  try { console.log('[VictoryPhase] dispatch incrementMinorEncounter (minor group)', monster); } catch (e) {}
+  dispatch(logMessage(` Increment counter: minor encounter (source=${monster.encounterSource})`,'system'));
+  dispatch(incrementMinorEncounter());
+      }
+      // 'boss' and other sources don't increment counters
     });
 
     dispatch({ type: 'CLEAR_MONSTERS' });

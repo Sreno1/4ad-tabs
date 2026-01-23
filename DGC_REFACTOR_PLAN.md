@@ -73,3 +73,84 @@
 - Doors/walls/markers render identically (colors, sizes, layering).
 - Pawn movement and placement behavior unchanged.
 - No new re-render loops or frame drops.
+
+---
+
+## Implementation Progress
+
+### Completed (Phase 1)
+
+**Files Created:**
+
+1. **`DungeonGridCanvas.constants.js`** - Centralized constants
+   - `COLORS` object with all color definitions (background, cell, door, wall, template, etc.)
+   - Size calculation helpers: `getDoorMetrics()`, `getWallThickness()`, `getGlyphSizes()`, etc.
+   - `getDoorColor()`, `getWallColor()`, `getTemplateFillColor()` helpers
+   - Edge rotation/mirror mappings for template transforms
+   - Zoom/pan constants
+
+2. **`DungeonGridCanvas.template.js`** - Template transformation utilities
+   - `cloneTemplate()` - Deep clone templates
+   - `rotateCW()` - 90° clockwise rotation with grid/doors/walls/styles
+   - `rotateCCW()` - 90° counter-clockwise rotation
+   - `mirrorHorizontal()` - Horizontal flip
+   - `getTemplateBounds()`, `isTemplateEmpty()` helpers
+
+3. **`DungeonGridCanvas.geometry.js`** - Coordinate transformation utilities
+   - `screenToLogical()`, `screenToLogicalWithRotation()` - Screen to canvas coords
+   - `logicalToGrid()`, `gridToPixel()`, `getCellCenter()` - Grid coordinate helpers
+   - `detectEdge()` - Door/wall edge detection
+   - `calculateZoom()`, `calculatePanDelta()` - Pan/zoom math
+   - `normalizeRect()`, `forEachCellInRect()` - Rectangle utilities
+   - `getGridDimensions()`, `getCanvasDimensions()` - Size helpers
+
+4. **`hooks/usePanZoom.js`** - Pan and zoom state management
+   - Scale/pan state
+   - Wheel zoom handler (Ctrl/Cmd + scroll)
+   - Middle mouse button panning
+   - T-key panning mode
+   - Pointer overscroll lock (prevents browser gestures)
+
+5. **`hooks/useDragFill.js`** - Drag-to-fill functionality
+   - Single click toggle
+   - Drag painting
+   - Cmd/Ctrl+drag rectangle fill
+   - Click vs drag detection
+
+6. **`hooks/useTemplateTransform.js`** - Template transformation state
+   - Local transformed template copy
+   - Q/E/W keyboard shortcuts for rotate/mirror
+   - Auto-sync with source template
+
+7. **`hooks/index.js`** - Hook exports
+
+### Completed (Phase 2 - Integration)
+
+1. **Updated `DungeonGridCanvas.jsx`** to import and use the extracted utilities:
+   - ✅ Imported constants from `DungeonGridCanvas.constants.js`
+   - ✅ Imported geometry utilities from `DungeonGridCanvas.geometry.js`
+   - ✅ Replaced pan/zoom state with `usePanZoom` hook
+   - ✅ Replaced template transforms with `useTemplateTransform` hook
+   - ✅ Updated keyboard handlers to use hook functions
+   - ✅ Removed duplicate transform function definitions
+
+2. **Build verification**: Build passes successfully
+
+### Remaining (Optional - Phase 3)
+
+1. **Integrate `useDragFill` hook** (optional)
+   - The hook is created but not integrated - drag fill logic is still inline
+   - Would require significant refactoring of mouse handlers
+   - Current inline implementation works correctly
+   - Consider for future incremental improvement
+
+2. **Replace inline colors with COLORS constants** (optional)
+   - Many colors are dynamic (alpha values based on animation state)
+   - Static colors could be replaced incrementally
+   - Low impact on maintainability
+
+3. **Extract draw functions** to `DungeonGridCanvas.draw.js` (optional)
+   - Complex due to light animation and clipping logic
+   - May be better to leave in main component
+
+4. **Verification** - Test all interactions per acceptance checklist

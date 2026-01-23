@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { d6 } from '../utils/dice.js';
 import sfx from '../utils/sfx.js';
-import { updateMonster, deleteMonster } from '../state/actionCreators.js';
+import { updateMonster, deleteMonster, incrementMinorEncounter, incrementMajorFoe, logMessage } from '../state/actionCreators.js';
 import { MONSTER_ABILITIES } from '../data/monsters.js';
 import { getEquipment, hasEquipment, getActiveWeapon, getAllWeapons, weaponSwitchCostsTurn, isHeroUnarmed } from '../data/equipment.js';
 import { hasDarkvision, getFlurryAttacks, getPrayerPoints, getTrickPoints, getMaxPanache, getSpellSlots } from '../data/classes.js';
@@ -69,6 +69,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
   const [showCombatModule, setShowCombatModule] = useState(false);
   const [showRangedVolley, setShowRangedVolley] = useState(false);
   const [roundStartsWith, setRoundStartsWith] = useState('attack');
+  const [isSecondPhase, setIsSecondPhase] = useState(false); // Track if we've completed first phase and switched
   const [attackedThisRound, setAttackedThisRound] = useState({});
   const [targetMonsterIdx, setTargetMonsterIdx] = useState(null);
   const [pendingSave, setPendingSave] = useState(null);
@@ -92,6 +93,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       setCombatInitiative(null);
       setShowRangedVolley(false);
       setRoundStartsWith('attack');
+      setIsSecondPhase(false);
       setAttackedThisRound({});
       // Clear any wandering encounter metadata that might force ambush/monster-first
       try { dispatch({ type: 'CLEAR_WANDERING_ENCOUNTER' }); } catch (e) {}
@@ -151,9 +153,29 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       }
     });
 
+    // Increment foe counters for defeated monsters based on encounter source
+    const defeatedMonsters = state.monsters.filter(m => m.hp <= 0 || m.count === 0);
+    defeatedMonsters.forEach(monster => {
+      if (monster.encounterSource === 'minor_boss') {
+  try { console.log('[Combat] dispatch incrementMinorEncounter (minor_boss)', monster); } catch (e) {}
+  dispatch(logMessage(` Increment counter: minor encounter (source=${monster.encounterSource})`,'system'));
+  dispatch(incrementMinorEncounter());
+      } else if (monster.encounterSource === 'major_foe') {
+  try { console.log('[Combat] dispatch incrementMajorFoe (major_foe)', monster); } catch (e) {}
+  dispatch(logMessage(` Increment counter: major foe (source=${monster.encounterSource})`,'system'));
+  dispatch(incrementMajorFoe());
+  } else if (monster.encounterSource === 'minion_room' || monster.encounterSource === 'wandering' || monster.isMinorFoe) {
+        // Minion groups from room or wandering encounters defeated
+  try { console.log('[Combat] dispatch incrementMinorEncounter (minor group)', monster); } catch (e) {}
+  dispatch(logMessage(` Increment counter: minor encounter (source=${monster.encounterSource})`,'system'));
+  dispatch(incrementMinorEncounter());
+      }
+    });
+
     dispatch({ type: 'CLEAR_MONSTERS' });
     clearCombatLog();
     setCombatInitiative(null);
+    setIsSecondPhase(false);
     setTargetMonsterIdx(null);
     // Reset ranged engagement flag
     dispatch({ type: 'SET_RANGED_ENGAGEMENT', engaged: false });
@@ -401,46 +423,63 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
     setPendingSave(null);
   }, [pendingSave, state.party, state.hasLightSource, dispatch]);
 
-  // Process monster round start (regeneration, etc.)
-  const handleNewRound = useCallback(() => {
-    processMonsterRoundStart(dispatch, state.monsters);
+  // Handle switching between attack/defend phases or starting a new round
+  const handleNextPhase = useCallback(() => {
     // If modules are not yet visible, only initialize if initiative was already chosen.
     if (!showCombatModule) {
       if (combatInitiative && typeof combatInitiative.monsterFirst !== 'undefined') {
         const start = combatInitiative.monsterFirst ? 'defend' : 'attack';
         setRoundStartsWith(start);
+        setIsSecondPhase(false);
         setShowCombatModule(true);
+        addToCombatLog('--- Combat begins ---');
       } else {
         // No initiative set: leave InitiativePhase visible so player can choose.
         addToCombatLog(' Choose initiative before starting the round.');
         return;
       }
+    } else if (!isSecondPhase) {
+      // First phase complete - switch to second phase (attack → defend or defend → attack)
+      const nextPhase = roundStartsWith === 'attack' ? 'defend' : 'attack';
+      setRoundStartsWith(nextPhase);
+      setIsSecondPhase(true);
+      setAttackedThisRound({}); // Reset attack tracking for defend-after-attack scenarios
+      addToCombatLog(`--- ${nextPhase === 'attack' ? 'Party Attacks' : 'Monster Attacks'} ---`);
     } else {
-      // Maintain the same initiative order throughout the encounter
+      // Second phase complete - start actual new round
+      processMonsterRoundStart(dispatch, state.monsters);
+
+      // Reset to first phase based on initiative
       const start = combatInitiative.monsterFirst ? 'defend' : 'attack';
       setRoundStartsWith(start);
-    }
-    // Reset per-round attack markers
-    setAttackedThisRound({});
-    // Clear weapon switch turn cost flags for all heroes
-    state.party.forEach((hero, idx) => {
-      if (hero.switchedWeaponThisTurn) {
-        dispatch({ type: 'UPD_HERO', i: idx, u: { switchedWeaponThisTurn: false } });
-      }
-    });
+      setIsSecondPhase(false);
 
-    // Set ranged engagement flag for room combat (melee range closed after first round)
-    const location = state.currentCombatLocation;
-    if (!location || location.type === 'room') {
-      // If this is the start of round 2+, mark ranged as engaged (melee range closed)
-      if (!state.combatMeta?.rangedEngaged) {
-        dispatch({ type: 'SET_RANGED_ENGAGEMENT', engaged: true });
-        addToCombatLog('--- Melee range closed - ranged weapons no longer usable ---');
-      }
-    }
+      // Reset per-round attack markers
+      setAttackedThisRound({});
 
-    addToCombatLog('--- New Round ---');
-  }, [state.monsters, state.party, state.currentCombatLocation, state.combatMeta, dispatch, addToCombatLog, combatInitiative, showCombatModule]);
+      // Clear weapon switch turn cost flags for all heroes
+      state.party.forEach((hero, idx) => {
+        if (hero.switchedWeaponThisTurn) {
+          dispatch({ type: 'UPD_HERO', i: idx, u: { switchedWeaponThisTurn: false } });
+        }
+      });
+
+      // Set ranged engagement flag for room combat (melee range closed after first round)
+      const location = state.currentCombatLocation;
+      if (!location || location.type === 'room') {
+        // If this is the start of round 2+, mark ranged as engaged (melee range closed)
+        if (!state.combatMeta?.rangedEngaged) {
+          dispatch({ type: 'SET_RANGED_ENGAGEMENT', engaged: true });
+          addToCombatLog('--- Melee range closed - ranged weapons no longer usable ---');
+        }
+      }
+
+      addToCombatLog('--- New Round ---');
+    }
+  }, [state.monsters, state.party, state.currentCombatLocation, state.combatMeta, dispatch, addToCombatLog, combatInitiative, showCombatModule, isSecondPhase, roundStartsWith]);
+
+  // Alias for backwards compatibility (some places might call handleNewRound)
+  const handleNewRound = handleNextPhase;
 
   // If initiative is set externally (InitiativePhase), reveal the appropriate module automatically.
   // However, if the party attacks first and there are ranged heroes, defer showing the main combat module
@@ -1134,11 +1173,11 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                     <div className="flex justify-between items-center mb-2">
                       <div className="text-orange-400 font-bold text-sm">️ Attack (L{computedFoeLevel}+)</div>
                       <button
-                        onClick={handleNewRound}
-                        className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
-                        title="Start a new round of combat"
+                        onClick={handleNextPhase}
+                        className={`${isSecondPhase ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'} px-2 py-0.5 rounded text-xs`}
+                        title={isSecondPhase ? "Start a new round of combat" : "Switch to defense phase"}
                       >
-                        New Round
+                        {isSecondPhase ? 'New Round' : 'Defend Phase'}
                       </button>
                     </div>
                     {state.party.map((hero, index) => {
@@ -1247,11 +1286,11 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                     <div className="flex justify-between items-center mb-2">
                       <div className="text-red-400 font-bold text-sm">️ Defend (L{computedFoeLevel + 1}+)</div>
                       <button
-                        onClick={handleNewRound}
-                        className="bg-blue-600 hover:bg-blue-500 px-2 py-0.5 rounded text-xs"
-                        title="Start a new round of combat"
+                        onClick={handleNextPhase}
+                        className={`${isSecondPhase ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'} px-2 py-0.5 rounded text-xs`}
+                        title={isSecondPhase ? "Start a new round of combat" : "Switch to attack phase"}
                       >
-                        New Round
+                        {isSecondPhase ? 'New Round' : 'Attack Phase'}
                       </button>
                     </div>
                     {state.party.map((hero, index) => {
