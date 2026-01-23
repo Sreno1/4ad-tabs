@@ -106,7 +106,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     pan,
     setPan,
     isPanningRef,
-    isTKeyPanningRef,
+  isTKeyPanningRef,
+  isPointerOverRef,
     handlePointerEnter: handlePointerEnterCanvas,
     handlePointerLeave: handlePointerLeaveCanvas,
     handleWheel: handlePanZoomWheel,
@@ -1422,8 +1423,15 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       return;
     }
     // Handle right-click explicitly (some environments block contextmenu)
-    if (e.button === 2) {
-  if (suppressContextAction) return;
+    // Also treat Cmd+LeftClick on macOS and Ctrl+LeftClick on non-mac as context-clicks
+    const isMac = (typeof navigator !== 'undefined' && /Mac|iPhone|iPad|MacIntel/.test(navigator.platform));
+    const isModifierContextClick = (e.button === 0 && ((isMac && e.metaKey) || (!isMac && e.ctrlKey)));
+    if (e.button === 2 || isModifierContextClick) {
+      if (suppressContextAction) return;
+      // Prevent the native browser menu and stop propagation so our app menu can show
+      try { e.preventDefault(); } catch (err) {}
+      try { e.stopPropagation(); } catch (err) {}
+
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
@@ -1437,9 +1445,9 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       }
       const cx = Math.floor(logicalX / cellSize);
       const cy = Math.floor(logicalY / cellSize);
-  if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) {
-    setHoveredCell({ x: cx, y: cy });
-  try { console.debug('mouseDown right-click cell', cx, cy); if (typeof onCellContextMenu === 'function') onCellContextMenu(cx, cy, e); else if (typeof onCellRightClick === 'function') onCellRightClick(cx, cy, e, hoveredDoor?.edge); } catch (err) { console.error(err); }
+      if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) {
+        setHoveredCell({ x: cx, y: cy });
+        try { console.debug('mouseDown context-click cell', cx, cy); if (typeof onCellContextMenu === 'function') onCellContextMenu(cx, cy, e); else if (typeof onCellRightClick === 'function') onCellRightClick(cx, cy, e, hoveredDoor?.edge); } catch (err) { console.error(err); }
       }
       return;
     }
@@ -1535,6 +1543,11 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   }, [rectPreview, onCellSet, cols, rows, onEditComplete]);
 
   const handleClick = useCallback((e) => {
+    // If this was a modifier-based context-click (Cmd+Click on Mac or Ctrl+Click on PC), ignore here
+    const isMac = (typeof navigator !== 'undefined' && /Mac|iPhone|iPad|MacIntel/.test(navigator.platform));
+    if ((isMac && e.metaKey && e.button === 0) || (!isMac && e.ctrlKey && e.button === 0)) {
+      return;
+    }
     // Don't process click if we dragged across multiple cells
     if (draggedCellsRef.current.size > 1) {
       draggedCellsRef.current.clear();
@@ -1593,7 +1606,15 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   }, [hoveredCell, hoveredDoor, grid, onWallToggle, onPartyMove, onPartySelect, partyPos, partySelected]);
 
   const handleContextMenu = useCallback((e) => {
-  e.preventDefault();
+  try {
+    if (suppressContextAction) {
+      try { e.preventDefault(); } catch (err) {}
+      try { e.stopPropagation(); } catch (err) {}
+      return;
+    }
+  } catch (err) {}
+  try { e.preventDefault(); } catch (err) {}
+  try { e.stopPropagation(); } catch (err) {}
   try { console.debug('canvas contextmenu event'); } catch (err) {}
     const canvas = canvasRef.current;
     if (!canvas) return;

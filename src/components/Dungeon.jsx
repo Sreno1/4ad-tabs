@@ -543,24 +543,47 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
       }
     };
 
-    // Attach to container
+    // Attach to container and canvas (bubble phase)
     container.addEventListener('contextmenu', handler);
-    // Attach to canvas as well (in case browser context menu sneaks through)
     const canvas = container.querySelector('canvas');
     if (canvas) {
-      canvas.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
+      canvas.addEventListener('contextmenu', handler);
     }
-    return () => {
-      container.removeEventListener('contextmenu', handler);
-      if (canvas) {
-        canvas.removeEventListener('contextmenu', (e) => {
+
+    // Also attach a capture-phase listener on window so environments that
+    // deliver the native contextmenu before our handlers can be reliably
+    // prevented. If the event target is inside our container, always
+    // preventDefault so the browser menu never appears above the app menu.
+    const captureHandler = (e) => {
+      try {
+        if (!container) return;
+        // Some environments or overlays can cause the event target to be
+        // something other than a direct child of the container. Check the
+        // click coordinates against the container bounding rect which is
+        // more robust.
+        const rect = container.getBoundingClientRect();
+        const cx = e.clientX;
+        const cy = e.clientY;
+        if (typeof cx === 'number' && typeof cy === 'number') {
+          if (cx >= rect.left && cx <= rect.right && cy >= rect.top && cy <= rect.bottom) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        } else if (container.contains(e.target)) {
+          // Fallback to DOM containment when coordinates aren't available
           e.preventDefault();
           e.stopPropagation();
-        });
+        }
+      } catch (err) {
+        // ignore
       }
+    };
+    window.addEventListener('contextmenu', captureHandler, { capture: true });
+
+    return () => {
+      container.removeEventListener('contextmenu', handler);
+      if (canvas) canvas.removeEventListener('contextmenu', handler);
+      window.removeEventListener('contextmenu', captureHandler, { capture: true });
     };
   }, [cellSize, shouldRotate, state.grid, showFirstPersonView, openContextMenu]);
 
