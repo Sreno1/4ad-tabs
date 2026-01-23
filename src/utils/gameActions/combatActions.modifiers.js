@@ -81,6 +81,16 @@ export function buildAttackModifiers(hero, options = {}) {
       mod += weaponMod;
       modifiers.push(`${weaponMod >= 0 ? '+' : ''}${weaponMod} (weapon)`);
     }
+    // Crushing weapon bonus vs skeletons
+    if (
+      options.weapon.damageType === 'crushing' &&
+      options.target &&
+      (options.target.vulnerableTo === 'crushing' ||
+        (options.target.name && options.target.name.toLowerCase().includes('skeleton')))
+    ) {
+      mod += 1;
+      modifiers.push('+1 (crushing vs skeleton)');
+    }
   }
 
   // 3. ENVIRONMENTAL MODIFIERS

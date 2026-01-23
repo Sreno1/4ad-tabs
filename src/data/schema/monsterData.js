@@ -192,6 +192,7 @@ export const MONSTERS = {
         description: "Vial automatically destroys 1 skeleton",
       },
     },
+    vulnerableTo: 'crushing',
   },
 
   zombies: {
@@ -871,6 +872,7 @@ export const MONSTERS = {
         description: "Vial automatically destroys 2 skeletons",
       },
     },
+    vulnerableTo: 'crushing',
   },
 
   ratMenOfTheDeep: {

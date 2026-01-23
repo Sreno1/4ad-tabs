@@ -94,6 +94,28 @@ export const WEAPONS = {
     specialBonus: { vs: 'flammable', bonus: 2 },
     description: 'Improvised weapon. -1 normally, +2 vs flammable creatures',
     cost: 1
+  },
+  mace: {
+    id: 'mace',
+    key: 'mace',
+    name: 'Mace',
+    category: 'weapon',
+    type: 'weapon',
+    attackMod: 0,
+    damageType: 'crushing',
+    description: 'Blunt weapon. +1 vs skeletons',
+    cost: 12
+  },
+  club: {
+    id: 'club',
+    key: 'club',
+    name: 'Club',
+    category: 'weapon',
+    type: 'weapon',
+    attackMod: -1,
+    damageType: 'crushing',
+    description: 'Improvised blunt weapon. +1 vs skeletons',
+    cost: 1
   }
 };
 
