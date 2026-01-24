@@ -901,7 +901,8 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
               </div>
               <div id={`monster_${index}_hp_section`} className="flex justify-between items-center mt-0.5 text-xs">
                 <div id={`monster_${index}_stats`} className="flex items-center gap-2">
-                  {monster.xp && <span className="text-yellow-400">({monster.xp}XP)</span>}
+                  {/* XP removed from monster schema; show Tier instead */}
+                  {monster.tier && <span className="text-yellow-400">(T{monster.tier})</span>}
                   {isMinor && <span className="text-blue-300">(Minor Foe)</span>}
                 </div>
                 {/* Show count for Minor Foes, HP for Major Foes */}

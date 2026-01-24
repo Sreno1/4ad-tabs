@@ -36,6 +36,7 @@ export default function ActionPane({
   actionMode,
   selectedHero,
   onSelectHero,
+  mapActions = {},
   roomEvents,
   tileResult,
   roomDetails,
@@ -212,17 +213,36 @@ export default function ActionPane({
 
   return (
     <div className="space-y-2">
+      {/* Marching order + controls are shown regardless of room state */}
+      <div className="mb-2" data-testid="marching-order-container">
+        <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} dispatch={dispatch} />
+      </div>
+      <div className="border-t border-slate-700 my-2" />
+      <div className="flex gap-2 mb-2">
+        <button
+          onClick={() => { if (mapActions.onWandering) mapActions.onWandering(); }}
+          className="flex-1 bg-red-700 hover:bg-red-600 px-3 py-2 rounded text-sm"
+          title="Roll Wandering Monster"
+        >
+          Wandering
+        </button>
+        <button
+          onClick={() => { if (mapActions.onCustomMonster) mapActions.onCustomMonster(); }}
+          className="flex-1 bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm"
+          title="Spawn Custom Monster"
+        >
+          Custom Monster
+        </button>
+      </div>
+
       {showIdle ? (
         <div className="space-y-3">
           <div className="mb-2">
-            <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} dispatch={dispatch} />
+            {/* idle view content (marching order is shown above) */}
           </div>
         </div>
       ) : (
         <div>
-          <div className="mb-2" data-testid="marching-order-container">
-            <MarchingOrder state={state} selectedHero={selectedHero} onSelectHero={onSelectHero} dispatch={dispatch} />
-          </div>
 
           {/* "Clear saved room" button removed; use the Exit Room button below which also clears monsters and persisted tile data. */}
 

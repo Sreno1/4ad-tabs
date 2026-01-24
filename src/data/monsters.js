@@ -336,182 +336,182 @@ export const MONSTER_CATEGORIES = {
 // reactionTable: Custom d6 reaction table (uses DEFAULT_REACTION_TABLE if not specified)
 export const MONSTER_TABLE = {
   // ===== DUNGEON VERMIN =====
-  rats: { name: 'Rats', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['infection'], xp: 1,
+  rats: { name: 'Rats', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['infection'],
     reactionTable: { 1: 'flee', 2: 'flee', 3: 'fleeIfOutnumbered', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  skeletonHorde: { name: 'Skeleton Horde', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['undead'], xp: 1,
+  skeletonHorde: { name: 'Skeleton Horde', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['undead'],
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
-  swarmOfBats: { name: 'Swarm of Bats', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['flying'], xp: 1,
+  swarmOfBats: { name: 'Swarm of Bats', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['flying'],
     reactionTable: { 1: 'flee', 2: 'flee', 3: 'ignore', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  zombies: { name: 'Zombies', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['undead'], xp: 1,
+  zombies: { name: 'Zombies', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['undead'],
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  vampireBats: { name: 'Vampire Bats', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['flying', 'infection'], xp: 1,
+  vampireBats: { name: 'Vampire Bats', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['flying', 'infection'],
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  goblins: { name: 'Goblins', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: null, xp: 1,
+  goblins: { name: 'Goblins', category: 'dungeonVermin', tier: 1, levelMod: 0, count: 'd6+2', special: null,
     hates: 'dwarf',
     reactionTable: { 1: 'flee', 2: 'fleeIfOutnumbered', 3: 'bribe', 4: 'fight', 5: 'fight', 6: 'fight' } },
 
   // ===== DUNGEON MINIONS =====
-  orcs: { name: 'Orcs', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
+  orcs: { name: 'Orcs', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: null,
     hates: 'elf',
     reactionTable: { 1: 'bribe', 2: 'fleeIfOutnumbered', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  hobgoblins: { name: 'Hobgoblins', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
+  hobgoblins: { name: 'Hobgoblins', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: null,
     reactionTable: { 1: 'fleeIfOutnumbered', 2: 'bribe', 3: 'bribe', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  ghouls: { name: 'Ghouls', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: ['undead', 'paralysis'], xp: 2,
+  ghouls: { name: 'Ghouls', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: ['undead', 'paralysis'],
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  trolls: { name: 'Trolls', category: 'dungeonMinions', tier: 2, levelMod: 1, count: 'd6-2', special: ['regenerate'], xp: 3,
+  trolls: { name: 'Trolls', category: 'dungeonMinions', tier: 2, levelMod: 1, count: 'd6-2', special: ['regenerate'],
     hates: 'dwarf',
     reactionTable: { 1: 'bribe', 2: 'bribe', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  fungiFolk: { name: 'Fungi Folk', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: ['sporeCloud'], xp: 2,
+  fungiFolk: { name: 'Fungi Folk', category: 'dungeonMinions', tier: 2, levelMod: 0, count: 'd6', special: ['sporeCloud'],
     reactionTable: { 1: 'peaceful', 2: 'ignore', 3: 'tradeInformation', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  ogreGuard: { name: 'Ogre Guard', category: 'dungeonMinions', tier: 3, levelMod: 1, count: 'd3', special: null, xp: 4,
+  ogreGuard: { name: 'Ogre Guard', category: 'dungeonMinions', tier: 3, levelMod: 1, count: 'd3', special: null,
     reactionTable: { 1: 'bribe', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
 
   // ===== DUNGEON BOSS MONSTERS =====
-  medusa: { name: 'Medusa', category: 'dungeonBoss', tier: 4, levelMod: 2, count: '1', special: ['petrify', 'boss'], xp: 8,
+  medusa: { name: 'Medusa', category: 'dungeonBoss', tier: 4, levelMod: 2, count: '1', special: ['petrify', 'boss'],
     reactionTable: { 1: 'puzzle', 2: 'magicChallenge', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  ettin: { name: 'Ettin', category: 'dungeonBoss', tier: 4, levelMod: 2, count: '1', special: ['boss'], xp: 8,
+  ettin: { name: 'Ettin', category: 'dungeonBoss', tier: 4, levelMod: 2, count: '1', special: ['boss'],
     reactionTable: { 1: 'bribe', 2: 'trialOfChampions', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  smallDragon: { name: 'Small Dragon', category: 'dungeonBoss', tier: 4, levelMod: 2, count: '1', special: ['fireBreath', 'boss'], xp: 10,
+  smallDragon: { name: 'Small Dragon', category: 'dungeonBoss', tier: 4, levelMod: 2, count: '1', special: ['fireBreath', 'boss'],
     reactionTable: { 1: 'bribe', 2: 'puzzle', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  vampireLord: { name: 'Vampire Lord', category: 'dungeonBoss', tier: 5, levelMod: 2, count: '1', special: ['undead', 'boss'], xp: 12,
+  vampireLord: { name: 'Vampire Lord', category: 'dungeonBoss', tier: 5, levelMod: 2, count: '1', special: ['undead', 'boss'],
     reactionTable: { 1: 'bloodOffering', 2: 'capture', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  catacombLich: { name: 'Catacomb Lich', category: 'dungeonBoss', tier: 5, levelMod: 3, count: '1', special: ['undead', 'boss'], xp: 15,
+  catacombLich: { name: 'Catacomb Lich', category: 'dungeonBoss', tier: 5, levelMod: 3, count: '1', special: ['undead', 'boss'],
     reactionTable: { 1: 'magicChallenge', 2: 'quest', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  greaterDemon: { name: 'Greater Demon', category: 'dungeonBoss', tier: 6, levelMod: 3, count: '1', special: ['magic_resist', 'boss'], xp: 20,
+  greaterDemon: { name: 'Greater Demon', category: 'dungeonBoss', tier: 6, levelMod: 3, count: '1', special: ['magic_resist', 'boss'],
     reactionTable: { 1: 'bloodOffering', 2: 'quest', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
 
   // ===== DUNGEON WEIRD MONSTERS =====
-  wanderingSwordsman: { name: 'Wandering Swordsman', category: 'dungeonWeird', tier: 2, levelMod: 0, count: '1', special: null, xp: 3,
+  wanderingSwordsman: { name: 'Wandering Swordsman', category: 'dungeonWeird', tier: 2, levelMod: 0, count: '1', special: null,
     reactionTable: { 1: 'offerFoodAndRest', 2: 'tradeInformation', 3: 'trialOfChampions', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  gargoyle: { name: 'Gargoyle', category: 'dungeonWeird', tier: 3, levelMod: 1, count: 'd3', special: ['flying'], xp: 4,
+  gargoyle: { name: 'Gargoyle', category: 'dungeonWeird', tier: 3, levelMod: 1, count: 'd3', special: ['flying'],
     reactionTable: { 1: 'ignore', 2: 'puzzle', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  carrionCrawler: { name: 'Carrion Crawler', category: 'dungeonWeird', tier: 2, levelMod: 1, count: '1', special: ['paralysis'], xp: 3,
+  carrionCrawler: { name: 'Carrion Crawler', category: 'dungeonWeird', tier: 2, levelMod: 1, count: '1', special: ['paralysis'],
     reactionTable: { 1: 'ignore', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  wraithKing: { name: 'Wraith King', category: 'dungeonWeird', tier: 4, levelMod: 2, count: '1', special: ['undead', 'fear'], xp: 8,
+  wraithKing: { name: 'Wraith King', category: 'dungeonWeird', tier: 4, levelMod: 2, count: '1', special: ['undead', 'fear'],
     reactionTable: { 1: 'quest', 2: 'magicChallenge', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
-  manticor: { name: 'Manticor', category: 'dungeonWeird', tier: 3, levelMod: 1, count: '1', special: ['flying', 'poison'], xp: 5,
+  manticor: { name: 'Manticor', category: 'dungeonWeird', tier: 3, levelMod: 1, count: '1', special: ['flying', 'poison'],
     reactionTable: { 1: 'bribe', 2: 'puzzle', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  mimicChest: { name: 'Mimic Chest', category: 'dungeonWeird', tier: 3, levelMod: 1, count: '1', special: null, xp: 4,
+  mimicChest: { name: 'Mimic Chest', category: 'dungeonWeird', tier: 3, levelMod: 1, count: '1', special: null,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
 
   // ===== CAVERNS VERMIN =====
-  caveRats: { name: 'Cave Rats', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['disease'], xp: 1,
+  caveRats: { name: 'Cave Rats', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['disease'],
     reactionTable: { 1: 'flee', 2: 'flee', 3: 'fleeIfOutnumbered', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  giantCentipedes: { name: 'Giant Centipedes', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['poison'], xp: 1,
+  giantCentipedes: { name: 'Giant Centipedes', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['poison'],
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  giantSpiders: { name: 'Giant Spiders', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['poison', 'webbing'], xp: 1,
+  giantSpiders: { name: 'Giant Spiders', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['poison', 'webbing'],
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  caveLocusts: { name: 'Cave Locusts', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['swarm'], xp: 1,
+  caveLocusts: { name: 'Cave Locusts', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['swarm'],
     reactionTable: { 1: 'flee', 2: 'flee', 3: 'ignore', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  piercers: { name: 'Piercers', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: null, xp: 1,
+  piercers: { name: 'Piercers', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: null,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  stirges: { name: 'Stirges', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['flying'], xp: 1,
+  stirges: { name: 'Stirges', category: 'cavernsVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['flying'],
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
 
   // ===== CAVERNS MINIONS =====
-  giantLizards: { name: 'Giant Lizards', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
+  giantLizards: { name: 'Giant Lizards', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: null,
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  troglodytes: { name: 'Troglodytes', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
+  troglodytes: { name: 'Troglodytes', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: null,
     reactionTable: { 1: 'fleeIfOutnumbered', 2: 'bribe', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  caveOrcs: { name: 'Cave Orcs', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
+  caveOrcs: { name: 'Cave Orcs', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: null,
     hates: 'elf',
     reactionTable: { 1: 'bribe', 2: 'fleeIfOutnumbered', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  darkElves: { name: 'Dark Elves', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: ['spellDisrupt'], xp: 2,
+  darkElves: { name: 'Dark Elves', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: ['spellDisrupt'],
     reactionTable: { 1: 'tradeInformation', 2: 'magicChallenge', 3: 'capture', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  caveGoblins: { name: 'Cave Goblins', category: 'cavernsMinions', tier: 1, levelMod: 0, count: 'd6+2', special: null, xp: 1, surpriseChance: 2,
+  caveGoblins: { name: 'Cave Goblins', category: 'cavernsMinions', tier: 1, levelMod: 0, count: 'd6+2', special: null, surpriseChance: 2,
     hates: 'dwarf',
     reactionTable: { 1: 'flee', 2: 'fleeIfOutnumbered', 3: 'bribe', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  caveSkeletons: { name: 'Cave Skeletons', category: 'cavernsMinions', tier: 1, levelMod: 2, count: '2d6', special: ['undead'], xp: 2, surpriseChance: 1,
+  caveSkeletons: { name: 'Cave Skeletons', category: 'cavernsMinions', tier: 1, levelMod: 2, count: '2d6', special: ['undead'], surpriseChance: 1,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
-  deepDwarves: { name: 'Deep Dwarves', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
+  deepDwarves: { name: 'Deep Dwarves', category: 'cavernsMinions', tier: 2, levelMod: 0, count: 'd6', special: null,
     reactionTable: { 1: 'tradeInformation', 2: 'bribe', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
 
   // ===== CAVERNS BOSS MONSTERS =====
-  caveOgre: { name: 'Cave Ogre', category: 'cavernsBoss', tier: 4, levelMod: 2, count: '1', special: ['boss'], xp: 8,
+  caveOgre: { name: 'Cave Ogre', category: 'cavernsBoss', tier: 4, levelMod: 2, count: '1', special: ['boss'],
     reactionTable: { 1: 'bribe', 2: 'trialOfChampions', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  basilisk: { name: 'Basilisk', category: 'cavernsBoss', tier: 4, levelMod: 2, count: '1', special: ['gaze', 'boss'], xp: 10,
+  basilisk: { name: 'Basilisk', category: 'cavernsBoss', tier: 4, levelMod: 2, count: '1', special: ['gaze', 'boss'],
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  giantSlug: { name: 'Giant Slug', category: 'cavernsBoss', tier: 4, levelMod: 2, count: '1', special: ['boss'], xp: 8,
+  giantSlug: { name: 'Giant Slug', category: 'cavernsBoss', tier: 4, levelMod: 2, count: '1', special: ['boss'],
     reactionTable: { 1: 'ignore', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  umberhulk: { name: 'Umber Hulk', category: 'cavernsBoss', tier: 4, levelMod: 2, count: '1', special: ['boss'], xp: 8,
+  umberhulk: { name: 'Umber Hulk', category: 'cavernsBoss', tier: 4, levelMod: 2, count: '1', special: ['boss'],
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  caveDragon: { name: 'Cave Dragon', category: 'cavernsBoss', tier: 5, levelMod: 3, count: '1', special: ['fireBreath', 'boss'], xp: 15,
+  caveDragon: { name: 'Cave Dragon', category: 'cavernsBoss', tier: 5, levelMod: 3, count: '1', special: ['fireBreath', 'boss'],
     reactionTable: { 1: 'bribe', 2: 'puzzle', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
-  purpleWorm: { name: 'Purple Worm', category: 'cavernsBoss', tier: 6, levelMod: 3, count: '1', special: ['boss'], xp: 20,
+  purpleWorm: { name: 'Purple Worm', category: 'cavernsBoss', tier: 6, levelMod: 3, count: '1', special: ['boss'],
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
 
   // ===== CAVERNS WEIRD MONSTERS =====
-  carrionCrawlerCave: { name: 'Carrion Crawler', category: 'cavernsWeird', tier: 2, levelMod: 1, count: '1', special: ['paralysis'], xp: 3,
+  carrionCrawlerCave: { name: 'Carrion Crawler', category: 'cavernsWeird', tier: 2, levelMod: 1, count: '1', special: ['paralysis'],
     reactionTable: { 1: 'ignore', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  rustMonster: { name: 'Rust Monster', category: 'cavernsWeird', tier: 2, levelMod: 0, count: '1', special: ['metalEater'], xp: 2,
+  rustMonster: { name: 'Rust Monster', category: 'cavernsWeird', tier: 2, levelMod: 0, count: '1', special: ['metalEater'],
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  drillworm: { name: 'Drillworm', category: 'cavernsWeird', tier: 4, levelMod: 2, count: '1', special: null, xp: 6, surpriseChance: 3,
+  drillworm: { name: 'Drillworm', category: 'cavernsWeird', tier: 4, levelMod: 2, count: '1', special: null, surpriseChance: 3,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  cavernSludge: { name: 'Cavern Sludge', category: 'cavernsWeird', tier: 3, levelMod: 2, count: '1', special: null, xp: 5, surpriseChance: 4,
+  cavernSludge: { name: 'Cavern Sludge', category: 'cavernsWeird', tier: 3, levelMod: 2, count: '1', special: null, surpriseChance: 4,
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  gelatinousCube: { name: 'Gelatinous Cube', category: 'cavernsWeird', tier: 4, levelMod: 2, count: '1', special: ['paralysis'], xp: 6,
+  gelatinousCube: { name: 'Gelatinous Cube', category: 'cavernsWeird', tier: 4, levelMod: 2, count: '1', special: ['paralysis'],
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  roper: { name: 'Roper', category: 'cavernsWeird', tier: 3, levelMod: 1, count: '1', special: ['paralysis'], xp: 4,
+  roper: { name: 'Roper', category: 'cavernsWeird', tier: 3, levelMod: 1, count: '1', special: ['paralysis'],
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  cloaker: { name: 'Cloaker', category: 'cavernsWeird', tier: 3, levelMod: 1, count: '1', special: null, xp: 4,
+  cloaker: { name: 'Cloaker', category: 'cavernsWeird', tier: 3, levelMod: 1, count: '1', special: null,
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  hookHorror: { name: 'Hook Horror', category: 'cavernsWeird', tier: 3, levelMod: 1, count: 'd3', special: null, xp: 4,
+  hookHorror: { name: 'Hook Horror', category: 'cavernsWeird', tier: 3, levelMod: 1, count: 'd3', special: null,
     reactionTable: { 1: 'fleeIfOutnumbered', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
 
   // ===== FUNGAL GROTTOES VERMIN =====
-  giantFireBeetles: { name: 'Giant Fire Beetles', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: null, xp: 1,
+  giantFireBeetles: { name: 'Giant Fire Beetles', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: null,
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  fungusBats: { name: 'Fungus Bats', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['flying', 'sporeCloud'], xp: 1,
+  fungusBats: { name: 'Fungus Bats', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['flying', 'sporeCloud'],
     reactionTable: { 1: 'flee', 2: 'flee', 3: 'ignore', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  shrieker: { name: 'Shrieker', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: null, xp: 1,
+  shrieker: { name: 'Shrieker', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: null,
     reactionTable: { 1: 'ignore', 2: 'ignore', 3: 'ignore', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  yellowMold: { name: 'Yellow Mold', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['sporeCloud'], xp: 1,
+  yellowMold: { name: 'Yellow Mold', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['sporeCloud'],
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  sporeFolk: { name: 'Spore Folk', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['sporeCloud'], xp: 1,
+  sporeFolk: { name: 'Spore Folk', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['sporeCloud'],
     reactionTable: { 1: 'peaceful', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  fungusGnats: { name: 'Fungus Gnats', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['swarm', 'disease'], xp: 1,
+  fungusGnats: { name: 'Fungus Gnats', category: 'fungalVermin', tier: 1, levelMod: 0, count: 'd6+2', special: ['swarm', 'disease'],
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
 
   // ===== FUNGAL GROTTOES MINIONS =====
-  myconids: { name: 'Myconids', category: 'fungalMinions', tier: 2, levelMod: 0, count: 'd6', special: ['sporeCloud'], xp: 2,
+  myconids: { name: 'Myconids', category: 'fungalMinions', tier: 2, levelMod: 0, count: 'd6', special: ['sporeCloud'],
     reactionTable: { 1: 'peaceful', 2: 'tradeInformation', 3: 'ignore', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  moldMen: { name: 'Mold Men', category: 'fungalMinions', tier: 2, levelMod: 0, count: 'd6', special: ['disease'], xp: 2,
+  moldMen: { name: 'Mold Men', category: 'fungalMinions', tier: 2, levelMod: 0, count: 'd6', special: ['disease'],
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  fungusTrolls: { name: 'Fungus Trolls', category: 'fungalMinions', tier: 2, levelMod: 1, count: 'd6-2', special: ['regenerate', 'sporeCloud'], xp: 3,
+  fungusTrolls: { name: 'Fungus Trolls', category: 'fungalMinions', tier: 2, levelMod: 1, count: 'd6-2', special: ['regenerate', 'sporeCloud'],
     reactionTable: { 1: 'bribe', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  sporeZombies: { name: 'Spore Zombies', category: 'fungalMinions', tier: 2, levelMod: 0, count: 'd6', special: ['undead', 'sporeCloud'], xp: 2,
+  sporeZombies: { name: 'Spore Zombies', category: 'fungalMinions', tier: 2, levelMod: 0, count: 'd6', special: ['undead', 'sporeCloud'],
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  fungalGoblins: { name: 'Fungal Goblins', category: 'fungalMinions', tier: 1, levelMod: 0, count: 'd6+2', special: ['sporeCloud'], xp: 1,
+  fungalGoblins: { name: 'Fungal Goblins', category: 'fungalMinions', tier: 1, levelMod: 0, count: 'd6+2', special: ['sporeCloud'],
     reactionTable: { 1: 'flee', 2: 'fleeIfOutnumbered', 3: 'bribe', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  giantSlugs: { name: 'Giant Slugs', category: 'fungalMinions', tier: 2, levelMod: 0, count: 'd6', special: null, xp: 2,
+  giantSlugs: { name: 'Giant Slugs', category: 'fungalMinions', tier: 2, levelMod: 0, count: 'd6', special: null,
     reactionTable: { 1: 'ignore', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
 
   // ===== FUNGAL GROTTOES BOSS MONSTERS =====
-  giantMushroom: { name: 'Giant Mushroom', category: 'fungalBoss', tier: 4, levelMod: 2, count: '1', special: ['sporeCloud', 'boss'], xp: 8,
+  giantMushroom: { name: 'Giant Mushroom', category: 'fungalBoss', tier: 4, levelMod: 2, count: '1', special: ['sporeCloud', 'boss'],
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  fungalTyrant: { name: 'Fungal Tyrant', category: 'fungalBoss', tier: 5, levelMod: 2, count: '1', special: ['sporeCloud', 'boss'], xp: 12,
+  fungalTyrant: { name: 'Fungal Tyrant', category: 'fungalBoss', tier: 5, levelMod: 2, count: '1', special: ['sporeCloud', 'boss'],
     reactionTable: { 1: 'quest', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
-  myconidSovereign: { name: 'Myconid Sovereign', category: 'fungalBoss', tier: 4, levelMod: 2, count: '1', special: ['sporeCloud', 'sleepAura', 'boss'], xp: 10,
+  myconidSovereign: { name: 'Myconid Sovereign', category: 'fungalBoss', tier: 4, levelMod: 2, count: '1', special: ['sporeCloud', 'sleepAura', 'boss'],
     reactionTable: { 1: 'peaceful', 2: 'tradeInformation', 3: 'quest', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  moldDragon: { name: 'Mold Dragon', category: 'fungalBoss', tier: 5, levelMod: 3, count: '1', special: ['sporeCloud', 'fireBreath', 'boss'], xp: 15,
+  moldDragon: { name: 'Mold Dragon', category: 'fungalBoss', tier: 5, levelMod: 3, count: '1', special: ['sporeCloud', 'fireBreath', 'boss'],
     reactionTable: { 1: 'bribe', 2: 'puzzle', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
-  sporeMother: { name: 'Spore Mother', category: 'fungalBoss', tier: 4, levelMod: 2, count: '1', special: ['sporeCloud', 'boss'], xp: 10,
+  sporeMother: { name: 'Spore Mother', category: 'fungalBoss', tier: 4, levelMod: 2, count: '1', special: ['sporeCloud', 'boss'],
     reactionTable: { 1: 'peaceful', 2: 'quest', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  cordycepsHorror: { name: 'Cordyceps Horror', category: 'fungalBoss', tier: 6, levelMod: 3, count: '1', special: ['disease', 'boss'], xp: 20,
+  cordycepsHorror: { name: 'Cordyceps Horror', category: 'fungalBoss', tier: 6, levelMod: 3, count: '1', special: ['disease', 'boss'],
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fightToTheDeath', 6: 'fightToTheDeath' } },
 
   // ===== FUNGAL GROTTOES WEIRD MONSTERS =====
-  gasBag: { name: 'Gas Bag', category: 'fungalWeird', tier: 2, levelMod: 0, count: '1', special: ['flying', 'sporeCloud'], xp: 2,
+  gasBag: { name: 'Gas Bag', category: 'fungalWeird', tier: 2, levelMod: 0, count: '1', special: ['flying', 'sporeCloud'],
     reactionTable: { 1: 'flee', 2: 'ignore', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  violetFungus: { name: 'Violet Fungus', category: 'fungalWeird', tier: 2, levelMod: 0, count: 'd3', special: ['poison'], xp: 2,
+  violetFungus: { name: 'Violet Fungus', category: 'fungalWeird', tier: 2, levelMod: 0, count: 'd3', special: ['poison'],
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  phantomFungus: { name: 'Phantom Fungus', category: 'fungalWeird', tier: 3, levelMod: 1, count: '1', special: null, xp: 4,
+  phantomFungus: { name: 'Phantom Fungus', category: 'fungalWeird', tier: 3, levelMod: 1, count: '1', special: null,
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fight' } },
-  sporeWight: { name: 'Spore Wight', category: 'fungalWeird', tier: 3, levelMod: 1, count: '1', special: ['undead', 'sporeCloud'], xp: 4,
+  sporeWight: { name: 'Spore Wight', category: 'fungalWeird', tier: 3, levelMod: 1, count: '1', special: ['undead', 'sporeCloud'],
     reactionTable: { 1: 'fight', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  moldElemental: { name: 'Mold Elemental', category: 'fungalWeird', tier: 3, levelMod: 1, count: '1', special: ['magic_resist', 'disease'], xp: 5,
+  moldElemental: { name: 'Mold Elemental', category: 'fungalWeird', tier: 3, levelMod: 1, count: '1', special: ['magic_resist', 'disease'],
     reactionTable: { 1: 'ignore', 2: 'magicChallenge', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } },
-  myceliumColony: { name: 'Mycelium Colony', category: 'fungalWeird', tier: 4, levelMod: 2, count: '1', special: ['swarm', 'sporeCloud'], xp: 6,
+  myceliumColony: { name: 'Mycelium Colony', category: 'fungalWeird', tier: 4, levelMod: 2, count: '1', special: ['swarm', 'sporeCloud'],
     reactionTable: { 1: 'ignore', 2: 'fight', 3: 'fight', 4: 'fight', 5: 'fight', 6: 'fightToTheDeath' } }
 };
 
@@ -533,7 +533,8 @@ export const getAllMonsters = () => {
   const monsters = Object.entries(MONSTER_TABLE).map(([key, monster]) => ({
     key,
     ...monster,
-    displayName: `${monster.name} (T${monster.tier}, ${monster.xp}XP)`
+    // XP removed from schema; show Tier and Level (calculated from tier/levelMod when used)
+    displayName: `${monster.name} (T${monster.tier})`
   }));
   
   // Sort by category order, then by name within category
@@ -604,7 +605,7 @@ export const createMonsterFromTable = (key, hcl = 1, ctx) => {
     tier: template.tier,
     special: specialAbilities.length > 0 ? specialAbilities[0] : null, // Primary ability for display
     abilities: specialAbilities, // All abilities
-    xp: template.xp,
+  // xp removed from schema — derive any XP-related base from monster.level or tier
     surpriseChance: template.surpriseChance || 0,
     // Evaluate count expressions (like 'd6', 'd6+2', 'd6-2', 'd3', or numeric strings)
     count: rollCountExpression(),
@@ -619,34 +620,34 @@ export const createMonsterFromTable = (key, hcl = 1, ctx) => {
 // Monster Templates with base stats
 export const MONSTER_TEMPLATES = {
   // Vermin - weakest enemies
-  vermin: { name: 'Vermin', level: 1, baseHP: 1, special: null, xp: 1 },
+  vermin: { name: 'Vermin', level: 1, baseHP: 1, special: null },
   
   // Minions - standard enemies
-  minion: { name: 'Minion', level: 2, baseHP: 2, special: null, xp: 2 },
-  minions: { name: 'Minions', level: 2, baseHP: 2, special: null, xp: 2 }, // Alias for plural
+  minion: { name: 'Minion', level: 2, baseHP: 2, special: null },
+  minions: { name: 'Minions', level: 2, baseHP: 2, special: null }, // Alias for plural
   
   // Major Foes - level set by HCL
-  major: { name: 'Major Foe', level: 0, baseHP: 6, special: null, xp: 5 },
+  major: { name: 'Major Foe', level: 0, baseHP: 6, special: null },
   
   // Boss - level set by HCL+1
-  boss: { name: 'Boss', level: 0, baseHP: 10, special: 'boss', xp: 10 },
+  boss: { name: 'Boss', level: 0, baseHP: 10, special: 'boss' },
   
   // Wandering monsters by level
-  goblin: { name: 'Goblin', level: 1, baseHP: 2, special: null, xp: 1, moraleMod: -1 }, // Cowardly
-  orc: { name: 'Orc', level: 2, baseHP: 4, special: null, xp: 2, moraleMod: +1 }, // Courageous
-  troll: { name: 'Troll', level: 3, baseHP: 6, special: 'regenerate', xp: 4 },
-  ogre: { name: 'Ogre', level: 4, baseHP: 8, special: null, xp: 5 },
-  dragon: { name: 'Dragon', level: 5, baseHP: 12, special: 'breath', xp: 10 },
+  goblin: { name: 'Goblin', level: 1, baseHP: 2, special: null, moraleMod: -1 }, // Cowardly
+  orc: { name: 'Orc', level: 2, baseHP: 4, special: null, moraleMod: +1 }, // Courageous
+  troll: { name: 'Troll', level: 3, baseHP: 6, special: 'regenerate' },
+  ogre: { name: 'Ogre', level: 4, baseHP: 8, special: null },
+  dragon: { name: 'Dragon', level: 5, baseHP: 12, special: 'breath' },
   
   // Additional monster types with special abilities
-  skeleton: { name: 'Skeleton', level: 2, baseHP: 3, special: 'undead', xp: 2 },
-  zombie: { name: 'Zombie', level: 2, baseHP: 4, special: 'undead', xp: 2 },
-  ghost: { name: 'Ghost', level: 3, baseHP: 4, special: 'undead', xp: 4 },
-  giant_spider: { name: 'Giant Spider', level: 3, baseHP: 5, special: 'poison', xp: 4 },
-  rat_swarm: { name: 'Rat Swarm', level: 1, baseHP: 6, special: 'swarm', xp: 2 },
-  harpy: { name: 'Harpy', level: 3, baseHP: 4, special: 'flying', xp: 4 },
-  demon: { name: 'Demon', level: 4, baseHP: 8, special: 'magic_resist', xp: 6 },
-  vampire: { name: 'Vampire', level: 5, baseHP: 8, special: 'undead', xp: 8 }
+  skeleton: { name: 'Skeleton', level: 2, baseHP: 3, special: 'undead' },
+  zombie: { name: 'Zombie', level: 2, baseHP: 4, special: 'undead' },
+  ghost: { name: 'Ghost', level: 3, baseHP: 4, special: 'undead' },
+  giant_spider: { name: 'Giant Spider', level: 3, baseHP: 5, special: 'poison' },
+  rat_swarm: { name: 'Rat Swarm', level: 1, baseHP: 6, special: 'swarm' },
+  harpy: { name: 'Harpy', level: 3, baseHP: 4, special: 'flying' },
+  demon: { name: 'Demon', level: 4, baseHP: 8, special: 'magic_resist' },
+  vampire: { name: 'Vampire', level: 5, baseHP: 8, special: 'undead' }
 };
 
 // Wandering Monster Table (d6)
@@ -706,7 +707,7 @@ export const createMonster = (type, level = null, ctx) => {
       initialCount: count, // Starting count for morale checks
       type,
       special: template.special,
-      xp: template.xp || effectiveLevel,
+  // xp removed from schema — awardXP derives base from monster.level
       moraleMod: template.moraleMod || 0, // Morale modifier (e.g., -1 for cowardly, +1 for courageous)
       reaction: null, // Set when first encountered
       statuses: [], // Active status effects (sleeping, etc.)
@@ -725,7 +726,7 @@ export const createMonster = (type, level = null, ctx) => {
     maxHp: hp,
     type,
     special: template.special,
-    xp: template.xp || effectiveLevel,
+  // xp removed from schema — awardXP derives base from monster.level
     moraleMod: template.moraleMod || 0, // Morale modifier (e.g., -1 for cowardly, +1 for courageous)
     reaction: null, // Set when first encountered
     statuses: [] // Active status effects (sleeping, etc.)

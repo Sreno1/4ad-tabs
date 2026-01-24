@@ -294,13 +294,9 @@ Optional architecture work:
 <a name="implementation-priority"></a>
 ## 5. IMPLEMENTATION PRIORITY (REMAINING)
 
-### Priority 0: Refactor Foundations (sequence locked)
-1. fix problem where context menu for browser appears over app's
-2. remove xp amounts from monster schema
-
 ### High Priority: Core Gameplay Gaps
 4. Spell targeting UI + casting edge cases (traits, resistances, status expiry)
-5. Reaction-based initiative and per-monster reaction tables (bribe/intimidate)
+5. Reaction-based initiative and per-monster reaction tables (bribe/intimidate/otherwise peaceful reactions need to be coded in logically)
 6. Trap complications + rogue bonus + damage variety
 7. Environment-based treasure tables (depends on #5)
 8. Marching order targeting improvements (use marchingOrder positions)

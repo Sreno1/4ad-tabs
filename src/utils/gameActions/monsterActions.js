@@ -183,10 +183,11 @@ export const rollMonsterReaction = (dispatch, monsterIdx, ctx) => {
  */
 export const awardXP = (dispatch, monster, party, ctx) => {
   const { rng, rollLog } = ctx || getDefaultContext();
-  const baseXP = monster.xp || monster.level;
+  // Base XP should be derived from monster level (schema no longer stores per-monster XP amounts)
+  const baseXP = monster.level;
   const aliveHeroes = party.filter(h => h.hp > 0);
 
-  if (aliveHeroes.length === 0) return { xp: 0, rolls: [] };
+  if (aliveHeroes.length === 0) return { baseXP, totalXP: 0, rolls: [], recipients: 0 };
 
   const rolls = [];
 

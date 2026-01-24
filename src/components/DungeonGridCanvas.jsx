@@ -1883,6 +1883,7 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
 
   return (
     <div
+      className="dungeon-grid-container"
       style={{
   position: 'relative',
   width: 'fit-content',
@@ -1934,14 +1935,17 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
       )}
       {/* Placement shortcuts hint */}
       {(placementTemplate || autoPlacedRoom) && (
-        <div
-          className="absolute top-2 right-2 bg-black/70 text-white px-3 py-2 rounded text-xs font-semibold"
-          style={{ zIndex: 9999 }}
-        >
-          <div className="font-bold text-amber-300">Placement Shortcuts</div>
-          <div className="text-slate-200 text-xs mt-1">E: rotate → &nbsp; Q: rotate ← &nbsp; W: mirror</div>
-          <div className="text-slate-400 text-xs mt-1">Focus map or click to enable keys</div>
-        </div>
+        <>
+          <style>{`.placement-shortcuts:hover{ opacity: 0; transform: translateY(6px); pointer-events: none; } .placement-shortcuts{ transition: opacity 160ms ease, transform 160ms ease; }`}</style>
+          <div
+            className="placement-shortcuts absolute bottom-2 right-2 bg-black/80 text-white px-2 py-1 rounded text-xxs font-semibold shadow-md"
+            style={{ zIndex: 9999, minWidth: 140, maxWidth: 220 }}
+          >
+            <div className="font-bold text-amber-300 text-xs">Placement</div>
+            <div className="text-slate-200 text-xxs mt-0.5">E: ↻ &nbsp; Q: ↺ &nbsp; W: ⇋</div>
+            <div className="text-slate-400 text-xxs mt-0.5">Focus map or click to enable keys</div>
+          </div>
+        </>
       )}
       {tooltipText && tooltipPos && (
         <div

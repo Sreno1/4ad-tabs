@@ -871,6 +871,7 @@ export default function App() {
                 handleEndCombat={combatFlow.handleEndCombat}
                 setCombatPhase={combatFlow.setCombatPhase}
                 setRoomEvents={roomEvents.setRoomEvents}
+                mapActions={mapActions}
                 setShowDungeonFeatures={setShowDungeonFeatures}
               />
               {/* Desktop uses ActionPane for combat UI to avoid duplication */}

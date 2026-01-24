@@ -12,6 +12,7 @@ import LanternAnimation from '../LanternAnimation.jsx';
 import { Tooltip } from '../RulesReference.jsx';
 import DungeonHeaderButtons from '../DungeonHeaderButtons.jsx';
 import { adjustGold, adjustMajorFoes, adjustMinorEncounters, logMessage } from '../../state/actionCreators.js';
+import HeaderCounter from './HeaderCounter.jsx';
 import sfx from '../../utils/sfx.js';
 import { ENVIRONMENTS, normalizeEnvironment } from '../../constants/environmentConstants.js';
 
@@ -75,47 +76,34 @@ export default function AppHeader({
 
         {/* Stats with manual controls */}
         <div id="app_header_stats" className="flex items-center gap-3 text-xs">
-          <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
-            <span className="text-slate-400 text-xs">Gold</span>
+          <HeaderCounter noBorder>
+            <img src="/assets/coins.png" alt="Gold" title="Gold" className="h-5 w-auto" />
             <span id="header_gold_value" className="text-amber-400 font-bold">{state.gold}</span>
             <div className="flex gap-1">
               <button aria-label="Decrease gold" onClick={() => { try { sfx.play('select5', { volume: 0.85 }); } catch(e){}; dispatch(adjustGold(-1)); }} className="px-1 text-slate-300">−</button>
               <button aria-label="Increase gold" onClick={() => { try { sfx.play('pickup4', { volume: 0.9 }); } catch(e){}; dispatch(adjustGold(1)); }} className="px-1 text-amber-400 font-bold">+</button>
             </div>
-          </div>
+          </HeaderCounter>
 
-          <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
-            <span className="text-slate-400 text-xs">Minion Groups</span>
+          <HeaderCounter noBorder>
+            <img src="/assets/minion.png" alt="Minion Groups" title="Minion Groups" className="h-5 w-auto" />
             <span id="header_minion_value" className="text-slate-400 font-bold">{state.minorEnc}</span>
             <div className="flex gap-1">
               <button aria-label="Decrease minion groups" onClick={() => dispatch(adjustMinorEncounters(-1))} className="px-1 text-slate-300">−</button>
               <button aria-label="Increase minion groups" onClick={() => dispatch(adjustMinorEncounters(1))} className="px-1 text-amber-400 font-bold">+</button>
-              {/* Debug button: quick verification that reducer/action path is active */}
-              <button
-                aria-label="Debug increment minion"
-                title="DBG: force increment minorEnc and emit logs"
-                onClick={() => {
-                  try { console.log('[AppHeader] DBG dispatch adjustMinorEncounters +1'); } catch (e) {}
-                  dispatch(logMessage('DBG: dispatching ADJUST_MINOR +1', 'debug'));
-                  dispatch(adjustMinorEncounters(1));
-                }}
-                className="px-1 text-slate-300 border border-slate-600 rounded text-[10px]"
-              >
-                DBG
-              </button>
             </div>
-          </div>
+          </HeaderCounter>
 
-          <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
-            <span className="text-slate-400 text-xs">Major Foes Faced</span>
+          <HeaderCounter noBorder>
+            <img src="/assets/majorfoe.png" alt="Major Foes" title="Major Foes Faced" className="h-5 w-auto" />
             <span id="header_major_value" className="text-red-400 font-bold">{state.majorFoes}</span>
             <div className="flex gap-1">
               <button aria-label="Decrease major foes" onClick={() => dispatch(adjustMajorFoes(-1))} className="px-1 text-slate-300">−</button>
               <button aria-label="Increase major foes" onClick={() => dispatch(adjustMajorFoes(1))} className="px-1 text-red-400 font-bold">+</button>
             </div>
-          </div>
+          </HeaderCounter>
 
-          <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded">
+          <HeaderCounter noBorder>
             <span className="text-slate-400 text-xs">Env</span>
             <select
               id="header_environment_select"
@@ -127,7 +115,7 @@ export default function AppHeader({
                 <option key={env.id} value={env.id}>{env.label}</option>
               ))}
             </select>
-          </div>
+          </HeaderCounter>
         </div>
 
         {onViewChange && (

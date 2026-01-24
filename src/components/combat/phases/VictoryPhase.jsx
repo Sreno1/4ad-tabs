@@ -122,10 +122,10 @@ const VictoryPhase = memo(function VictoryPhase({
       {hasDefeatedMonsters && (
         <div className="bg-slate-800 rounded p-2">
           <div className="text-green-400 font-bold text-sm mb-2">Victory!</div>
-          <div className="text-xs text-slate-300 mb-2">
+            <div className="text-xs text-slate-300 mb-2">
             {monsters.filter(m => m.hp <= 0 || m.count === 0).map(m => (
               <div key={m.id}>
-                {m.name} defeated (Base XP: {m.xp || 0})
+                {m.name} defeated (Level: {m.level || 'N/A'})
               </div>
             ))}
           </div>
@@ -146,7 +146,7 @@ const VictoryPhase = memo(function VictoryPhase({
               {xpResults.map((result, idx) => (
                 <div key={idx} className="border border-purple-600 rounded p-2">
                   <div className="text-purple-400 font-bold text-xs mb-1">
-                    {result.monsterName} (Base XP: {result.baseXP})
+                    {result.monsterName} (Base: L{result.baseXP})
                   </div>
                   {result.rolls.map((roll, rollIdx) => (
                     <div key={rollIdx} className="text-xs text-slate-300 flex justify-between">
