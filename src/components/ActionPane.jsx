@@ -479,7 +479,18 @@ export default function ActionPane({
                   // ignore
                 }
 
-                try { dispatch(clearMonsters()); } catch (e) { dispatch({ type: 'CLEAR_MONSTERS' }); }
+                // Prefer the centralized combat cleanup handler if provided by the parent
+                // (this ensures local combat flow state is reset in addition to clearing monsters)
+                try {
+                  if (typeof handleEndCombat === 'function') {
+                    handleEndCombat();
+                  } else {
+                    dispatch(clearMonsters());
+                  }
+                } catch (e) {
+                  try { dispatch(clearMonsters()); } catch (e) { dispatch({ type: 'CLEAR_MONSTERS' }); }
+                }
+                // Clear tile and persisted tile state
                 clearTile();
               }}
               className="flex-1 bg-red-800 hover:bg-red-700 px-3 py-2 rounded text-sm"

@@ -292,14 +292,21 @@ Optional architecture work:
 ---
 
 <a name="implementation-priority"></a>
+
 ## 5. IMPLEMENTATION PRIORITY (REMAINING)
+1. allow user to input custom gold amount instead of rolling at start x
+2. implement starting rooms with correct shapes and addition at beginning of crawl.
+4. fix bug where player cant attack sometimes because character "already attacked that round"
+5. make sure multiple enemies all get a chance to attack
+6. fix bug where major foes all seem to have one health
+7. add undo button (and history states) to dungeon grid editor. works for any action taken (placing tiles, adding rooms, editing walls and doors, etc.)
 
 ### High Priority: Core Gameplay Gaps
-4. Spell targeting UI + casting edge cases (traits, resistances, status expiry)
-5. Reaction-based initiative and per-monster reaction tables (bribe/intimidate/otherwise peaceful reactions need to be coded in logically)
-6. Trap complications + rogue bonus + damage variety
-7. Environment-based treasure tables (depends on #5)
-8. Marching order targeting improvements (use marchingOrder positions)
+1. Spell targeting UI + casting edge cases (traits, resistances, status expiry)
+2. Reaction-based initiative and per-monster reaction tables (bribe/intimidate/otherwise peaceful reactions need to be coded in logically)
+3. Trap complications + rogue bonus + damage variety
+4. Environment-based treasure tables (depends on #5)
+5. Marching order targeting improvements (use marchingOrder positions)
 
 ### Medium Priority: Content and UX
 9. Retracing steps wandering monster (1-in-6)
@@ -316,6 +323,8 @@ Optional architecture work:
 18. Equipment limits
 19. Stealth modifiers
 20. Food rations
+
+Manually check everything in data - for example, traits for rogue are incorrect and are probably implemented incorrectly in the actual game files. all classes need checked.
 
 ---
 

@@ -386,6 +386,18 @@ export function useRoomEvents(state, dispatch, setActionMode, onGoldSensePreview
   // Combined tile generation - rolls both shape and contents at once
   // generateTile optionally accepts overrides: { shapeRoll, contentsRoll }
   const generateTile = (opts = {}) => {
+    // If a new tile is being generated, ensure any existing combat is cleared so
+    // monsters from a previous tile don't persist when the new tile spawns monsters.
+    try {
+      if (state && Array.isArray(state.monsters) && state.monsters.length > 0) {
+        dispatch({ type: 'CLEAR_MONSTERS' });
+      }
+      // Clear any wandering encounter metadata or previous combat location
+      try { dispatch({ type: 'CLEAR_WANDERING_ENCOUNTER' }); } catch (e) {}
+      try { dispatch({ type: 'CLEAR_COMBAT_LOCATION' }); } catch (e) {}
+    } catch (e) {
+      // ignore dispatch errors
+    }
     // Compute d66 shape roll, preserving overrides. When not overridden, roll two d6 so we can
     // show the individual dice in the log prefix (e.g. [3+4]=34).
     let shapeRoll;

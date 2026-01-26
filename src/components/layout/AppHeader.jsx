@@ -105,16 +105,53 @@ export default function AppHeader({
 
           <HeaderCounter noBorder>
             <span className="text-slate-400 text-xs">Env</span>
-            <select
-              id="header_environment_select"
-              value={state.currentEnvironment || 'dungeon'}
-              onChange={(e) => handleEnvironmentChange(e.target.value)}
-              className="bg-slate-700 hover:bg-slate-600 text-xs rounded px-1 py-0.5"
+            {/* Icon-only radio selector for environments */}
+            <div
+              role="radiogroup"
+              aria-label="Environment"
+              className="flex items-center gap-2"
             >
-              {ENVIRONMENTS.map((env) => (
-                <option key={env.id} value={env.id}>{env.label}</option>
-              ))}
-            </select>
+              {(() => {
+                const iconFor = (id) => {
+                  if (id === 'fungal_grottoes') return '/assets/fungal.png';
+                  if (id === 'caverns') return '/assets/cavern.png';
+                  return '/assets/dungeon.png';
+                };
+
+                return ENVIRONMENTS.map((env) => {
+                  const checked = (state.currentEnvironment || 'dungeon') === env.id;
+                  const inputId = `env_radio_${env.id}`;
+                  return (
+                    <div key={env.id} className="flex items-center">
+                      <input
+                        id={inputId}
+                        type="radio"
+                        name="header_environment"
+                        value={env.id}
+                        checked={checked}
+                        onChange={() => handleEnvironmentChange(env.id)}
+                        className="sr-only"
+                        aria-checked={checked}
+                      />
+                      <label
+                        htmlFor={inputId}
+                        title={env.label}
+                        style={{
+                          display: 'inline-block',
+                          padding: 4,
+                          borderRadius: 6,
+                          cursor: 'pointer',
+                          backgroundColor: 'transparent',
+                          boxShadow: checked ? '0 0 0 2px rgba(250,204,21,0.45)' : 'none',
+                        }}
+                      >
+                        <img src={iconFor(env.id)} alt={env.label} className="h-5 w-auto" />
+                      </label>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
           </HeaderCounter>
         </div>
 

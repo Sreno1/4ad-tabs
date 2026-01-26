@@ -7,6 +7,12 @@ import { ALL_EQUIPMENT, getEquipment } from "../data/equipment";
 import TraitSelector from "./TraitSelector";
 import { getTrait, getTraitsForClass } from "../data/traits";
 
+const parseGoldInput = (value) => {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return parsed;
+};
+
 /**
  * OnboardingScreen - Campaign creation and party setup
  * Steps: campaign name → welcome → create party → confirm gold → start adventure
@@ -16,10 +22,26 @@ export default function OnboardingScreen({ onComplete }) {
   const [campaignName, setCampaignName] = useState("");
   const [heroes, setHeroes] = useState([null, null, null, null]);
   const [goldRolls, setGoldRolls] = useState([]);
+  const [goldMode, setGoldMode] = useState("roll");
+  const [customGoldInput, setCustomGoldInput] = useState("");
   const [remainingGold, setRemainingGold] = useState(0);
   const [traitSelectorHero, setTraitSelectorHero] = useState(null);
   const [sortByPrice, setSortByPrice] = useState(false);
   const [hideUnaffordable, setHideUnaffordable] = useState(false);
+
+  const rollStartingGold = () => {
+    const rolls = heroes.map((hero) => {
+      const classData = CLASSES[hero.key];
+      const goldRoll = rollGold(classData.startingWealth);
+      return {
+        heroName: hero.name,
+        className: classData.name,
+        amount: goldRoll,
+      };
+    });
+    setGoldRolls(rolls);
+    return rolls;
+  };
 
   return (
     <>
@@ -75,8 +97,8 @@ export default function OnboardingScreen({ onComplete }) {
               </p>
               <p>
                 You'll create a party of 4 heroes, each with their own class and
-                abilities. Starting gold will be rolled per character and pooled
-                for the party.
+                abilities. Starting gold can be rolled per character or entered
+                manually for the party pool.
               </p>
               <p className="text-amber-300 font-semibold">
                 Let's begin by creating your party!
@@ -219,7 +241,7 @@ export default function OnboardingScreen({ onComplete }) {
                       </h2>
                       <p className="text-slate-400 text-sm mb-6">
                         Choose name, class, and trait for each hero. Starting
-                        gold will be rolled per class and pooled.
+                        gold can be rolled per class or set manually.
                       </p>
                     </div>
                     <Button
@@ -257,28 +279,36 @@ export default function OnboardingScreen({ onComplete }) {
                   </div>
 
                   {createdCount === 4 && (
-                    <Button
-                      variant="success"
-                      size="lg"
-                      fullWidth
-                      onClick={() => {
-                        // Roll starting gold per class, then pool it
-                        const rolls = heroes.map((hero) => {
-                          const classData = CLASSES[hero.key];
-                          const goldRoll = rollGold(classData.startingWealth);
-                          return {
-                            heroName: hero.name,
-                            className: classData.name,
-                            amount: goldRoll,
-                          };
-                        });
-                        setGoldRolls(rolls);
-                        setStep("confirm-gold");
-                      }}
-                      dataAction="confirm-party"
-                    >
-                      Roll Starting Gold →
-                    </Button>
+                    <div className="space-y-3">
+                      <Button
+                        variant="success"
+                        size="lg"
+                        fullWidth
+                        onClick={() => {
+                          setGoldMode("roll");
+                          setCustomGoldInput("");
+                          rollStartingGold();
+                          setStep("confirm-gold");
+                        }}
+                        dataAction="confirm-party"
+                      >
+                        Roll Starting Gold →
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="lg"
+                        fullWidth
+                        onClick={() => {
+                          setGoldMode("custom");
+                          setGoldRolls([]);
+                          setCustomGoldInput("");
+                          setStep("confirm-gold");
+                        }}
+                        dataAction="confirm-party-custom-gold"
+                      >
+                        Set Custom Gold →
+                      </Button>
+                    </div>
                   )}
                 </Card>
               </div>
@@ -289,38 +319,93 @@ export default function OnboardingScreen({ onComplete }) {
       {/* Step 3: Review starting gold */}
       {step === "confirm-gold" &&
         (() => {
-          const totalGold = goldRolls.reduce(
+          const rolledTotal = goldRolls.reduce(
             (sum, roll) => sum + roll.amount,
             0,
           );
+          const parsedCustomGold = parseGoldInput(customGoldInput);
+          const customGold = parsedCustomGold ?? 0;
+          const totalGold = goldMode === "custom" ? customGold : rolledTotal;
+          const customGoldValid = parsedCustomGold !== null;
           return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
               <Card variant="surface1" className="max-w-2xl w-full p-8">
-                <h2 className="text-3xl font-bold text-amber-400 mb-6">
-                  Starting Gold
-                </h2>
-
-                {/* Individual rolls */}
-                <div className="space-y-3 mb-6">
-                  {goldRolls.map((roll, idx) => (
-                    <div
-                      key={idx}
-                      className="flex justify-between items-center bg-slate-800 rounded p-3"
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                  <h2 className="text-3xl font-bold text-amber-400">
+                    Starting Gold
+                  </h2>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={goldMode === "roll" ? "success" : "secondary"}
+                      size="sm"
+                      onClick={() => {
+                        setGoldMode("roll");
+                        if (goldRolls.length === 0) {
+                          rollStartingGold();
+                        }
+                      }}
+                      dataAction="confirm-gold-use-rolls"
                     >
-                      <div>
-                        <span className="text-white font-semibold">
-                          {roll.heroName}
-                        </span>
-                        <span className="text-slate-400 text-sm ml-2">
-                          ({roll.className})
+                      Use Rolls
+                    </Button>
+                    <Button
+                      variant={goldMode === "custom" ? "success" : "secondary"}
+                      size="sm"
+                      onClick={() => setGoldMode("custom")}
+                      dataAction="confirm-gold-use-custom"
+                    >
+                      Custom Amount
+                    </Button>
+                  </div>
+                </div>
+
+                {goldMode === "roll" && (
+                  <div className="space-y-3 mb-6">
+                    {goldRolls.map((roll, idx) => (
+                      <div
+                        key={idx}
+                        className="flex justify-between items-center bg-slate-800 rounded p-3"
+                      >
+                        <div>
+                          <span className="text-white font-semibold">
+                            {roll.heroName}
+                          </span>
+                          <span className="text-slate-400 text-sm ml-2">
+                            ({roll.className})
+                          </span>
+                        </div>
+                        <span className="text-amber-400 font-bold text-lg">
+                          {roll.amount} gp
                         </span>
                       </div>
-                      <span className="text-amber-400 font-bold text-lg">
-                        {roll.amount} gp
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
+
+                {goldMode === "custom" && (
+                  <div className="bg-slate-800 rounded p-4 mb-6">
+                    <label
+                      htmlFor="onboarding_custom_gold_input"
+                      className="text-slate-300 font-semibold block mb-2"
+                    >
+                      Custom starting gold (party total)
+                    </label>
+                    <input
+                      id="onboarding_custom_gold_input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputMode="numeric"
+                      value={customGoldInput}
+                      onChange={(e) => setCustomGoldInput(e.target.value)}
+                      className="w-full bg-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      aria-label="Custom starting gold"
+                    />
+                    <p className="text-slate-400 text-xs mt-2">
+                      Enter a non-negative whole number.
+                    </p>
+                  </div>
+                )}
 
                 {/* Total gold */}
                 <div className="bg-slate-800 border-2 border-amber-500 rounded p-6 mb-6 text-center">
@@ -331,10 +416,16 @@ export default function OnboardingScreen({ onComplete }) {
                   <p className="text-slate-400 text-sm">gold pieces</p>
                 </div>
 
-                <p className="text-slate-300 text-sm mb-6 text-center">
-                  Each hero's class has different starting wealth. These amounts
-                  have been rolled and pooled for your party to share.
-                </p>
+                {goldMode === "roll" ? (
+                  <p className="text-slate-300 text-sm mb-6 text-center">
+                    Each hero's class has different starting wealth. These
+                    amounts have been rolled and pooled for your party to share.
+                  </p>
+                ) : (
+                  <p className="text-slate-300 text-sm mb-6 text-center">
+                    Set a party-wide starting gold amount for your adventure.
+                  </p>
+                )}
 
                 <Button
                   variant="success"
@@ -344,6 +435,11 @@ export default function OnboardingScreen({ onComplete }) {
                     setRemainingGold(totalGold);
                     setStep("buy-equipment");
                   }}
+                  disabled={
+                    goldMode === "custom"
+                      ? !customGoldValid
+                      : goldRolls.length === 0
+                  }
                   dataAction="confirm-gold"
                 >
                   Continue to Shop →
@@ -612,10 +708,13 @@ export default function OnboardingScreen({ onComplete }) {
       {/* Step 5: Ready to start */}
       {step === "ready" &&
         (() => {
-          const totalGold = goldRolls.reduce(
+          const rolledTotal = goldRolls.reduce(
             (sum, roll) => sum + roll.amount,
             0,
           );
+          const parsedCustomGold = parseGoldInput(customGoldInput);
+          const customGold = parsedCustomGold ?? 0;
+          const totalGold = goldMode === "custom" ? customGold : rolledTotal;
           return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
               <Card variant="surface1" className="max-w-3xl w-full p-8">
@@ -665,7 +764,7 @@ export default function OnboardingScreen({ onComplete }) {
                   </p>
                   {totalGold !== remainingGold && (
                     <p className="text-amber-400 text-sm text-center mt-2">
-                      Originally rolled: {totalGold} gp | Spent on equipment:{" "}
+                      Starting gold: {totalGold} gp | Spent on equipment:{" "}
                       {totalGold - remainingGold} gp
                     </p>
                   )}
