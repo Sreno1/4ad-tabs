@@ -25,6 +25,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   const showFirstPersonView = currentView === 'firstPerson';
   const [firstPersonFacing, setFirstPersonFacing] = useState(0);
   const [roomMarkers, setRoomMarkers] = useState({}); // {cellKey: {type, label, tooltip}}  const [hoveredCell, setHoveredCell] = useState(null); // For showing tooltip
+  const [markersLoaded, setMarkersLoaded] = useState(false);
   // Load persisted markers (notes) from localStorage
   React.useEffect(() => {
     try {
@@ -34,6 +35,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
         if (parsed && typeof parsed === 'object') setRoomMarkers(parsed);
       }
     } catch (e) {}
+    setMarkersLoaded(true);
   }, []);
 
   // Listen for external updates to roomMarkers (written by other code paths)
@@ -67,6 +69,15 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
     return null;
   });
   const [partySelected, setPartySelected] = useState(false);
+  const HISTORY_LIMIT = 120;
+  const HISTORY_DEBOUNCE_MS = 120;
+  const historyRef = React.useRef([]);
+  const historyIndexRef = React.useRef(-1);
+  const historySignatureRef = React.useRef(null);
+  const pendingHistoryRef = React.useRef(null);
+  const historyTimerRef = React.useRef(null);
+  const isApplyingHistoryRef = React.useRef(false);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const gridContainerRef = React.useRef(null);
   const isCalculatingRef = React.useRef(false); // Persistent flag across renders
   const lastCalculatedSizeRef = React.useRef({ width: 0, height: 0 }); // Track container size to prevent loops
@@ -75,6 +86,122 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
   const effectiveTileResult = externalTileResult;
   const effectiveBossCheck = externalBossCheck;
   const effectiveRoomDetails = externalRoomDetails;
+  const adventureId = state?.adventure?.adventureId || null;
+
+  const cloneGrid = (grid) => (grid || []).map((row) => row.slice());
+  const cloneDoors = (doors) => (doors || []).map((d) => ({ ...d }));
+  const cloneWalls = (walls) => (walls || []).map((w) => ({ ...w }));
+  const cloneCellStyles = (styles) => ({ ...(styles || {}) });
+  const cloneMarkers = (markers) => {
+    const next = {};
+    if (!markers) return next;
+    Object.keys(markers).forEach((key) => {
+      const value = markers[key];
+      next[key] = value ? { ...value } : value;
+    });
+    return next;
+  };
+
+  const buildDungeonSnapshot = useCallback(() => ({
+    grid: cloneGrid(state.grid),
+    doors: cloneDoors(state.doors),
+    walls: cloneWalls(state.walls),
+    cellStyles: cloneCellStyles(state.cellStyles),
+    roomMarkers: cloneMarkers(roomMarkers),
+    partyPos: partyPos ? { x: partyPos.x, y: partyPos.y } : null,
+  }), [state.grid, state.doors, state.walls, state.cellStyles, roomMarkers, partyPos]);
+
+  React.useEffect(() => {
+    historyRef.current = [];
+    historyIndexRef.current = -1;
+    historySignatureRef.current = null;
+    pendingHistoryRef.current = null;
+    if (historyTimerRef.current) {
+      clearTimeout(historyTimerRef.current);
+      historyTimerRef.current = null;
+    }
+    setHistoryIndex(-1);
+  }, [adventureId]);
+
+  const queueDungeonSnapshot = useCallback((snapshot) => {
+    if (isApplyingHistoryRef.current) return;
+    pendingHistoryRef.current = snapshot;
+    if (historyTimerRef.current) return;
+    historyTimerRef.current = setTimeout(() => {
+      historyTimerRef.current = null;
+      const nextSnapshot = pendingHistoryRef.current;
+      pendingHistoryRef.current = null;
+      if (!nextSnapshot) return;
+      const signature = JSON.stringify(nextSnapshot);
+      if (signature === historySignatureRef.current) return;
+      let nextHistory = historyRef.current;
+      if (historyIndexRef.current < nextHistory.length - 1) {
+        nextHistory = nextHistory.slice(0, historyIndexRef.current + 1);
+      }
+      nextHistory = [...nextHistory, nextSnapshot];
+      if (nextHistory.length > HISTORY_LIMIT) {
+        const overflow = nextHistory.length - HISTORY_LIMIT;
+        nextHistory = nextHistory.slice(overflow);
+      }
+      historyRef.current = nextHistory;
+      historyIndexRef.current = nextHistory.length - 1;
+      historySignatureRef.current = signature;
+      setHistoryIndex(historyIndexRef.current);
+    }, HISTORY_DEBOUNCE_MS);
+  }, []);
+
+  React.useEffect(() => {
+    if (!markersLoaded) return;
+    if (isApplyingHistoryRef.current) return;
+    queueDungeonSnapshot(buildDungeonSnapshot());
+  }, [markersLoaded, buildDungeonSnapshot, queueDungeonSnapshot]);
+
+  const applyDungeonSnapshot = useCallback((snapshot) => {
+    if (!snapshot) return;
+    const nextMarkers = cloneMarkers(snapshot.roomMarkers);
+    const nextPartyPos = snapshot.partyPos ? { ...snapshot.partyPos } : null;
+    dispatch({
+      type: 'SET_DUNGEON_STATE',
+      payload: {
+        grid: cloneGrid(snapshot.grid),
+        doors: cloneDoors(snapshot.doors),
+        walls: cloneWalls(snapshot.walls),
+        cellStyles: cloneCellStyles(snapshot.cellStyles),
+      }
+    });
+    setRoomMarkers(nextMarkers);
+    try {
+      localStorage.setItem('roomMarkers', JSON.stringify(nextMarkers));
+      window.dispatchEvent(new CustomEvent('roomMarkersUpdated'));
+    } catch (e) {}
+    if (nextPartyPos) {
+      try { localStorage.setItem('partyPos', JSON.stringify(nextPartyPos)); } catch (e) {}
+    } else {
+      try { localStorage.removeItem('partyPos'); } catch (e) {}
+      setPartySelected(false);
+    }
+    setPartyPos(nextPartyPos);
+  }, [dispatch]);
+
+  const handleUndo = useCallback(() => {
+    if (historyIndexRef.current <= 0) return;
+    const nextIndex = historyIndexRef.current - 1;
+    const snapshot = historyRef.current[nextIndex];
+    if (!snapshot) return;
+    isApplyingHistoryRef.current = true;
+    if (historyTimerRef.current) {
+      clearTimeout(historyTimerRef.current);
+      historyTimerRef.current = null;
+    }
+    pendingHistoryRef.current = null;
+    applyDungeonSnapshot(snapshot);
+    historyIndexRef.current = nextIndex;
+    historySignatureRef.current = JSON.stringify(snapshot);
+    setHistoryIndex(nextIndex);
+    setTimeout(() => { isApplyingHistoryRef.current = false; }, HISTORY_DEBOUNCE_MS);
+  }, [applyDungeonSnapshot]);
+
+  const canUndo = historyIndex > 0;
 
   // Add marker to a cell
   const addMarker = useCallback((x, y, type, label, tooltip) => {
@@ -600,6 +727,8 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
             onCustomTile={() => mapActions.onCustomTile && mapActions.onCustomTile()}
             onCustomMonster={() => mapActions.onCustomMonster && mapActions.onCustomMonster()}
             onClearMap={() => mapActions.onClearMap && mapActions.onClearMap()}
+            onUndo={handleUndo}
+            canUndo={canUndo}
           />
         </div>
         {/* Desktop controls: always show in map view, above the grid */}
@@ -612,6 +741,8 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
               onCustomTile={() => mapActions.onCustomTile && mapActions.onCustomTile()}
               onCustomMonster={() => mapActions.onCustomMonster && mapActions.onCustomMonster()}
               onClearMap={() => mapActions.onClearMap && mapActions.onClearMap()}
+              onUndo={handleUndo}
+              canUndo={canUndo}
             />
           </div>
         )}

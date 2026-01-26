@@ -42,6 +42,7 @@ export const TOGGLE_DOOR = 'TOGGLE_DOOR';
 export const CLEAR_GRID = 'CLEAR_GRID';
 export const SET_WALLS = 'SET_WALLS';
 export const SET_DOORS = 'SET_DOORS';
+export const SET_DUNGEON_STATE = 'SET_DUNGEON_STATE';
 
 // Environment
 export const CHANGE_ENVIRONMENT = 'CHANGE_ENVIRONMENT';

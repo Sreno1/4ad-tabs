@@ -7,6 +7,8 @@ export default function DungeonHeaderButtons({
   onCustomTile,
   onCustomMonster,
   onClearMap,
+  onUndo,
+  canUndo = false,
 }) {
   // Apply a mild brightness boost to overcome the CRT vignette, and add a subtle glow
   // on each button to increase legibility without removing the vignette effect.
@@ -43,6 +45,17 @@ export default function DungeonHeaderButtons({
         title="Custom Tile"
       >
   Custom Tile
+      </button>
+      <button
+        id="dungeon_undo_button"
+        onClick={onUndo}
+        disabled={!canUndo}
+        className="text-xs bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed px-2 py-1 rounded relative"
+        style={buttonGlow}
+        title="Undo last dungeon edit"
+        aria-label="Undo last dungeon edit"
+      >
+  Undo
       </button>
   {/* Wandering and Custom Monster buttons moved to ActionPane under marching order */}
       <button

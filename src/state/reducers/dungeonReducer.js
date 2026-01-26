@@ -61,6 +61,16 @@ export function dungeonReducer(state, action) {
   walls: [],
   traps: []
       };
+    case A.SET_DUNGEON_STATE: {
+      const next = action.payload || {};
+      return {
+        ...state,
+        grid: Array.isArray(next.grid) ? next.grid : state.grid,
+        doors: Array.isArray(next.doors) ? next.doors : state.doors,
+        walls: Array.isArray(next.walls) ? next.walls : state.walls,
+        cellStyles: (next.cellStyles && typeof next.cellStyles === 'object') ? next.cellStyles : state.cellStyles,
+      };
+    }
 
     // ========== Environment ==========
     case A.CHANGE_ENVIRONMENT:
