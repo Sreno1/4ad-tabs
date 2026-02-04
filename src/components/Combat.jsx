@@ -35,6 +35,7 @@ import {
   getRemainingSpells,
   processMinorFoeAttack,
   processMajorFoeAttack,
+  buildMonsterAttackPlan,
   monsterHatesHero,
 } from '../utils/gameActions/index.js';
 import MonsterReaction from './combat/MonsterReaction';
@@ -80,6 +81,8 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
   const [showWeaponSwitch, setShowWeaponSwitch] = useState(null);
   const [subdualAttackEnabled, setSubdualAttackEnabled] = useState({}); // Per-hero subdual toggle
   const [fleeingAttacksUsed, setFleeingAttacksUsed] = useState({}); // Track which heroes attacked fleeing foes
+  const [pendingMonsterAttacks, setPendingMonsterAttacks] = useState(null);
+  const [defendedThisPhase, setDefendedThisPhase] = useState({});
 
   // Ensure new encounters always start at the InitiativePhase: if monsters were 0 and now >0,
   // reset combat module visibility and initiative so player can choose.
@@ -95,6 +98,8 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       setRoundStartsWith('attack');
       setIsSecondPhase(false);
       setAttackedThisRound({});
+      setPendingMonsterAttacks(null);
+      setDefendedThisPhase({});
       // Clear any wandering encounter metadata that might force ambush/monster-first
       try { dispatch({ type: 'CLEAR_WANDERING_ENCOUNTER' }); } catch (e) {}
       // Reset ranged engagement flag for new encounter
@@ -177,6 +182,8 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
     setCombatInitiative(null);
     setIsSecondPhase(false);
     setTargetMonsterIdx(null);
+    setPendingMonsterAttacks(null);
+    setDefendedThisPhase({});
     // Reset ranged engagement flag
     dispatch({ type: 'SET_RANGED_ENGAGEMENT', engaged: false });
     dispatch({ type: 'LOG', t: '--- Encounter ended ---' });
@@ -352,38 +359,80 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
     }
   }, [state, fleeingAttacksUsed, subdualAttackEnabled, effectiveHasLight, getActiveWeapon, isMinorFoe, dispatch, addToCombatLog]);
 
+  const startDefensePhase = useCallback(() => {
+    const plan = buildMonsterAttackPlan(state);
+    if (!plan || !plan.attacks || plan.attacks.length === 0) {
+      setPendingMonsterAttacks(null);
+      setDefendedThisPhase({});
+      return;
+    }
+    setPendingMonsterAttacks(plan);
+    setDefendedThisPhase({});
+    if (Array.isArray(plan.messages)) {
+      plan.messages.forEach((msg) => addToCombatLog(` ${msg}`));
+    }
+  }, [state, addToCombatLog]);
+
   const handleDefense = useCallback((heroIndex) => {
     const hero = state.party[heroIndex];
     if (!hero) return;
+    if (hero.hp <= 0) return;
 
     const heroAbilities = state.abilities?.[heroIndex] || {};
-    let mod = 0;
-
-    // Rage penalty to defense
-    if (heroAbilities.rageActive && hero.key === 'barbarian') {
-      mod -= 1;
-    }
 
     const options = {
       hasLightSource: effectiveHasLight,
-      ignoreShield: shieldsDisabledFirst
+      ignoreShield: shieldsDisabledFirst,
+      rageActive: heroAbilities.rageActive,
     };
 
-  const target = getTargetMonster();
-  const targetMonster = target ? target.monster : null;
-  const computedFoeLevel = targetMonster ? (targetMonster.level || 1) : (Math.max(...state.monsters.map(m => m.level || 1), 1));
+    const plan = pendingMonsterAttacks;
+    const maxTargets = plan?.maxTargetsPerHero?.[heroIndex];
+    const defendedCount = defendedThisPhase[heroIndex] || 0;
+    if (maxTargets && defendedCount >= maxTargets) {
+      addToCombatLog(` ${hero.name} is not targeted again this round.`);
+      return;
+    }
 
-  const result = calculateDefense(hero, computedFoeLevel, options);
-  // Clear the global one-time shield restriction after it's consumed by the first defense roll
-  if (shieldsDisabledFirst) setShieldsDisabledFirst(false);
-    
-  try { sfx.play('defend', { volume: 0.6 }); } catch (e) {}
-  if (!result.blocked) {
-      const newHP = Math.max(0, hero.hp - 1);
-      
-      // Check if this is lethal damage
+    let attackIdx = plan?.attacks?.findIndex((attack) => attack.targetHeroIdx === heroIndex) ?? -1;
+    if (attackIdx === -1) {
+      attackIdx = plan?.attacks?.findIndex((attack) => {
+        if (attack.targetHeroIdx !== null && typeof attack.targetHeroIdx !== 'undefined') return false;
+        if (!attack.eligibleHeroIdx) return true;
+        return attack.eligibleHeroIdx.includes(heroIndex);
+      }) ?? -1;
+    }
+
+    if (!plan || !plan.attacks || attackIdx === -1) {
+      const fallbackLevel = Math.max(...state.monsters.map(m => m.level || 1), 1);
+      const result = calculateDefense(hero, fallbackLevel, options);
+      if (shieldsDisabledFirst) setShieldsDisabledFirst(false);
+      try { sfx.play('defend', { volume: 0.6 }); } catch (e) {}
+      if (!result.blocked) {
+        const newHP = Math.max(0, hero.hp - 1);
+        if (newHP <= 0 && hero.hp > 0) {
+          setPendingSave({ heroIdx: heroIndex, damageSource: 'monster' });
+          addToCombatLog(` ${hero.name} takes lethal damage! SAVE ROLL needed!`);
+        } else {
+          dispatch({ type: 'UPD_HERO', i: heroIndex, u: { hp: newHP } });
+        }
+      }
+      addToCombatLog(result.message);
+      return;
+    }
+
+    const attack = plan.attacks[attackIdx];
+    const foeLevel = attack.monsterLevel || 1;
+    const result = calculateDefense(hero, foeLevel, options);
+    const damage = result.blocked ? 0 : (attack.damage || 1);
+
+    // Clear the global one-time shield restriction after it's consumed by the first defense roll
+    if (shieldsDisabledFirst) setShieldsDisabledFirst(false);
+
+    try { sfx.play('defend', { volume: 0.6 }); } catch (e) {}
+    if (!result.blocked) {
+      const newHP = Math.max(0, hero.hp - damage);
       if (newHP <= 0 && hero.hp > 0) {
-        // Trigger save roll
         setPendingSave({ heroIdx: heroIndex, damageSource: 'monster' });
         addToCombatLog(` ${hero.name} takes lethal damage! SAVE ROLL needed!`);
       } else {
@@ -391,8 +440,24 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       }
     }
 
-    addToCombatLog(result.message);
-  }, [state.party, state.abilities, state.monsters, dispatch, addToCombatLog, getTargetMonster]);
+    const attackLabel = attack.totalAttacks > 1 ? ` (attack ${attack.attackNum}/${attack.totalAttacks})` : '';
+    let message = result.message;
+    if (!result.blocked && damage > 1) {
+      message = message.replace('-1 Life', `-${damage} Life`);
+    }
+    addToCombatLog(` ${attack.monsterName}${attackLabel}: ${message}`);
+
+    setPendingMonsterAttacks((prev) => {
+      if (!prev || !prev.attacks) return prev;
+      const nextAttacks = prev.attacks.slice();
+      nextAttacks.splice(attackIdx, 1);
+      return { ...prev, attacks: nextAttacks };
+    });
+    setDefendedThisPhase((prev) => ({
+      ...prev,
+      [heroIndex]: (prev[heroIndex] || 0) + 1,
+    }));
+  }, [state.party, state.abilities, state.monsters, dispatch, addToCombatLog, pendingMonsterAttacks, defendedThisPhase, effectiveHasLight, shieldsDisabledFirst]);
 
   // Handle save roll
   const handleSaveRoll = useCallback(() => {
@@ -432,6 +497,12 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
         setRoundStartsWith(start);
         setIsSecondPhase(false);
         setShowCombatModule(true);
+        if (start === 'defend') {
+          startDefensePhase();
+        } else {
+          setPendingMonsterAttacks(null);
+          setDefendedThisPhase({});
+        }
         addToCombatLog('--- Combat begins ---');
       } else {
         // No initiative set: leave InitiativePhase visible so player can choose.
@@ -444,6 +515,12 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       setRoundStartsWith(nextPhase);
       setIsSecondPhase(true);
       setAttackedThisRound({}); // Reset attack tracking for defend-after-attack scenarios
+      if (nextPhase === 'defend') {
+        startDefensePhase();
+      } else {
+        setPendingMonsterAttacks(null);
+        setDefendedThisPhase({});
+      }
       addToCombatLog(`--- ${nextPhase === 'attack' ? 'Party Attacks' : 'Monster Attacks'} ---`);
     } else {
       // Second phase complete - start actual new round
@@ -453,6 +530,12 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       const start = combatInitiative.monsterFirst ? 'defend' : 'attack';
       setRoundStartsWith(start);
       setIsSecondPhase(false);
+      if (start === 'defend') {
+        startDefensePhase();
+      } else {
+        setPendingMonsterAttacks(null);
+        setDefendedThisPhase({});
+      }
 
       // Reset per-round attack markers
       setAttackedThisRound({});
@@ -476,7 +559,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
 
       addToCombatLog('--- New Round ---');
     }
-  }, [state.monsters, state.party, state.currentCombatLocation, state.combatMeta, dispatch, addToCombatLog, combatInitiative, showCombatModule, isSecondPhase, roundStartsWith]);
+  }, [state.monsters, state.party, state.currentCombatLocation, state.combatMeta, dispatch, addToCombatLog, combatInitiative, showCombatModule, isSecondPhase, roundStartsWith, startDefensePhase]);
 
   // Alias for backwards compatibility (some places might call handleNewRound)
   const handleNewRound = handleNextPhase;
@@ -486,6 +569,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
   // and show the pre-initiative ranged volley instead to avoid flicker/toggle.
   useEffect(() => {
     if (combatInitiative && typeof combatInitiative.monsterFirst !== 'undefined') {
+      if (showCombatModule) return;
       const start = combatInitiative.monsterFirst ? 'defend' : 'attack';
       setRoundStartsWith(start);
 
@@ -507,8 +591,15 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
       }
 
       setShowCombatModule(true);
+      if (start === 'defend' && !pendingMonsterAttacks) {
+        startDefensePhase();
+      }
+      if (start === 'attack') {
+        setPendingMonsterAttacks(null);
+        setDefendedThisPhase({});
+      }
     }
-  }, [combatInitiative, state.party]);
+  }, [combatInitiative, state.party, showCombatModule, pendingMonsterAttacks, startDefensePhase]);
 
   // Respond to wandering encounter metadata (set by rollWanderingMonster)
   useEffect(() => {
@@ -1282,22 +1373,53 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                 const target = getTargetMonster();
                 const targetMonster = target ? target.monster : null;
                 const computedFoeLevel = targetMonster ? (targetMonster.level || 1) : (Math.max(...state.monsters.map(m => m.level || 1), 1));
+                const pendingAttacks = pendingMonsterAttacks?.attacks || [];
+                const unassignedAttacks = pendingAttacks.filter((attack) => attack.targetHeroIdx === null || typeof attack.targetHeroIdx === 'undefined');
+                const pendingLevels = pendingAttacks.map((attack) => attack.monsterLevel || computedFoeLevel).filter(Boolean);
+                const minLevel = pendingLevels.length > 0 ? Math.min(...pendingLevels) : computedFoeLevel;
+                const maxLevel = pendingLevels.length > 0 ? Math.max(...pendingLevels) : computedFoeLevel;
+                const defenseTargetLabel = minLevel === maxLevel
+                  ? `L${minLevel + 1}+`
+                  : `L${minLevel + 1}-L${maxLevel + 1}+`;
+                const hasPendingAttacks = pendingAttacks.length > 0;
                 return (
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <div className="text-red-400 font-bold text-sm">️ Defend (L{computedFoeLevel + 1}+)</div>
+                      <div className="text-red-400 font-bold text-sm">️ Defend ({defenseTargetLabel})</div>
                       <button
                         onClick={handleNextPhase}
-                        className={`${isSecondPhase ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'} px-2 py-0.5 rounded text-xs`}
-                        title={isSecondPhase ? "Start a new round of combat" : "Switch to attack phase"}
+                        disabled={hasPendingAttacks}
+                        className={`${isSecondPhase ? 'bg-green-600 hover:bg-green-500' : 'bg-blue-600 hover:bg-blue-500'} px-2 py-0.5 rounded text-xs disabled:bg-slate-600 disabled:text-slate-300`}
+                        title={hasPendingAttacks ? `Resolve ${pendingAttacks.length} attack${pendingAttacks.length === 1 ? '' : 's'} first` : (isSecondPhase ? "Start a new round of combat" : "Switch to attack phase")}
                       >
                         {isSecondPhase ? 'New Round' : 'Attack Phase'}
                       </button>
                     </div>
+                    {pendingMonsterAttacks && (
+                      <div className="text-xs text-slate-400 mb-2">
+                        {pendingAttacks.length} monster attack{pendingAttacks.length === 1 ? '' : 's'} remaining
+                        {unassignedAttacks.length > 0 ? ` (${unassignedAttacks.length} unassigned)` : ''}
+                      </div>
+                    )}
                     {state.party.map((hero, index) => {
                       const abilities = getAbilityUsage(index);
-                      const defRes = calculateDefense(hero, computedFoeLevel, { hasLightSource: effectiveHasLight });
+                      const defRes = calculateDefense(hero, computedFoeLevel, { hasLightSource: effectiveHasLight, rageActive: abilities.rageActive });
                       const modLabel = defRes.mod >= 0 ? `+${defRes.mod}` : `${defRes.mod}`;
+                      const assignedCount = pendingAttacks.filter((attack) => attack.targetHeroIdx === index).length;
+                      const eligibleUnassigned = unassignedAttacks.some((attack) => {
+                        if (!attack.eligibleHeroIdx) return true;
+                        return attack.eligibleHeroIdx.includes(index);
+                      });
+                      const maxTargets = pendingMonsterAttacks?.maxTargetsPerHero?.[index];
+                      const defendedCount = defendedThisPhase[index] || 0;
+                      const canTakeUnassigned = eligibleUnassigned && (!maxTargets || defendedCount < maxTargets);
+                      const hasPlan = !!pendingMonsterAttacks;
+                      const canDefend = hero.hp > 0 && (!hasPlan || assignedCount > 0 || canTakeUnassigned);
+                      const countLabel = hasPlan && pendingAttacks.length > 0
+                        ? (assignedCount > 0
+                          ? `${assignedCount}${canTakeUnassigned ? '+?' : ''}`
+                          : (canTakeUnassigned ? '+?' : null))
+                        : null;
                       // Determine equipped shield and armor names
                       let shieldName = 'No Shield';
                       let armorName = 'No Armor';
@@ -1323,7 +1445,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                         <button 
                           key={hero.id || index} 
                           onClick={() => handleDefense(index)} 
-                          disabled={hero.hp <= 0} 
+                          disabled={!canDefend} 
                           className="w-full bg-red-700 hover:bg-red-600 disabled:bg-slate-600 py-1 rounded text-sm mb-1 truncate"
                         >
                           <span className="font-bold">{hero.name}</span>
@@ -1334,6 +1456,7 @@ export default function Combat({ state, dispatch, selectedHero = 0, setSelectedH
                             <span className="text-xs ml-2 text-slate-300">{armorName}</span>
                           )}
                           <span className="text-xs ml-2">({modLabel})</span>
+                          {countLabel && <span className="text-xs ml-2 text-slate-400">[{countLabel}]</span>}
                         </button>
                       );
                     })}

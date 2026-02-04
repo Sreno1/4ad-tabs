@@ -294,12 +294,11 @@ Optional architecture work:
 <a name="implementation-priority"></a>
 
 ## 5. IMPLEMENTATION PRIORITY (REMAINING)
-1. allow user to input custom gold amount instead of rolling at start x
+1. allow user to input custom gold amount instead of rolling at start x NEEDS TESTING
 2. implement starting rooms with correct shapes and addition at beginning of crawl.
-4. fix bug where player cant attack sometimes because character "already attacked that round"
-5. make sure multiple enemies all get a chance to attack
-6. fix bug where major foes all seem to have one health
-7. add undo button (and history states) to dungeon grid editor. works for any action taken (placing tiles, adding rooms, editing walls and doors, etc.)
+4. fix bug where player cant attack sometimes because character "already attacked that round" x NEEDS TESTING
+5. make sure multiple enemies all get a chance to attack x NEEDS TESTING
+6. fix bug where major foes all seem to have one health x NEEDS TESTING
 
 ### High Priority: Core Gameplay Gaps
 1. Spell targeting UI + casting edge cases (traits, resistances, status expiry)
@@ -315,7 +314,7 @@ Optional architecture work:
 12. Tile library wall colors for room vs corridor tiles
 13. Update monsters data (after #5 schema)
 14. XP roll button per party card (UI polish)
-15. Bandage limits
+15. Bandage limits x NEEDS TESTING
 
 ### Low Priority: Optional Content
 16. Quest system

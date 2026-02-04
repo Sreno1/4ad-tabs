@@ -1088,10 +1088,8 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
   const ox2 = Math.sin(t * 1.5 + 1.7) * radius * 0.45 + Math.cos(t * 0.6) * radius * 0.12;
   const oy2 = Math.cos(t * 1.3 + 0.9) * radius * 0.35 + Math.sin(t * 0.4) * radius * 0.08;
   const flicker = 1.0 + 0.02 * Math.sin(t * 0.7) + 0.01 * Math.sin(t * 1.9);
-  // Make lights larger when outside rooms, but tighter when inside
-  // slightly increase in-room base so it reads better on black rooms
-  // Preset B (amplified): noticeably bigger and brighter
-  const baseRadius = inRoom ? (radius * (3.9 + flicker * 0.8)) : (radius * (5.5 + flicker * 1.1));
+  // Keep indoor glow from shrinking; slightly boost it to offset room clipping.
+  const baseRadius = radius * (5.5 + flicker * 1.1) * (inRoom ? 1.15 : 1.0);
   // Increase interior alpha so the whole room reads brighter on dark tiles.
   // This intentionally uses >1.0 so room fills are boosted relative to outside.
   const inRoomAlpha = inRoom ? 1.2 : 1.0;
@@ -1120,11 +1118,11 @@ const DungeonGridCanvas = memo(function DungeonGridCanvas({
     }
   }
 
-  // Adjust inner/out radii depending on whether we're inside a room
-  const innerMult1 = inRoom ? 0.22 : 0.28;
-  const outerScale1 = inRoom ? 0.7 : 0.85;
-  const innerMult2 = inRoom ? 0.38 : 0.45;
-  const outerScale2 = inRoom ? 0.95 : 1.1;
+  // Keep indoor and outdoor glow scales aligned so indoor radius doesn't feel smaller.
+  const innerMult1 = 0.28;
+  const outerScale1 = 0.85;
+  const innerMult2 = 0.45;
+  const outerScale2 = 1.1;
 
   // First soft blob
   const grad1 = ctx.createRadialGradient(screenCx + ox1, screenCy + oy1, radius * innerMult1, screenCx + ox1, screenCy + oy1, baseRadius * outerScale1);

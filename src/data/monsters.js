@@ -547,6 +547,22 @@ export const getAllMonsters = () => {
   });
 };
 
+export const getMonsterKeysByCategory = (category) => {
+  if (!category) return [];
+  return Object.entries(MONSTER_TABLE)
+    .filter(([, monster]) => monster.category === category)
+    .map(([key]) => key);
+};
+
+export const rollOnMonsterTable = (category, ctx) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
+  const keys = getMonsterKeysByCategory(category);
+  if (keys.length === 0) return null;
+  const tableRoll = roll(1, 6, 0, rng, rollLog);
+  const idx = Math.min(Math.max(tableRoll - 1, 0), keys.length - 1);
+  return { key: keys[idx], roll: tableRoll };
+};
+
 // Calculate monster level based on HCL (Highest Character Level) and tier
 export const calculateMonsterLevel = (template, hcl = 1) => {
   // Base level is HCL + levelMod
@@ -560,13 +576,16 @@ export const calculateMonsterHP = (template) => {
 };
 
 // Create monster from table entry
-export const createMonsterFromTable = (key, hcl = 1, ctx) => {
+export const createMonsterFromTable = (key, hcl = 1, ctx, opts = {}) => {
   const { rng, now, rollLog } = ctx || getDefaultContext();
   const template = MONSTER_TABLE[key];
   if (!template) return null;
   
   const level = calculateMonsterLevel(template, hcl);
-  const hp = calculateMonsterHP(template);
+  const category = template.category || '';
+  const isMinorCategory = /vermin|minion/i.test(category);
+  const isBossCategory = /boss/i.test(category);
+  const tableRoll = typeof opts?.tableRoll === 'number' ? opts.tableRoll : null;
   
   // Handle special abilities (can be array or null)
   const specialAbilities = template.special ? 
@@ -593,6 +612,16 @@ export const createMonsterFromTable = (key, hcl = 1, ctx) => {
     // Fallback: undefined
     return undefined;
   };
+
+  const countRoll = isMinorCategory ? rollCountExpression() : undefined;
+  const minorCount = isMinorCategory
+    ? Math.max(1, (typeof tableRoll === 'number' ? tableRoll : (countRoll || 1)))
+    : undefined;
+  const hp = isMinorCategory
+    ? 1
+    : Math.max(1, (isBossCategory && typeof tableRoll === 'number')
+        ? tableRoll
+        : calculateMonsterHP(template));
   
   return {
     id: now() + rng.nextFloat(),
@@ -608,9 +637,10 @@ export const createMonsterFromTable = (key, hcl = 1, ctx) => {
   // xp removed from schema — derive any XP-related base from monster.level or tier
     surpriseChance: template.surpriseChance || 0,
     // Evaluate count expressions (like 'd6', 'd6+2', 'd6-2', 'd3', or numeric strings)
-    count: rollCountExpression(),
+    count: isMinorCategory ? minorCount : undefined,
     // initialCount: if we produced a numeric count, set initialCount for minor groups
-    initialCount: rollCountExpression(),
+    initialCount: isMinorCategory ? minorCount : undefined,
+    isMinorFoe: isMinorCategory,
     reactionTable: template.reactionTable || DEFAULT_REACTION_TABLE, // Monster-specific reactions
     reaction: null, // Set when rolled
     statuses: []
@@ -682,8 +712,8 @@ export const createMonster = (type, level = null, ctx) => {
   const { rng, now, rollLog } = ctx || getDefaultContext();
   const template = MONSTER_TEMPLATES[type];
   if (!template) return null;
-    const effectiveLevel = level || template.level;
-    // Check if this is a Minor Foe (Vermin or Minion)
+  const effectiveLevel = level || template.level;
+  // Check if this is a Minor Foe (Vermin or Minion)
   const isMinorFoe = (type === 'vermin' || type === 'minion' || type === 'minions');
   
   if (isMinorFoe) {
@@ -716,7 +746,7 @@ export const createMonster = (type, level = null, ctx) => {
   }
   
   // Major Foes and other monsters
-  const hp = calculateMonsterHP(type, effectiveLevel);
+  const hp = Math.max(1, template.baseHP || 1);
   
   return {
     id: now() + rng.nextFloat(),

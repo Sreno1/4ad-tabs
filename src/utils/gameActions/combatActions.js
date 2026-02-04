@@ -12,6 +12,7 @@ import {
 } from "../../data/saves.js";
 import { getTraitRollModifiers } from "../traitEffects.js";
 import { getTier, hasDarkvision } from "../../data/classes.js";
+import { MONSTER_ABILITIES } from "../../data/monsters.js";
 import {
   checkMinorFoeMorale,
   checkMajorFoeLevelReduction,
@@ -46,17 +47,18 @@ const getEffectiveMonsterLevel = (monster) => {
  * @returns {boolean} True if monster hates hero's class
  */
 export function monsterHatesHero(monster, hero) {
-  if (!monster || !hero || !hero.class) return false;
+  const heroClass = hero ? (hero.class || hero.key) : null;
+  if (!monster || !hero || !heroClass) return false;
 
   // Check explicit hatred from monster template
   if (monster.template && monster.template.hates) {
-    if (monster.template.hates === hero.class) return true;
+    if (monster.template.hates === heroClass) return true;
   }
 
   // Check undead hatred of clerics
   if (monster.template && monster.template.special && Array.isArray(monster.template.special)) {
     const isUndead = monster.template.special.includes('undead');
-    if (isUndead && hero.class === 'cleric') return true;
+    if (isUndead && heroClass === 'cleric') return true;
   }
 
   return false;
@@ -313,6 +315,10 @@ export function calculateDefense(hero, foeLevel, options = {}, ctx) {
     mod += bonus;
     modifiers.push(`+${bonus} (½L)`);
   }
+  if (options.rageActive && hero.key === "barbarian") {
+    mod -= 1;
+    modifiers.push("-1 (rage)");
+  }
   if (options.parry && hero.key === "lightGladiator") { mod += 2; modifiers.push("+2 (parry)"); }
   if (options.panacheDodge) { mod += 2; modifiers.push("+2 (panache)"); }
   if (options.acrobatTrick) { mod += 2; modifiers.push("+2 (trick)"); }
@@ -517,6 +523,221 @@ export function attemptWithdraw(dispatch, party, monsters, doors, ctx) {
     dispatch({ type: "CLEAR_MONSTERS" });
     return { success: true, wanderingMonster: false, strikeResult };
   }
+}
+
+export function buildMonsterAttackPlan(state, ctx) {
+  const monsters = (state.monsters || []).filter((m) => {
+    if (!m) return false;
+    if (m.status && m.status.asleep) return false;
+    if (m.count !== undefined || m.isMinorFoe) return (m.count || 0) > 0;
+    return (m.hp || 0) > 0;
+  });
+  const party = state.party || [];
+  const aliveHeroes = party
+    .map((hero, idx) => ({ hero, idx }))
+    .filter((entry) => entry.hero && entry.hero.hp > 0);
+
+  if (monsters.length === 0 || aliveHeroes.length === 0) return null;
+
+  const location = state.currentCombatLocation?.type || null;
+  const marchingOrder = state.marchingOrder || [0, 1, 2, 3];
+  const tier = getTier(party);
+  const isCorridor = location === 'corridor';
+  const isWanderingAmbush = !!(
+    state &&
+    state.combatMeta &&
+    state.combatMeta.wanderingEncounter &&
+    state.combatMeta.wanderingEncounter.ambush &&
+    isCorridor
+  );
+
+  let attackId = 0;
+  const plan = {
+    attacks: [],
+    maxTargetsPerHero: null,
+    messages: [],
+    ignoredAttacks: 0,
+  };
+
+  const makeAttackEntry = ({
+    monster,
+    monsterIdx,
+    foeKey,
+    attackNum,
+    totalAttacks,
+    damage,
+    area = false,
+    targetHeroIdx = null,
+    eligibleHeroIdx = null,
+  }) => ({
+    id: `atk-${attackId++}`,
+    monsterIdx,
+    monsterName: monster.name,
+    monsterLevel: monster.level || 1,
+    foeKey,
+    attackNum,
+    totalAttacks,
+    damage,
+    area: !!area,
+    targetHeroIdx,
+    eligibleHeroIdx,
+  });
+
+  const normalAttacks = [];
+
+  monsters.forEach((monster, monsterIdx) => {
+    const isMinor = monster.count !== undefined || monster.isMinorFoe;
+    const foeCount = isMinor ? Math.max(0, monster.count || 0) : 1;
+    const attacksPerFoe = Math.max(1, monster.attacks || 1);
+    const ability = monster.special ? MONSTER_ABILITIES[monster.special] : null;
+    const isAreaAttack = !!(ability && (ability.effect === 'aoe_attack' || ability.effect === 'fire_breath'));
+    const baseDamage = isAreaAttack ? Math.max(1, ability.damage || 1) : calculateMonsterAttackDamage(monster, tier);
+
+    for (let foeIdx = 0; foeIdx < foeCount; foeIdx += 1) {
+      const foeKey = isMinor ? `${monsterIdx}-${foeIdx}` : `${monsterIdx}`;
+      for (let attackNum = 1; attackNum <= attacksPerFoe; attackNum += 1) {
+        if (isAreaAttack) {
+          aliveHeroes.forEach(({ idx: heroIdx }) => {
+            plan.attacks.push(
+              makeAttackEntry({
+                monster,
+                monsterIdx,
+                foeKey,
+                attackNum,
+                totalAttacks: attacksPerFoe,
+                damage: baseDamage,
+                area: true,
+                targetHeroIdx: heroIdx,
+              }),
+            );
+          });
+        } else {
+          normalAttacks.push(
+            makeAttackEntry({
+              monster,
+              monsterIdx,
+              foeKey,
+              attackNum,
+              totalAttacks: attacksPerFoe,
+              damage: baseDamage,
+            }),
+          );
+        }
+      }
+    }
+  });
+
+  const aliveIdx = aliveHeroes.map((entry) => entry.idx);
+
+  if (normalAttacks.length === 0) {
+    if (plan.attacks.length > 0) {
+      plan.messages.push('Area attack: all heroes must defend.');
+    }
+    return plan;
+  }
+
+  if (isCorridor) {
+    const targetPositions = isWanderingAmbush ? [2, 3] : [0, 1];
+    const positionHeroes = targetPositions
+      .map((pos) => marchingOrder[pos])
+      .filter((idx) => typeof idx === 'number' && party[idx] && party[idx].hp > 0);
+    const fallbackHero = aliveIdx[0];
+    const targetHeroes = positionHeroes.length > 0 ? positionHeroes : (typeof fallbackHero === 'number' ? [fallbackHero] : []);
+
+    const seenFoes = new Set();
+    const orderedFoes = [];
+    normalAttacks.forEach((attack) => {
+      if (!seenFoes.has(attack.foeKey)) {
+        seenFoes.add(attack.foeKey);
+        orderedFoes.push(attack.foeKey);
+      }
+    });
+
+    const engagedFoes = orderedFoes.slice(0, 2);
+    const engagedAttacks = normalAttacks.filter((attack) => engagedFoes.includes(attack.foeKey));
+    plan.ignoredAttacks = Math.max(0, normalAttacks.length - engagedAttacks.length);
+
+    if (targetHeroes.length === 1) {
+      engagedAttacks.forEach((attack) => {
+        attack.targetHeroIdx = targetHeroes[0];
+      });
+    } else if (targetHeroes.length > 1) {
+      const foeToHero = {};
+      engagedFoes.forEach((foeKey, idx) => {
+        foeToHero[foeKey] = targetHeroes[idx] ?? targetHeroes[0];
+      });
+      engagedAttacks.forEach((attack) => {
+        attack.targetHeroIdx = foeToHero[attack.foeKey] ?? targetHeroes[0];
+      });
+    }
+
+    plan.attacks.push(...engagedAttacks);
+    if (plan.ignoredAttacks > 0) {
+      plan.messages.push(`${plan.ignoredAttacks} foes cannot reach the front in the corridor.`);
+    }
+    return plan;
+  }
+
+  const N = normalAttacks.length;
+  const M = aliveIdx.length;
+
+  if (N < M) {
+    plan.maxTargetsPerHero = {};
+    aliveIdx.forEach((idx) => {
+      plan.maxTargetsPerHero[idx] = 1;
+    });
+    normalAttacks.forEach((attack) => {
+      attack.eligibleHeroIdx = aliveIdx.slice();
+    });
+    plan.attacks.push(...normalAttacks);
+    plan.messages.push(`Monsters attack ${N} different hero${N === 1 ? '' : 'es'}. Choose who defends.`);
+    return plan;
+  }
+
+  if (N === M) {
+    let attackIdx = 0;
+    aliveIdx.forEach((heroIdx) => {
+      const attack = normalAttacks[attackIdx++];
+      if (attack) {
+        attack.targetHeroIdx = heroIdx;
+        plan.attacks.push(attack);
+      }
+    });
+    plan.messages.push('Each hero must defend once.');
+    return plan;
+  }
+
+  const base = Math.floor(N / M);
+  const unassigned = normalAttacks.slice();
+  const assigned = [];
+
+  aliveIdx.forEach((heroIdx) => {
+    for (let i = 0; i < base; i += 1) {
+      const attack = unassigned.shift();
+      if (!attack) break;
+      attack.targetHeroIdx = heroIdx;
+      assigned.push(attack);
+    }
+  });
+
+  const hatedHeroes = aliveIdx.filter((idx) => monsters.some((monster) => monsterHatesHero(monster, party[idx])));
+  const eligibleHeroes = hatedHeroes.length > 0 ? hatedHeroes : aliveIdx;
+
+  unassigned.forEach((attack) => {
+    attack.eligibleHeroIdx = eligibleHeroes.slice();
+  });
+
+  plan.attacks.push(...assigned, ...unassigned);
+
+  if (unassigned.length > 0) {
+    if (hatedHeroes.length > 0) {
+      plan.messages.push('Extra attacks target hated heroes.');
+    } else {
+      plan.messages.push('Extra attacks need targets.');
+    }
+  }
+
+  return plan;
 }
 
 export function performMonsterAttacks(dispatch, state, ctx) {

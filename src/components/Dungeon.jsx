@@ -361,12 +361,12 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
               const allExist = perimeter.every(pe => existingWalls.some(w => w.x === pe.x && w.y === pe.y && w.edge === pe.edge));
               if (allExist) {
                 // remove perimeter edges from existing walls
-                const newWalls = existingWalls.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === pe.edge));
+                const newWalls = existingWalls.filter(w => !perimeter.some(pe => pe.x === w.x && pe.y === w.y && pe.edge === w.edge));
                 dispatch({ type: 'SET_WALLS', walls: newWalls });
               } else {
                 // Remove any conflicting doors on these edges
                 (state.doors || []).forEach(d => {
-                  if (perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === pe.edge)) {
+                  if (perimeter.some(pe => pe.x === d.x && pe.y === d.y && pe.edge === d.edge)) {
                     dispatch({ type: 'TOGGLE_DOOR', x: d.x, y: d.y, edge: d.edge });
                   }
                 });
@@ -401,7 +401,7 @@ export default function Dungeon({ state, dispatch, tileResult: externalTileResul
       }
     ];
     openContextMenu({ xPx: menuX, yPx: menuY, cellX: x, cellY: y, doorEdge, doorIdx, items });
-  }, [openContextMenu, getMarker, addMarker, removeMarker, dispatch, state.doors]);
+  }, [openContextMenu, getMarker, addMarker, removeMarker, dispatch, state.doors, state.grid, state.cellStyles, state.walls, cellSize]);
 
   const closeRadial = useCallback(() => setRadialMenu(null), []);
 

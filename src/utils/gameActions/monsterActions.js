@@ -8,6 +8,7 @@ import {
   createMonster,
   createMonsterFromTable,
   MONSTER_TABLE,
+  rollOnMonsterTable,
   rollReaction,
   applyMonsterAbility,
   canLevelUp
@@ -50,9 +51,15 @@ export const spawnMonster = (dispatch, type, level = null, opts = {}, ctx) => {
  * @param {number} hcl - Party HCL (Hero Challenge Level)
  * @param {boolean} isBoss - Whether this is THE BOSS (gets +1 Life, +1 Attack, 3x treasure)
  */
-export const spawnMajorFoe = (dispatch, hcl, isBoss = false, ctx) => {
+export const spawnMajorFoe = (dispatch, hcl, isBoss = false, ctx, opts = {}) => {
+  const { rng, rollLog } = ctx || getDefaultContext();
   const monster = createMonster('major', hcl, ctx);
   if (!monster) return;
+
+  const lifeRoll = (typeof opts.lifeRoll === 'number') ? opts.lifeRoll : d6(rng, rollLog);
+  const life = Math.max(1, lifeRoll);
+  monster.hp = life;
+  monster.maxHp = life;
 
   if (isBoss) {
     // Boss gets +1 Life, +1 Attack, and fights to the death
@@ -97,15 +104,45 @@ export const rollWanderingMonster = (dispatch, opts = {}, ctx) => {
   const categories = ENVIRONMENT_MONSTER_CATEGORIES[envKey] || ENVIRONMENT_MONSTER_CATEGORIES.dungeon;
 
   let monsterKey = null;
-  if (roll <= 3) monsterKey = getRandomMonsterKeyByCategory(categories.vermin, rng);
-  else if (roll === 4) monsterKey = getRandomMonsterKeyByCategory(categories.minions, rng);
-  else if (roll === 5) monsterKey = getRandomMonsterKeyByCategory(categories.weird, rng);
-  else monsterKey = getRandomMonsterKeyByCategory(categories.boss, rng);
+  let tableRoll = null;
+  if (roll <= 3) {
+    const tableResult = rollOnMonsterTable(categories.vermin, ctx);
+    if (tableResult) {
+      monsterKey = tableResult.key;
+      tableRoll = tableResult.roll;
+    } else {
+      monsterKey = getRandomMonsterKeyByCategory(categories.vermin, rng);
+    }
+  } else if (roll === 4) {
+    const tableResult = rollOnMonsterTable(categories.minions, ctx);
+    if (tableResult) {
+      monsterKey = tableResult.key;
+      tableRoll = tableResult.roll;
+    } else {
+      monsterKey = getRandomMonsterKeyByCategory(categories.minions, rng);
+    }
+  } else if (roll === 5) {
+    const tableResult = rollOnMonsterTable(categories.weird, ctx);
+    if (tableResult) {
+      monsterKey = tableResult.key;
+      tableRoll = tableResult.roll;
+    } else {
+      monsterKey = getRandomMonsterKeyByCategory(categories.weird, rng);
+    }
+  } else {
+    const tableResult = rollOnMonsterTable(categories.boss, ctx);
+    if (tableResult) {
+      monsterKey = tableResult.key;
+      tableRoll = tableResult.roll;
+    } else {
+      monsterKey = getRandomMonsterKeyByCategory(categories.boss, rng);
+    }
+  }
 
   let spawnedMonster = null;
   if (monsterKey) {
     const hcl = opts.state?.hcl || 1;
-    spawnedMonster = createMonsterFromTable(monsterKey, hcl, ctx);
+    spawnedMonster = createMonsterFromTable(monsterKey, hcl, ctx, { tableRoll });
     if (spawnedMonster) {
       if (spawnedMonster.count !== undefined) spawnedMonster.isMinorFoe = true;
       if (opts.ambush) spawnedMonster.ambush = true;

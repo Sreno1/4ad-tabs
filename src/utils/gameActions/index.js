@@ -39,6 +39,7 @@ export {
   determineInitiative,
   processMinorFoeAttack,
   processMajorFoeAttack,
+  buildMonsterAttackPlan,
   monsterHatesHero,
 } from './combatActions.js';
 
